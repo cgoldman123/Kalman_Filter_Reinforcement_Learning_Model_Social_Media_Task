@@ -1,0 +1,119 @@
+%% Clear workspace
+clear all
+
+%% Construct the appropriate path depending on the system this is run on
+% If running on the analysis cluster, some parameters will be supplied by 
+% the job submission script -- read those accordingly.
+
+dbstop if error
+
+if ispc
+    root = 'L:/';
+    run=1;
+    room='Dislike';
+elseif ismac
+    root = '/Volumes/labs/';
+    run=1;
+    room='Dislike';
+elseif isunix 
+    root = '/media/labs/';
+    run = getenv('RUN');   % run = 1,2,3
+    room = getenv('ROOM_TYPE'); %Like and/or Dislike
+end
+%% Set parameters or run loop over all-----
+% study = 'prolific'; %prolific or local
+% model = 'new'; %old or new
+% CB=false; %true or false
+for mm = {'new' 'old'}
+    for c = {false true}
+        for r = {'Like', 'Dislike'}
+            get_fits(root, 'prolific','old',c{1},r)
+        end
+    end
+end
+
+beep
+%% Begin
+function get_fits(root,study,model,CB,room_type)
+    if CB
+        cb='_CB';
+    else
+        cb='';
+    end
+    
+    if strcmp(study, 'local')
+        sink = [root 'rsmith/wellbeing/data/raw/'];
+        lab_ids = {'TT000', 'NL333', 'KP123', 'TT123', 'CL123', 'NL999', 'RS789', 'AR111'};
+    elseif strcmp(study, 'prolific')
+        sink = [root 'NPC/DataSink/StimTool_Online/WB_Social_Media' cb];
+        lab_ids = {'CGTEST', 'ar111', 'CLTEST', 'temp'};
+    end
+    
+    %% Import matjags library and model-specific fitting function
+    addpath([root 'rsmith/all-studies/core/matjags']);
+    addpath([root 'rsmith/all-studies/models/extended-horizon']);
+    %% Set params
+    
+    datadir = dir(sink);
+    
+    files={};subs={};
+    if strcmp(study, 'local')
+        for f=1:size(datadir,1)
+            if ~contains(datadir(f).name,'.')
+                fold = dir([sink datadir(f).name]);
+                for g=1:size(fold,1)
+                    if ~isempty(regexp(fold(g).name,'SM_R[0-9]-_BEH', 'once')) && ~contains(fold(g).name, lab_ids) && ~contains(fold(g).name, '~$')
+                        subs = [subs extractBetween([sink '/' datadir(f).name '/' fold(g).name], [sink '/' datadir(f).name '/'], '-T1-__SM')];
+                        files = [files [sink datadir(f).name '/' fold(g).name]];
+                    end
+                end
+            end
+        end
+    elseif strcmp(study, 'prolific')
+        sDir = datadir(find(arrayfun(@(n) contains(datadir(n).name, 'social_media'),1:numel(datadir))));
+        for f=1:size(sDir,1)
+            if ~isempty(regexp(sDir(f).name,'_T[0-2]_', 'once')) && ~contains(sDir(f).name, lab_ids)
+                subs = [subs extractBetween([sink '/' sDir(f).folder '/' sDir(f).name], [sink '/' sDir(f).folder '/social_media_'], '_T1')];
+                files = [files [sink '/' sDir(f).name]];
+            end
+        end
+    end
+    [~,order] = sort(arrayfun(@(n) datetime(extractBetween(files{n},['_T1' cb '_'],'.'), 'InputFormat', 'yyyy-MM-dd_HH''h''mm'), 1:numel(files)));
+    files=files(order);
+    %% Read in schedule for data organizing
+    schedule = readtable(['../schedules/sm_distributed_schedule1' cb '.csv']);
+    
+    if strcmp(model, 'old')
+        used_ids = {};
+        for i = 1:length(subs)
+           subject = subs{i};
+           root='L:/';
+           ses=2;
+           input_dir = [sink subject];
+           results_dir = [root 'rsmith/wellbeing/tasks/SocialMedia/output/' study '/logistic/'];
+           try
+                data = fit_social_genmeans(files{i}, ses, room_type, schedule, [], [], study);
+           catch
+               continue
+           end
+           used_ids = [used_ids subject];
+           writetable(data, [results_dir 'old_model-' subject '-' room_type '-fit.csv']);
+        end
+    else
+    %% Get timestamp
+    timestamp = datestr(datetime('now'), 'mm_dd_yy_THH-MM-SS');
+    
+    %% Clean up files and concatenate for fitting
+    [big_table, subj_mapping, flag] = Social_merge(subs, files, schedule, room_type, study);
+    outpath_beh = sprintf([root 'rsmith/wellbeing/tasks/SocialMedia/output/%s/kf/beh_%s_%s%s.csv'],study,room_type, timestamp, cb);
+    writetable(big_table, outpath_beh);
+    
+    %% Perform model fit
+    % Reads in the above 'outpath_beh' file and fits on this file
+    fits = fit_extended_model(outpath_beh);
+    fits.id = vertcat(subj_mapping{:, 1});
+    fits.SM_multiple_beh = ismember(fits.id, flag);
+    outpath_fits = sprintf([root 'rsmith/wellbeing/tasks/SocialMedia/output/%s/kf/fits_%s_%s%s.csv'],study, room_type, timestamp, cb);
+    writetable(fits, outpath_fits);
+    end
+end
