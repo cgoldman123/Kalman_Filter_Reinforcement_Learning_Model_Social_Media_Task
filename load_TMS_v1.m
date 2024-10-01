@@ -5,20 +5,22 @@ function sub = load_TMS_v1(fname)
 %% read data from spreadsheet
 fid = fopen(fname);
 
-hdr = textscan(fid,...
-    '%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s', ...
-    1, 'delimiter', ',');
-data = textscan(fid,...
-    '%s%f%f%f%f%f%f%f%f%f%f%f%f%f%f%f%f%f%f%f%f%f%f%f%f%f%f%f%f%f%f%f%f%f%f%f%f%f%f%f%f%f', ...
-    'delimiter', ',');
+
+numColumns = 57; % Adjust this number as needed
+formatSpec = repmat('%s', 1, numColumns); % Create the format string
+hdr = textscan(fid, formatSpec, 1, 'Delimiter', ',');
+
+formatSpec = ['%s', repmat('%f', 1, numColumns - 1)]; % First column as %s, rest as %f
+data = textscan(fid, formatSpec,  'delimiter', ',');
 fclose(fid);
 
 
 %% separate data into separate subjects
 R = [data{13:21}]; % changed from 13:22
 C = [data{22:30}]; % changed from 23:32
-RT = [data{35:42}]; %changed from 33:42
-
+RT = [data{31:39}]; %changed from 33:42
+BANDIT1_SCHEDULE = [data{40:48}]; % left bandit
+BANDIT2_SCHEDULE = [data{49:57}]; % right bandit
 subject_list = unique(data{3});
 
 % for sn = 1:max(data{3})
@@ -43,9 +45,11 @@ for sn = 1:size(subject_list, 1)
     sub(sn).r           = R(ind,:);
     sub(sn).a           = C(ind,:);
     sub(sn).RT          = RT(ind,:);
-    
+    sub(sn).bandit1_schedule = BANDIT1_SCHEDULE(ind,:);
+    sub(sn).bandit2_schedule = BANDIT2_SCHEDULE(ind,:);
+
 end
-clear RT C R
+clear RT C R 
 
 %% augment data structure
 for sn = 1:length(sub)

@@ -61,10 +61,10 @@ for i = 1:length(DCM.field)
         if ismember(field, {'alpha_start', 'alpha_inf'})
             pE.(field) = log(DCM.params.(field)/(1-DCM.params.(field)));  % bound between 0 and 1
             pC{i,i}    = prior_variance;
-        elseif ismember(field, {'dec_noise_h1_13', 'dec_noise_h5_13'})
+        elseif ismember(field, {'dec_noise_h1_13', 'dec_noise_h5_13', 'info_bonus', 'outcome_informativeness'})
             pE.(field) = log(DCM.params.(field));               % in log-space (to keep positive)
             pC{i,i}    = prior_variance;  
-        elseif ismember(field,{'info_bonus_h1', 'info_bonus_h5','side_bias_h1', 'side_bias_h5'})
+        elseif ismember(field,{'info_bonus_h1', 'info_bonus_h5','side_bias_h1', 'side_bias_h5', 'info_bonus'})
             pE.(field) = DCM.params.(field); 
             pC{i,i}    = prior_variance;
         else
@@ -113,28 +113,22 @@ function L = spm_mdp_L(P,M,U,Y)
     params   = M.params; % includes fitted and fixed params. Write over fitted params below. 
     field = fieldnames(M.pE);
     for i = 1:length(field)
-        if ismember(field{i},{'alpha_start', 'alpha_inf'})
+        if ismember(field{i},{'alpha_start', 'alpha_inf', 'info_bonus', 'outcome_informativeness'})
             params.(field{i}) = 1/(1+exp(-P.(field{i})));
-        elseif ismember(field{i},{'alpha_start', 'alpha_inf', 'dec_noise_h1_13', 'dec_noise_h5_13'})
+        elseif ismember(field{i},{'alpha_start', 'alpha_inf', 'dec_noise_h1_13', 'dec_noise_h5_13', 'info_bonus'})
             params.(field{i}) = exp(P.(field{i}));
         else
             params.(field{i}) = P.(field{i});
         end
     end
 
-    free_choices = U.c5(1,:);
-    rewards = squeeze(U.r(1,:,:))';
+    actions = U.actions;
+    rewards = U.rewards;
 
-    mdp.horizon_sequence = U.C1(1,:);
-    mdp.forced_choices = squeeze(U.a(1,:,:))';
-    mdp.right_info = squeeze(U.dI(1,:,:));
-    mdp.T = 4; % num forced choices
-    mdp.G = 40; % game length
+    mdp = U;
         
     % note that mu2 == right bandit ==  c=2 == free choice = 1
-
-
-    model_output = model_SM_KF_all_choices(params,free_choices, rewards,mdp);
+    model_output = model_SM_KF_all_choices(params,actions, rewards,mdp);
     log_probs = log(model_output.action_probs);
     log_probs(isnan(log_probs)) = eps; % Replace NaN in log output with eps for summing
     L = sum(log_probs, 'all');

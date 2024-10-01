@@ -90,6 +90,41 @@ function [all_data, subj_mapping, flag_ids] = Social_merge(ids, files, room_type
     % only take the rows of all_data that are good
     all_data = all_data(good_index);
     subj_mapping = subj_mapping(good_index, :);
-    
     all_data = vertcat(all_data{:});    
+    
+    % add in schedule
+    is_dislike_type = strcmp(room_type,'Dislike');
+    schedule_room_type = schedule(schedule.dislike_room == is_dislike_type, :);
+    % Assuming 'schedule_room_type' is your 280x13 table and it has these columns:
+    % game_number, trial_num, left_reward (mu1), right_reward (mu2)
+
+    % Step 1: Initialize an empty table to hold the new structure
+    num_games = 40; % There are 40 games
+    max_trials = 9; % Max number of trials per game
+    reward_schedule = array2table(NaN(num_games, max_trials * 2), ...
+        'VariableNames', [strcat('mu1_reward', string(1:max_trials)), ...
+                          strcat('mu2_reward', string(1:max_trials))]);
+
+    % Step 2: Loop through each game_number
+    k = 1;
+    for game = unique(schedule_room_type.game_number)'
+        % Filter the rows for the current game
+        game_rows = schedule_room_type(schedule_room_type.game_number == game, :);
+
+        % Extract the rewards for mu1 and mu2
+        mu1_rewards = game_rows.left_reward;  % Left rewards are for mu1
+        mu2_rewards = game_rows.right_reward; % Right rewards are for mu2
+
+        % Determine the number of trials in this game
+        num_trials = height(game_rows);
+
+        % Assign rewards to the appropriate columns in the new table
+        reward_schedule{k, 1:num_trials} = mu1_rewards';        % mu1 reward columns
+        reward_schedule{k, max_trials+1:max_trials+num_trials} = mu2_rewards'; % mu2 reward columns
+        k = k+1;
+    end
+
+    all_data = [all_data, reward_schedule]; 
+
+    
 end
