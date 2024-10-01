@@ -33,14 +33,11 @@ addpath([root '/rsmith/all-studies/util/spm12/toolbox/DEM/']);
 % study = 'prolific'; %prolific or local
 % model = 'new'; %old or new
 
-MDP.params.alpha_start = .5; % bound between 0 and 1
-MDP.params.alpha_inf = .5; % bound between 0 and 1
-MDP.params.info_bonus = 1; % unbounded
+MDP.params.sigma_d = .5;
+MDP.params.info_bonus = eps; % unbounded
 MDP.params.outcome_informativeness = 1;
-MDP.params.dec_noise_h1_13 = 1; % bound positive
-MDP.params.dec_noise_h5_13 = 1; % bound positive
-MDP.params.side_bias_h1 = 0; % unbounded
-MDP.params.side_bias_h5 = 0; % unbounded % just make one side bias
+MDP.params.random_exp = eps;
+MDP.params.side_bias = 0; % unbounded
 MDP.field = fieldnames(MDP.params);
 
 

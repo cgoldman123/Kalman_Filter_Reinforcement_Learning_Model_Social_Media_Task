@@ -24,18 +24,8 @@ function model_output = model_SM_KF_all_choices(params, actions, rewards, mdp)
     dbstop if error;
     G = mdp.G; % num of games
 
-    alpha_start = params.alpha_start;
-    alpha_inf = params.alpha_inf;
-    %mu0 = params.mu0; % initial value. can fix to 50
-%     info_bonuses = [params.info_bonus_h1 params.info_bonus_h5];       
-    decision_noises = [params.dec_noise_h1_13 params.dec_noise_h5_13];
+    sigma_d = params.sigma_d;
     bias = params.side_bias;
-
-    alpha0  = alpha_start / (1 - alpha_start) - alpha_inf^2 / (1 - alpha_inf);
-    alpha_d = alpha_inf^2 / (1 - alpha_inf); 
-
-    
-    % fit sigma d, assume learning rate starts at 1
     
     %%% FIT BEHAVIOR
     action_probs = nan(G,9);
@@ -49,13 +39,15 @@ function model_output = model_SM_KF_all_choices(params, actions, rewards, mdp)
         mu2 = [50 nan nan nan nan nan nan nan nan];
 
         % learning rates 
-        alpha1 = [alpha0 nan nan nan nan nan nan nan nan]; 
-        alpha2 = [alpha0 nan nan nan nan nan nan nan nan]; 
+        alpha1 = nan(1,9); 
+        alpha2 = nan(1,9); 
 
-        % Decision noise, and side bias for this game depend on 
-        % the horizon. Decision noise additionally depends on
-        % information condition
-        sigma_g = decision_noises(mdp.C1(g));
+        % standard deviations of bandits starts out at 0
+        sigma1 = zeros(1,9); 
+        sigma2 = zeros(1,9); 
+        
+        sigma_r1 = zeros(1,9); 
+        sigma_r2 = zeros(1,9); 
         
         num_choices = sum(~isnan(actions(g,:)));
 
@@ -64,45 +56,62 @@ function model_output = model_SM_KF_all_choices(params, actions, rewards, mdp)
                 % compute UCB
                 if mdp.C1(g)==1
                     T = 1;
+                    Y = 1;
                 else
                     T = 1+params.info_bonus;
+                    Y = 1+params.random_exp;
                 end
                 UCB1 = mu1(t) + (2*log(T)/(sum(actions(1,1:t-1) == 1)*params.outcome_informativeness))^.5 + bias;
                 UCB2 = mu2(t) + (2*log(T)/(sum(actions(1,1:t-1) == 2)*params.outcome_informativeness))^.5;
 
                 % total uncertainty = add variance of both arms and then square root 
                 % total uncertainty
-                Y = 1;
-                Y = 1+params.RE;
+                total_uncertainty = (sigma1(t)^2 + sigma2(t)^2)^.5;
                 
-                % decision_noise = total uncertainty + 2*log(Y)
+                decision_noise = total_uncertainty+2*log(Y);
                 
                 % probability of choosing bandit 1
-                p = exp(UCB1 / sigma_g) / (exp(UCB1 / sigma_g) + exp(UCB2 / sigma_g));
+                p = exp(UCB1 / decision_noise) / (exp(UCB1 / decision_noise) + exp(UCB2 / decision_noise));
                 action_probs(g,t) = mod(actions(g,t),2)*p + (1-mod(actions(g,t),2))*(1-p);
             end
             
+            outcomes_bandit1 = rewards(g,actions(g,1:t) == 1);
+            outcomes_bandit2 = rewards(g,actions(g,1:t) == 2);
+                
+                
+            sigma_r1(t) = std(outcomes_bandit1);
+            sigma_r2(t) = std(outcomes_bandit2);
             % left bandit choice so mu1 updates
             if (actions(g,t) == 1) 
-                % update LR
-                alpha1(t+1) = 1/( 1/(alpha1(t) + alpha_d) + 1 );
-                alpha2(t+1) = 1/( 1/(alpha2(t) + alpha_d) );
+                % update sigma and LR
+                temp = 1/(sigma1(t)^2 + sigma_d^2) + 1/(sigma_r1(t)^2);
+                sigma1(t+1) = (1/temp)^.5;
+                alpha1(t) = (sigma1(t+1)+eps)/(sigma_r1(t)+eps);
+                if ~isempty(outcomes_bandit2)   
+                    temp = sigma2(t)^2 + sigma_d^2;
+                    sigma2(t+1) = temp^.5; 
+                end          
                 exp_vals(g,t) = mu1(t);
                 pred_errors(g,t) = (rewards(g,t) - exp_vals(g,t));
-                alpha(g,t) = alpha1(t+1);
-                pred_errors_alpha(g,t) = alpha1(t+1) * pred_errors(g,t); % confirm that alpha here should be t+1
+                alpha(g,t) = alpha1(t);
+                pred_errors_alpha(g,t) = alpha1(t) * pred_errors(g,t);
                 mu1(t+1) = mu1(t) + pred_errors_alpha(g,t);
                 mu2(t+1) = mu2(t); 
             else % right bandit choice so mu2 updates
                 % update LR
-                alpha1(t+1) = 1/( 1/(alpha1(t) + alpha_d) ); 
-                alpha2(t+1) = 1/( 1/(alpha2(t) + alpha_d) + 1 );
-                exp_vals(g,t) = mu2(t);
+                temp = 1/(sigma2(t)^2 + sigma_d^2) + 1/(sigma_r2(t)^2);
+                sigma2(t+1) = (1/temp)^.5;
+                alpha2(t) = (sigma2(t+1)+eps)/(sigma_r2(t)+eps); % eps keeps first LR == 1
+                if ~isempty(outcomes_bandit1)   
+                    temp = sigma1(t)^2 + sigma_d^2;
+                    sigma1(t+1) = temp^.5; 
+                end
+                exp_vals(g,t) = mu1(t);
                 pred_errors(g,t) = (rewards(g,t) - exp_vals(g,t));
-                alpha(g,t) = alpha2(t+1);
-                pred_errors_alpha(g,t) = alpha2(t+1) * pred_errors(g,t);
-                mu1(t+1) = mu1(t);
+                alpha(g,t) = alpha2(t);
+                pred_errors_alpha(g,t) = alpha2(t) * pred_errors(g,t);
                 mu2(t+1) = mu2(t) + pred_errors_alpha(g,t);
+                mu1(t+1) = mu1(t); 
             end
 
         end
@@ -121,30 +130,42 @@ function model_output = model_SM_KF_all_choices(params, actions, rewards, mdp)
         mu2 = [50 nan nan nan nan nan nan nan nan];
 
         % learning rates 
-        alpha1 = [alpha0 nan nan nan nan nan nan nan nan]; 
-        alpha2 = [alpha0 nan nan nan nan nan nan nan nan]; 
+        alpha1 = nan(1,9); 
+        alpha2 = nan(1,9); 
 
-        % Decision noise, and side bias for this game depend on 
-        % the horizon. Decision noise additionally depends on
-        % information condition
-        sigma_g = decision_noises(mdp.C1(g));
+        % standard deviations of bandits starts out at 0
+        sigma1 = zeros(1,9); 
+        sigma2 = zeros(1,9); 
+        
+        sigma_r1 = zeros(1,9); 
+        sigma_r2 = zeros(1,9); 
         
         num_choices = sum(~isnan(actions(g,:)));
 
         for t=1:num_choices  % loop over forced-choice trials
             simmed_free_choices(g,t) = actions(g,t);
             if t >= 5
+                
                 % compute UCB
                 if mdp.C1(g)==1
                     T = 1;
+                    Y = 1;
                 else
                     T = 1+params.info_bonus;
+                    Y = 1+params.random_exp;
                 end
                 UCB1 = mu1(t) + (2*log(T)/(sum(actions(1,1:t-1) == 1)*params.outcome_informativeness))^.5 + bias;
                 UCB2 = mu2(t) + (2*log(T)/(sum(actions(1,1:t-1) == 2)*params.outcome_informativeness))^.5;
 
-                % probability of choosing bandit 1 (left)
-                p = exp(UCB1 / sigma_g) / (exp(UCB1 / sigma_g) + exp(UCB2 / sigma_g));
+                % total uncertainty = add variance of both arms and then square root 
+                % total uncertainty
+                total_uncertainty = (sigma1(t)^2 + sigma2(t)^2)^.5;
+
+                decision_noise = total_uncertainty+2*log(Y);
+
+                % probability of choosing bandit 1
+                p = exp(UCB1 / decision_noise) / (exp(UCB1 / decision_noise) + exp(UCB2 / decision_noise));
+                
                 % simulate behavior
                 u = rand(1,1);
                 if u <= p
@@ -159,27 +180,41 @@ function model_output = model_SM_KF_all_choices(params, actions, rewards, mdp)
                     simmed_rewards(g,t) = mdp.bandit2_schedule(g,t);
                 end
             end
+            
+            outcomes_bandit1 = simmed_rewards(g,simmed_free_choices(g,1:t) == 1);
+            outcomes_bandit2 = simmed_rewards(g,simmed_free_choices(g,1:t) == 2);
+            
             % left bandit choice so mu1 updates
             if (simmed_free_choices(g,t) == 1) 
-                % update LR
-                alpha1(t+1) = 1/( 1/(alpha1(t) + alpha_d) + 1 );
-                alpha2(t+1) = 1/( 1/(alpha2(t) + alpha_d) );
+                % update sigma and LR
+                temp = 1/(sigma1(t)^2 + sigma_d^2) + 1/(sigma_r1(t)^2);
+                sigma1(t+1) = (1/temp)^.5;
+                alpha1(t) = (sigma1(t+1)+eps)/(sigma_r1(t)+eps);
+                if ~isempty(outcomes_bandit2)   
+                    temp = sigma2(t)^2 + sigma_d^2;
+                    sigma2(t+1) = temp^.5; 
+                end          
                 sim_exp_vals(g,t) = mu1(t);
-                sim_pred_errors(g,t) = (simmed_rewards(g,t) - sim_exp_vals(g,t));
-                sim_alpha(g,t) = alpha1(t+1);
-                sim_pred_errors_alpha(g,t) = alpha1(t+1) * sim_pred_errors(g,t); % confirm that alpha here should be t+1
+                sim_pred_errors(g,t) = (rewards(g,t) - sim_exp_vals(g,t));
+                alpha(g,t) = alpha1(t);
+                sim_pred_errors_alpha(g,t) = alpha1(t) * sim_pred_errors(g,t);
                 mu1(t+1) = mu1(t) + sim_pred_errors_alpha(g,t);
                 mu2(t+1) = mu2(t); 
             else % right bandit choice so mu2 updates
                 % update LR
-                alpha1(t+1) = 1/( 1/(alpha1(t) + alpha_d) ); 
-                alpha2(t+1) = 1/( 1/(alpha2(t) + alpha_d) + 1 );
-                sim_exp_vals(g,t) = mu2(t);
-                sim_pred_errors(g,t) = (simmed_rewards(g,t) - sim_exp_vals(g,t));
-                sim_alpha(g,t) = alpha2(t+1);
-                sim_pred_errors_alpha(g,t) = alpha2(t+1) * sim_pred_errors(g,t);
-                mu1(t+1) = mu1(t);
+                temp = 1/(sigma2(t)^2 + sigma_d^2) + 1/(sigma_r2(t)^2);
+                sigma2(t+1) = (1/temp)^.5;
+                alpha2(t) = (sigma2(t+1)+eps)/(sigma_r2(t)+eps); % eps keeps first LR == 1
+                if ~isempty(outcomes_bandit1)   
+                    temp = sigma1(t)^2 + sigma_d^2;
+                    sigma1(t+1) = temp^.5; 
+                end
+                sim_exp_vals(g,t) = mu1(t);
+                sim_pred_errors(g,t) = (rewards(g,t) - sim_exp_vals(g,t));
+                alpha(g,t) = alpha2(t);
+                sim_pred_errors_alpha(g,t) = alpha2(t) * sim_pred_errors(g,t);
                 mu2(t+1) = mu2(t) + sim_pred_errors_alpha(g,t);
+                mu1(t+1) = mu1(t); 
             end
 
 

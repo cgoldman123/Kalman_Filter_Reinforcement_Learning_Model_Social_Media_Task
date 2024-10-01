@@ -61,10 +61,10 @@ for i = 1:length(DCM.field)
         if ismember(field, {'alpha_start', 'alpha_inf'})
             pE.(field) = log(DCM.params.(field)/(1-DCM.params.(field)));  % bound between 0 and 1
             pC{i,i}    = prior_variance;
-        elseif ismember(field, {'dec_noise_h1_13', 'dec_noise_h5_13', 'info_bonus', 'outcome_informativeness'})
+        elseif ismember(field, {'dec_noise_h1_13', 'dec_noise_h5_13', 'outcome_informativeness', 'sigma_d', 'info_bonus', 'random_exp'})
             pE.(field) = log(DCM.params.(field));               % in log-space (to keep positive)
             pC{i,i}    = prior_variance;  
-        elseif ismember(field,{'info_bonus_h1', 'info_bonus_h5','side_bias_h1', 'side_bias_h5', 'info_bonus'})
+        elseif ismember(field,{'info_bonus_h1', 'info_bonus_h5','side_bias_h1', 'side_bias_h5', 'side_bias'})
             pE.(field) = DCM.params.(field); 
             pC{i,i}    = prior_variance;
         else
@@ -113,12 +113,14 @@ function L = spm_mdp_L(P,M,U,Y)
     params   = M.params; % includes fitted and fixed params. Write over fitted params below. 
     field = fieldnames(M.pE);
     for i = 1:length(field)
-        if ismember(field{i},{'alpha_start', 'alpha_inf', 'info_bonus', 'outcome_informativeness'})
+        if ismember(field{i},{'alpha_start', 'alpha_inf', 'outcome_informativeness'})
             params.(field{i}) = 1/(1+exp(-P.(field{i})));
-        elseif ismember(field{i},{'alpha_start', 'alpha_inf', 'dec_noise_h1_13', 'dec_noise_h5_13', 'info_bonus'})
+        elseif ismember(field{i},{'alpha_start', 'alpha_inf', 'dec_noise_h1_13', 'dec_noise_h5_13', 'sigma_d', 'info_bonus', 'random_exp'})
             params.(field{i}) = exp(P.(field{i}));
-        else
+        elseif ismember(field{i},{'info_bonus_h1', 'info_bonus_h5','side_bias_h1', 'side_bias_h5','side_bias'})
             params.(field{i}) = P.(field{i});
+        else
+            error("Param not transformed properly");
         end
     end
 
