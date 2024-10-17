@@ -14,7 +14,7 @@ if ispc
     room = 'Like';
     model = 'kf';
     results_dir = sprintf([root 'rsmith/lab-members/cgoldman/Wellbeing/social_media/output/%s/%s/'], experiment, model);
-    id = '666878a27888fdd27f529c64'; % 666878a27888fdd27f529c64 60caf58c38ce3e0f5a51f62b
+    id = '60caf58c38ce3e0f5a51f62b'; % 666878a27888fdd27f529c64 60caf58c38ce3e0f5a51f62b
 elseif ismac
     root = '/Volumes/labs/';
     run=1;
@@ -34,10 +34,14 @@ addpath([root '/rsmith/all-studies/util/spm12/toolbox/DEM/']);
 % model = 'new'; %old or new
 
 MDP.params.sigma_d = .5;
-MDP.params.info_bonus = eps; % unbounded
+MDP.params.info_bonus = 5; % unbounded
 MDP.params.outcome_informativeness = 1;
-MDP.params.random_exp = eps;
+MDP.params.random_exp = 5;
 MDP.params.side_bias = 0; % unbounded
+MDP.params.initial_sigma = 8;
+MDP.params.initial_sigma_r = 8;
+MDP.params.familiarity_bonus = 0;
+
 MDP.field = fieldnames(MDP.params);
 
 
