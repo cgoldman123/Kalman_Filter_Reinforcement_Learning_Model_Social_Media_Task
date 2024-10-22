@@ -46,7 +46,6 @@ for i = 1:numel(model_output)
     model_output(i).results.room_type = room_type;
     model_output(i).results.cb = subj_mapping{i, 3};  
 end
-varargout{1} = model_output;
 save(sprintf([results_dir 'model_output_%s_%s.mat'], room_type, timestamp),'model_output');
 fits_table.id = string(subj_mapping{:, 1});
 fits_table.has_practice_effects = (ismember(fits_table.id, flag));
@@ -56,4 +55,6 @@ for i = 1:length(fields)
 end
 outpath_fits = sprintf([results_dir '%s_fits_%s_%s.csv'], fits_table.id, room_type, timestamp);
 writetable(struct2table(fits_table), outpath_fits);
+varargout{1} = fits_table;
+
 end

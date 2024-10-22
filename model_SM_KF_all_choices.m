@@ -70,8 +70,8 @@ function model_output = model_SM_KF_all_choices(params, actions, rewards, mdp)
                     Y = 1+random_exp;
                 end
 %                 add scalar (pos or neg) that * num obs for a bandit
-                UCB1 = mu1(t) + sum(actions(1,1:t-1) == 1)*familiarity_bonus + (2*log(T)/(sum(actions(1,1:t-1) == 1)*outcome_informativeness))^.5 + bias;
-                UCB2 = mu2(t) + sum(actions(1,1:t-1) == 2)*familiarity_bonus + (2*log(T)/(sum(actions(1,1:t-1) == 2)*outcome_informativeness))^.5;
+                UCB1 = mu1(t) + sum(actions(g,1:t-1) == 1)*familiarity_bonus + (2*log(T)/(sum(actions(g,1:t-1) == 1)*outcome_informativeness))^.5 + bias;
+                UCB2 = mu2(t) + sum(actions(g,1:t-1) == 2)*familiarity_bonus + (2*log(T)/(sum(actions(g,1:t-1) == 2)*outcome_informativeness))^.5;
 
                 % total uncertainty = add variance of both arms and then square root 
                 % total uncertainty
@@ -124,7 +124,7 @@ function model_output = model_SM_KF_all_choices(params, actions, rewards, mdp)
                 temp = sigma1(t)^2 + sigma_d^2;
                 sigma1(t+1) = temp^.5; 
                 
-                exp_vals(g,t) = mu1(t);
+                exp_vals(g,t) = mu2(t);
                 pred_errors(g,t) = (rewards(g,t) - exp_vals(g,t));
                 alpha(g,t) = alpha2(t);
                 pred_errors_alpha(g,t) = alpha2(t) * pred_errors(g,t);
@@ -140,9 +140,13 @@ function model_output = model_SM_KF_all_choices(params, actions, rewards, mdp)
     sim_pred_errors_alpha = nan(G,9);
     sim_exp_vals = nan(G,10);
     sim_alpha = nan(G,10);
-    simmed_free_choices = nan(G,9);
+    simmed_free_choices = actions; % use actions to get forced choices
     simmed_rewards = rewards;
+    simmed_action_probs = nan(G,9);
     for g=1:G  % loop over games
+        if g == 24
+            fprintf("hi");
+        end
         % values
         mu1 = [50 nan nan nan nan nan nan nan nan];
         mu2 = [50 nan nan nan nan nan nan nan nan];
@@ -160,10 +164,9 @@ function model_output = model_SM_KF_all_choices(params, actions, rewards, mdp)
         sigma_r1 = nan(1,9); 
         sigma_r2 = nan(1,9); 
         
-        num_choices = sum(~isnan(actions(g,:)));
+        num_choices = sum(~isnan(simmed_free_choices(g,:)));
 
         for t=1:num_choices  % loop over forced-choice trials
-            simmed_free_choices(g,t) = actions(g,t);
             if t >= 5
                 
                 % compute UCB
@@ -174,8 +177,8 @@ function model_output = model_SM_KF_all_choices(params, actions, rewards, mdp)
                     T = 1+info_bonus;
                     Y = 1+random_exp;
                 end
-                UCB1 = mu1(t) + sum(actions(1,1:t-1) == 1)*familiarity_bonus + (2*log(info_bonus)/(sum(actions(1,1:t-1) == 1)*outcome_informativeness))^.5 + bias;
-                UCB2 = mu2(t) + sum(actions(1,1:t-1) == 2)*familiarity_bonus + (2*log(info_bonus)/(sum(actions(1,1:t-1) == 2)*outcome_informativeness))^.5;
+                UCB1 = mu1(t) + sum(simmed_free_choices(g,1:t-1) == 1)*familiarity_bonus + (2*log(info_bonus)/(sum(simmed_free_choices(g,1:t-1) == 1)*outcome_informativeness))^.5 + bias;
+                UCB2 = mu2(t) + sum(simmed_free_choices(g,1:t-1) == 2)*familiarity_bonus + (2*log(info_bonus)/(sum(simmed_free_choices(g,1:t-1) == 2)*outcome_informativeness))^.5;
 
                 % total uncertainty = add variance of both arms and then square root 
                 % total uncertainty
@@ -193,6 +196,11 @@ function model_output = model_SM_KF_all_choices(params, actions, rewards, mdp)
                 else
                     simmed_free_choices(g,t) = 2;
                 end
+                
+                % get action prob
+                simmed_action_probs(g,t) = mod(simmed_free_choices(g,t),2)*p + (1-mod(simmed_free_choices(g,t),2))*(1-p);
+
+                
                 % simulate outcomes according to schedule
                 if simmed_free_choices(g,t) == 1
                 	simmed_rewards(g,t) = mdp.bandit1_schedule(g,t);
@@ -260,5 +268,6 @@ function model_output = model_SM_KF_all_choices(params, actions, rewards, mdp)
     model_output.alpha = sim_alpha;
     model_output.simmed_free_choices = simmed_free_choices;
     model_output.simmed_rewards = simmed_rewards;
+    model_output.simmed_action_probs = simmed_action_probs;
 
 end

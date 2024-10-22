@@ -1,0 +1,90 @@
+function simulate_social_media(params, gen_mean_difference, horizon)
+% load the mdp
+load('./social_media_mdp.mat');
+% extract actions
+actions = mdp.actions;
+% extract rewards
+rewards = mdp.rewards;
+
+% call function
+model_output = model_SM_KF_all_choices(params, actions, rewards, mdp);
+
+% locate our games of interest
+% Calculate the mean of the first 4 numbers in each row for both bandits
+mean_bandit1 = mean(mdp.bandit1_schedule(:, 1:4), 2);
+mean_bandit2 = mean(mdp.bandit2_schedule(:, 1:4), 2);
+
+% Subtract the respective means between the bandits and take the absolute values
+mean_diff = abs(mean_bandit1 - mean_bandit2);
+
+% filter by mean difference
+if gen_mean_difference == 24
+    target_values = [23.7500, 24.0000, 24.2500];
+else
+    target_values = [gen_mean_difference];
+end
+% Find the row numbers where the mean difference matches any of the target values
+rows_with_gen_mean_diff = find(ismember(mean_diff, target_values));
+
+% Count the number of NaN values in each row of model_output.simmed_free_choices
+nan_counts = sum(isnan(model_output.simmed_free_choices), 2);
+if horizon == 1
+    rows_with_horizon = find(nan_counts == 4);
+else
+    rows_with_horizon = find(nan_counts == 0);
+end
+
+games_of_interest = intersect(rows_with_gen_mean_diff, rows_with_horizon);
+
+for game_idx = 1:num_games
+        game = games_of_interest(game_idx);
+        
+        % Extract free choices and action probabilities for the current game
+        free_choices = model_output.simmed_free_choices(game, :);
+        action_probs = model_output.simmed_action_probs(game, :);
+        
+        % Plot each choice in the game
+        subplot(ceil(num_games/2), 2, game_idx); % Create subplots for games
+        hold on;
+        
+        % Labeling based on the number of free choices (1 or 5)
+        if sum(~isnan(free_choices(5:end))) == 1
+            title(['H1 - Game ', num2str(game)]);
+        else
+            title(['H5 - Game ', num2str(game)]);
+        end
+        
+        % Loop over the choices to plot forced (no shading) and free (with shading)
+        for choice_idx = 1:num_choices
+            if choice_idx <= 4
+                % Forced choice - no shading
+                fill_rect(choice_idx, free_choices(choice_idx), [0.7, 0.7, 0.7]); % Gray for forced choices
+            else
+                % Free choice - use shading based on action_probs
+                if ~isnan(free_choices(choice_idx))
+                    % Darker shading for higher probabilities
+                    color_intensity = action_probs(choice_idx);
+                    fill_rect(choice_idx, free_choices(choice_idx), [1-color_intensity, 0, color_intensity]);
+                end
+            end
+        end
+        
+        % Formatting for the plot
+        axis off; % Turn off the axis for clean visualization
+        hold off;
+    end
+end
+
+
+function fill_rect(choice_idx, choice_value, color)
+    % Helper function to plot a rectangle with shading
+    rect_height = 1;
+    rect_width = 0.8;
+    
+    % X and Y position for the rectangle
+    x_pos = choice_idx * 1.5;
+    y_pos = choice_value * 1.5;
+    
+    % Draw a filled rectangle with the specified color
+    rectangle('Position', [x_pos, y_pos, rect_width, rect_height], 'FaceColor', color, 'EdgeColor', 'none');
+end

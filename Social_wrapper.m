@@ -1,6 +1,7 @@
 %% Clear workspace
 clear all
-
+SIM = 1;
+FIT = 1;
 %% Construct the appropriate path depending on the system this is run on
 % If running on the analysis cluster, some parameters will be supplied by 
 % the job submission script -- read those accordingly.
@@ -44,9 +45,15 @@ MDP.params.familiarity_bonus = 0;
 
 MDP.field = fieldnames(MDP.params);
 
-
-get_fits(root, experiment, model, room, results_dir,MDP, id);
-
-
+if SIM
+    % choose generative mean difference of 2, 4, 8, 12, 24
+    gen_mean_difference = 4; %
+    % choose horizon of 1 or 5
+    horizon = 5;
+    simulate_social_media(MDP.params, gen_mean_difference, horizon);
+end
+if FIT
+    fits_table = get_fits(root, experiment, model, room, results_dir,MDP, id);
+end
 
 
