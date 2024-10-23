@@ -130,7 +130,7 @@ function L = spm_mdp_L(P,M,U,Y)
     mdp = U;
         
     % note that mu2 == right bandit ==  c=2 == free choice = 1
-    model_output = model_SM_KF_all_choices(params,actions, rewards,mdp);
+    model_output = model_SM_KF_all_choices(params,actions, rewards,mdp, 0);
     log_probs = log(model_output.action_probs);
     log_probs(isnan(log_probs)) = eps; % Replace NaN in log output with eps for summing
     L = sum(log_probs, 'all');

@@ -1,4 +1,4 @@
-function model_output = model_SM_KF_all_choices(params, actions, rewards, mdp)
+function model_output = model_SM_KF_all_choices(params, actions, rewards, mdp, sim)
 %     # This model has:
 %     #   Kalman filter inference
 %     #   Info bonus
@@ -82,6 +82,19 @@ function model_output = model_SM_KF_all_choices(params, actions, rewards, mdp)
                 
                 % probability of choosing bandit 1
                 p = exp(UCB1 / decision_noise) / (exp(UCB1 / decision_noise) + exp(UCB2 / decision_noise));
+                
+                if sim
+                    % simulate behavior
+                    u = rand(1,1);
+                    if u <= p
+                        actions(g,t) = 1;
+                        rewards(g,t) = mdp.bandit1_schedule(g,t);
+                    else
+                        actions(g,t) = 2;
+                        rewards(g,t) = mdp.bandit2_schedule(g,t);
+                    end
+                end
+                
                 action_probs(g,t) = mod(actions(g,t),2)*p + (1-mod(actions(g,t),2))*(1-p);
             end
             
@@ -135,145 +148,15 @@ function model_output = model_SM_KF_all_choices(params, actions, rewards, mdp)
 
         end
     end
-    
-    % SIMULATE BEHAVIOR
-    sim_pred_errors = nan(G,10);
-    sim_pred_errors_alpha = nan(G,9);
-    sim_exp_vals = nan(G,10);
-    sim_alpha = nan(G,10);
-    simmed_free_choices = actions; % use actions to get forced choices
-    simmed_rewards = rewards;
-    simmed_action_probs = nan(G,9);
-    for g=1:G  % loop over games
-        if g == 34
-             fprintf("hi");
-        end
-        % values
-        mu1 = [initial_mu nan nan nan nan nan nan nan nan];
-        mu2 = [initial_mu nan nan nan nan nan nan nan nan];
 
-        % learning rates 
-        alpha1 = nan(1,9); 
-        alpha2 = nan(1,9); 
-
-        sigma1 = nan(1,9); 
-        sigma1(1) = initial_sigma;
-        sigma2 = nan(1,9); 
-        sigma2(1) = initial_sigma;
-        
-        
-        sigma_r1 = nan(1,9); 
-        sigma_r2 = nan(1,9); 
-        
-        num_choices = sum(~isnan(simmed_free_choices(g,:)));
-
-        for t=1:num_choices  % loop over forced-choice trials
-            if t >= 5
-                
-                % compute UCB
-                if mdp.C1(g)==1
-                    T = 1;
-                    Y = 1;
-                else
-                    T = 1+info_bonus;
-                    Y = 1+random_exp;
-                end
-                UCB1 = mu1(t) + sum(simmed_free_choices(g,1:t-1) == 1)*familiarity_bonus + (2*log(T)/(sum(simmed_free_choices(g,1:t-1) == 1)*outcome_informativeness))^.5 + bias;
-                UCB2 = mu2(t) + sum(simmed_free_choices(g,1:t-1) == 2)*familiarity_bonus + (2*log(T)/(sum(simmed_free_choices(g,1:t-1) == 2)*outcome_informativeness))^.5;
-
-%                 % change to this equation
-%                 deltaR + delta(mean+sigma*3)*log(T) + (diff_in_observations)*familiarity_bonus
-%                 
-%                 % total uncertainty = add variance of both arms and then square root 
-%                 % total uncertainty
-                total_uncertainty = (sigma1(t)^2 + sigma2(t)^2)^.5; 
-% 
-%                 
-%                 decision_noise = total_uncertainty+2*log(Y);
-                decision_noise = total_uncertainty*log(Y)+1;
-                
-                % probability of choosing bandit 1
-                p = exp(UCB1 / decision_noise) / (exp(UCB1 / decision_noise) + exp(UCB2 / decision_noise));
-                
-                % simulate behavior
-                u = rand(1,1);
-                if u <= p
-                    simmed_free_choices(g,t) = 1;
-                else
-                    simmed_free_choices(g,t) = 2;
-                end
-                
-                % get action prob
-                simmed_action_probs(g,t) = mod(simmed_free_choices(g,t),2)*p + (1-mod(simmed_free_choices(g,t),2))*(1-p);
-
-                
-                % simulate outcomes according to schedule
-                if simmed_free_choices(g,t) == 1
-                	simmed_rewards(g,t) = mdp.bandit1_schedule(g,t);
-                else
-                    simmed_rewards(g,t) = mdp.bandit2_schedule(g,t);
-                end
-            end
-            
-            outcomes_bandit1 = simmed_rewards(g,simmed_free_choices(g,1:t) == 1);
-            outcomes_bandit2 = simmed_rewards(g,simmed_free_choices(g,1:t) == 2);
-            
-            if length(outcomes_bandit1)<=1
-                sigma_r1(t) = initial_sigma_r;
-            else
-                sigma_r1(t) = std(outcomes_bandit1);
-            end
-            
-            if length(outcomes_bandit2)<=1
-                sigma_r2(t) = initial_sigma_r;
-            else
-                sigma_r2(t) = std(outcomes_bandit2);
-            end
-            
-            
-            % left bandit choice so mu1 updates
-            if (simmed_free_choices(g,t) == 1) 
-                % update sigma and LR
-                temp = 1/(sigma1(t)^2 + sigma_d^2) + 1/(sigma_r1(t)^2);
-                sigma1(t+1) = (1/temp)^.5;
-                alpha1(t) = (sigma1(t+1)/sigma_r1(t))^2;
-                temp = sigma2(t)^2 + sigma_d^2;
-                sigma2(t+1) = temp^.5; 
-                sim_exp_vals(g,t) = mu1(t);
-                sim_pred_errors(g,t) = (rewards(g,t) - sim_exp_vals(g,t));
-                alpha(g,t) = alpha1(t);
-                sim_pred_errors_alpha(g,t) = alpha1(t) * sim_pred_errors(g,t);
-                mu1(t+1) = mu1(t) + sim_pred_errors_alpha(g,t);
-                mu2(t+1) = mu2(t); 
-            else % right bandit choice so mu2 updates
-                % update LR
-                temp = 1/(sigma2(t)^2 + sigma_d^2) + 1/(sigma_r2(t)^2);
-                sigma2(t+1) = (1/temp)^.5;
-                alpha2(t) = (sigma2(t+1)/sigma_r2(t))^2; 
-                temp = sigma1(t)^2 + sigma_d^2;
-                sigma1(t+1) = temp^.5; 
-
-                sim_exp_vals(g,t) = mu2(t);
-                sim_pred_errors(g,t) = (rewards(g,t) - sim_exp_vals(g,t));
-                alpha(g,t) = alpha2(t);
-                sim_pred_errors_alpha(g,t) = alpha2(t) * sim_pred_errors(g,t);
-                mu2(t+1) = mu2(t) + sim_pred_errors_alpha(g,t);
-                mu1(t+1) = mu1(t); 
-            end
-
-
-        end
-        
-    end
     
     
     model_output.action_probs = action_probs;
-    model_output.exp_vals = sim_exp_vals;
-    model_output.pred_errors = sim_pred_errors;
+    model_output.exp_vals = exp_vals;
+    model_output.pred_errors = pred_errors;
     model_output.pred_errors_alpha = pred_errors_alpha;
-    model_output.alpha = sim_alpha;
-    model_output.simmed_free_choices = simmed_free_choices;
-    model_output.simmed_rewards = simmed_rewards;
-    model_output.simmed_action_probs = simmed_action_probs;
+    model_output.alpha = alpha;
+    model_output.actions = actions;
+    model_output.rewards = rewards;
 
 end

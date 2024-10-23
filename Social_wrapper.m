@@ -1,7 +1,7 @@
 %% Clear workspace
 clear all
-SIM = 1;
-FIT = 0;
+SIM = 0;
+FIT = 1;
 rng(23);
 %% Construct the appropriate path depending on the system this is run on
 % If running on the analysis cluster, some parameters will be supplied by 
@@ -33,10 +33,9 @@ addpath([root '/rsmith/all-studies/util/spm12/toolbox/DEM/']);
 
 %% Set parameters or run loop over all-----
 % study = 'prolific'; %prolific or local
-% model = 'new'; %old or new
 
 MDP.params.sigma_d = .25;
-MDP.params.info_bonus = 0; % unbounded
+MDP.params.info_bonus = 5; % unbounded
 MDP.params.outcome_informativeness = .01;
 MDP.params.random_exp = 5;
 MDP.params.side_bias = 0; % unbounded

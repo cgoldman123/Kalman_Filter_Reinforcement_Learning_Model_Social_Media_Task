@@ -118,16 +118,17 @@ function [fits, model_output] = fit_extended_model(formatted_file, result_dir, M
     % note that mu2 == right bandit ==  c=2 == free choice = 1
 
 
-    %model_output(si).results = model_KFcond_v2_SMT_CMG(params,free_choices, rewards,mdp);    
-    model_output = model_SM_KF_all_choices(fits,actions, rewards,mdp);    
+    model_output = model_SM_KF_all_choices(fits,actions, rewards,mdp, 0);    
     fits.average_action_prob = mean(model_output.action_probs(~isnan(model_output.action_probs)), 'all');
     fits.model_acc = sum(model_output.action_probs(~isnan(model_output.action_probs)) > 0.5) / numel(model_output.action_probs(~isnan(model_output.action_probs)));
         
     
                 
-    
-    datastruct.actions = model_output.simmed_free_choices;
-    datastruct.rewards = model_output.simmed_rewards;
+    % simulate behavior with fitted params
+    simmed_model_output = model_SM_KF_all_choices(fits,actions, rewards,mdp, 1);    
+
+    datastruct.actions = simmed_model_output.actions;
+    datastruct.rewards = simmed_model_output.rewards;
     MDP.datastruct = datastruct;
     % note old social media model model_KFcond_v2_SMT
     fprintf( 'Running VB to fit simulated behavior! \n' );
