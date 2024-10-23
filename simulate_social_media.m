@@ -1,17 +1,32 @@
-function simulate_social_media(params, gen_mean_difference, horizon)
+function simulate_social_media(params, gen_mean_difference, horizon, truncate_h5)
     % Load the MDP file
     load('./social_media_mdp.mat');
 
-    % Extract actions and rewards
-    actions = mdp.actions;
-    rewards = mdp.rewards;
 
-    % Call the model function to get model output
-    model_output = model_SM_KF_all_choices(params, actions, rewards, mdp);
+
+
 
     % Locate games of interest based on gen_mean_difference and horizon
-    games_of_interest = locate_games_of_interest(mdp, model_output, gen_mean_difference, horizon);
+    if truncate_h5
+        horizon = 5;
+        model_output = model_SM_KF_all_choices(params, mdp.actions, mdp.rewards, mdp);
+        games_of_interest = locate_games_of_interest(mdp, model_output, gen_mean_difference, horizon);
+        mdp.C1 = ones(1,40);
+        mdp.actions(:, 6:9) = NaN;
+        mdp.rewards(:, 6:9) = NaN;
+        model_output = model_SM_KF_all_choices(params, mdp.actions, mdp.rewards, mdp);
 
+    else
+        model_output = model_SM_KF_all_choices(params, mdp.actions, mdp.rewards, mdp);
+        games_of_interest = locate_games_of_interest(mdp, model_output, gen_mean_difference, horizon);
+    end
+
+    
+    
+    % Call the model function to get model output
+    
+    
+    
     % Plot the games of interest
     plot_bandit_games(model_output, games_of_interest);
 end
@@ -49,6 +64,8 @@ function plot_bandit_games(model_output, games_of_interest)
     num_choices = 9;  % Each game has 9 total choices
 
     figure;
+    
+
 
     % Loop through each game of interest and create the plots
     for game_idx = 1:num_games
@@ -58,7 +75,7 @@ function plot_bandit_games(model_output, games_of_interest)
         free_choices = model_output.simmed_free_choices(game, :);
         rewards = model_output.simmed_rewards(game, :);
         action_probs = model_output.simmed_action_probs(game, :);
-        action_probs(isnan(action_probs)) = 0;
+        action_probs(isnan(action_probs)) = 1;
 
         % Create a subplot for the game
         subplot(ceil(num_games/2), 2, game_idx);
@@ -85,7 +102,7 @@ function plot_bandit_games(model_output, games_of_interest)
                 % Determine the shading based on action probability (darker = closer to 1)
                 prob_shading = 1 - action_probs(choice_idx);  % Higher prob = darker
                 shading_color = [prob_shading, prob_shading, prob_shading];  % Grayscale
-
+                not_chosen_color = [1 - prob_shading, 1 - prob_shading, 1 - prob_shading];
                 % Adjust the y-coordinate for correct placement (subtract 1 from 'choice_idx')
                 y_pos = 10 - choice_idx + 1;  % Corrected y position
 
@@ -93,10 +110,18 @@ function plot_bandit_games(model_output, games_of_interest)
                     % Chose the left bandit, place reward and shading in the left column
                     fill([1, 2, 2, 1], [y_pos, y_pos, y_pos-1, y_pos-1], shading_color);
                     text(1.5, y_pos-0.5, num2str(rewards(choice_idx)), 'HorizontalAlignment', 'center', 'VerticalAlignment', 'middle', 'Color', [0, .7, 0]);  % Neon green text
+                
+                    % not chosen bandit
+                    fill([3, 4, 4, 3], [y_pos, y_pos, y_pos-1, y_pos-1], not_chosen_color);
+
                 elseif free_choices(choice_idx) == 2
                     % Chose the right bandit, place reward and shading in the right column
                     fill([3, 4, 4, 3], [y_pos, y_pos, y_pos-1, y_pos-1], shading_color);
                     text(3.5, y_pos-0.5, num2str(rewards(choice_idx)), 'HorizontalAlignment', 'center', 'VerticalAlignment', 'middle', 'Color', [0, .7, 0]);  % Neon green text
+                
+                    % not chosen bandit
+                    fill([1, 2, 2, 1], [y_pos, y_pos, y_pos-1, y_pos-1], not_chosen_color);
+
                 end
             end
         end
@@ -106,5 +131,16 @@ function plot_bandit_games(model_output, games_of_interest)
         axis([0 5 0 10]);  % Set axis limits to fit two columns
         axis off;  % Turn off axis labels for cleaner plot
         hold off;
+        
+
+        % add color bar
+        colormap(flipud(gray));
+
+        % Create a colorbar for the entire figure
+        c = colorbar('Location', 'eastoutside');  % Position the colorbar outside the subplots
+        caxis([0 1]);  % Ensure the colorbar ranges from 0 (light) to 1 (dark)
+
+        
     end
+
 end

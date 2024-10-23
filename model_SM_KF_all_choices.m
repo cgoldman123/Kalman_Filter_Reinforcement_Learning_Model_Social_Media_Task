@@ -32,6 +32,7 @@ function model_output = model_SM_KF_all_choices(params, actions, rewards, mdp)
     outcome_informativeness = params.outcome_informativeness;
     info_bonus = params.info_bonus;
     random_exp = params.random_exp;
+    initial_mu = params.initial_mu;
     
     %%% FIT BEHAVIOR
     action_probs = nan(G,9);
@@ -41,8 +42,8 @@ function model_output = model_SM_KF_all_choices(params, actions, rewards, mdp)
     alpha = nan(G,10);
     for g=1:G  % loop over games
         % values
-        mu1 = [50 nan nan nan nan nan nan nan nan];
-        mu2 = [50 nan nan nan nan nan nan nan nan];
+        mu1 = [initial_mu nan nan nan nan nan nan nan nan];
+        mu2 = [initial_mu nan nan nan nan nan nan nan nan];
 
         % learning rates 
         alpha1 = nan(1,9); 
@@ -144,12 +145,12 @@ function model_output = model_SM_KF_all_choices(params, actions, rewards, mdp)
     simmed_rewards = rewards;
     simmed_action_probs = nan(G,9);
     for g=1:G  % loop over games
-        if g == 24
-            fprintf("hi");
+        if g == 34
+             fprintf("hi");
         end
         % values
-        mu1 = [50 nan nan nan nan nan nan nan nan];
-        mu2 = [50 nan nan nan nan nan nan nan nan];
+        mu1 = [initial_mu nan nan nan nan nan nan nan nan];
+        mu2 = [initial_mu nan nan nan nan nan nan nan nan];
 
         % learning rates 
         alpha1 = nan(1,9); 
@@ -177,15 +178,20 @@ function model_output = model_SM_KF_all_choices(params, actions, rewards, mdp)
                     T = 1+info_bonus;
                     Y = 1+random_exp;
                 end
-                UCB1 = mu1(t) + sum(simmed_free_choices(g,1:t-1) == 1)*familiarity_bonus + (2*log(info_bonus)/(sum(simmed_free_choices(g,1:t-1) == 1)*outcome_informativeness))^.5 + bias;
-                UCB2 = mu2(t) + sum(simmed_free_choices(g,1:t-1) == 2)*familiarity_bonus + (2*log(info_bonus)/(sum(simmed_free_choices(g,1:t-1) == 2)*outcome_informativeness))^.5;
+                UCB1 = mu1(t) + sum(simmed_free_choices(g,1:t-1) == 1)*familiarity_bonus + (2*log(T)/(sum(simmed_free_choices(g,1:t-1) == 1)*outcome_informativeness))^.5 + bias;
+                UCB2 = mu2(t) + sum(simmed_free_choices(g,1:t-1) == 2)*familiarity_bonus + (2*log(T)/(sum(simmed_free_choices(g,1:t-1) == 2)*outcome_informativeness))^.5;
 
-                % total uncertainty = add variance of both arms and then square root 
-                % total uncertainty
-                total_uncertainty = (sigma1(t)^2 + sigma2(t)^2)^.5;
-
-                decision_noise = total_uncertainty+2*log(Y);
-
+%                 % change to this equation
+%                 deltaR + delta(mean+sigma*3)*log(T) + (diff_in_observations)*familiarity_bonus
+%                 
+%                 % total uncertainty = add variance of both arms and then square root 
+%                 % total uncertainty
+                total_uncertainty = (sigma1(t)^2 + sigma2(t)^2)^.5; 
+% 
+%                 
+%                 decision_noise = total_uncertainty+2*log(Y);
+                decision_noise = total_uncertainty*log(Y)+1;
+                
                 % probability of choosing bandit 1
                 p = exp(UCB1 / decision_noise) / (exp(UCB1 / decision_noise) + exp(UCB2 / decision_noise));
                 
@@ -247,7 +253,7 @@ function model_output = model_SM_KF_all_choices(params, actions, rewards, mdp)
                 temp = sigma1(t)^2 + sigma_d^2;
                 sigma1(t+1) = temp^.5; 
 
-                sim_exp_vals(g,t) = mu1(t);
+                sim_exp_vals(g,t) = mu2(t);
                 sim_pred_errors(g,t) = (rewards(g,t) - sim_exp_vals(g,t));
                 alpha(g,t) = alpha2(t);
                 sim_pred_errors_alpha(g,t) = alpha2(t) * sim_pred_errors(g,t);

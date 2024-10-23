@@ -61,7 +61,7 @@ for i = 1:length(DCM.field)
         if ismember(field, {'alpha_start', 'alpha_inf'})
             pE.(field) = log(DCM.params.(field)/(1-DCM.params.(field)));  % bound between 0 and 1
             pC{i,i}    = prior_variance;
-        elseif ismember(field, {'dec_noise_h1_13', 'dec_noise_h5_13', 'outcome_informativeness', 'sigma_d', 'info_bonus', 'random_exp', 'initial_sigma_r', 'initial_sigma'})
+        elseif ismember(field, {'dec_noise_h1_13', 'dec_noise_h5_13', 'outcome_informativeness', 'sigma_d', 'info_bonus', 'random_exp', 'initial_sigma_r', 'initial_sigma', 'initial_mu'})
             pE.(field) = log(DCM.params.(field));               % in log-space (to keep positive)
             pC{i,i}    = prior_variance;  
         elseif ismember(field,{'info_bonus_h1', 'info_bonus_h5','side_bias_h1', 'side_bias_h5', 'side_bias', 'familiarity_bonus'})
@@ -115,7 +115,7 @@ function L = spm_mdp_L(P,M,U,Y)
     for i = 1:length(field)
         if ismember(field{i},{'alpha_start', 'alpha_inf'})
             params.(field{i}) = 1/(1+exp(-P.(field{i})));
-        elseif ismember(field{i},{'dec_noise_h1_13', 'dec_noise_h5_13', 'outcome_informativeness', 'sigma_d', 'info_bonus', 'random_exp','initial_sigma_r', 'initial_sigma'})
+        elseif ismember(field{i},{'dec_noise_h1_13', 'dec_noise_h5_13', 'outcome_informativeness', 'sigma_d', 'info_bonus', 'random_exp','initial_sigma_r', 'initial_sigma', 'initial_mu'})
             params.(field{i}) = exp(P.(field{i}));
         elseif ismember(field{i},{'info_bonus_h1', 'info_bonus_h5','side_bias_h1', 'side_bias_h5','side_bias', 'familiarity_bonus'})
             params.(field{i}) = P.(field{i});
