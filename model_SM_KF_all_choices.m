@@ -1,23 +1,4 @@
 function model_output = model_SM_KF_all_choices(params, actions, rewards, mdp, sim)
-%     # This model has:
-%     #   Kalman filter inference
-%     #   Info bonus
-% 
-%     #   spatial bias is in this one and it can vary by 
-% 
-%     # no choice kernel
-%     # inference is constant across horizon and uncertainty but can vary by 
-%     # "condition".  Condition can be anything e.g. TMS or losses etc ...
-%     
-%     # two types of condition:
-%     #   * inference fixed - e.g. horizon, uncertainty - C1, nC1
-%     #   * inference varies - e.g. TMS, losses - C2, nC2
-% 
-%     # hyperpriors =========================================================
-% 
-%     # inference does not vary by condition 1, but can by condition 2
-%     # note, always use j to refer to condition 2
-
 
 % note that mu2 == right bandit ==  c=2 == free choice = 1
 
@@ -26,10 +7,10 @@ function model_output = model_SM_KF_all_choices(params, actions, rewards, mdp, s
 
     sigma_d = params.sigma_d;
     bias = params.side_bias;
-    initial_sigma_r = params.initial_sigma_r;
+    sigma_r = params.sigma_r;
     initial_sigma = params.initial_sigma;
     familiarity_bonus = params.familiarity_bonus;
-    outcome_informativeness = params.outcome_informativeness;
+    baseline_noise = params.baseline_noise;
     info_bonus = params.info_bonus;
     random_exp = params.random_exp;
     initial_mu = params.initial_mu;
@@ -54,10 +35,6 @@ function model_output = model_SM_KF_all_choices(params, actions, rewards, mdp, s
         sigma2 = nan(1,9); 
         sigma2(1) = initial_sigma;
         
-        
-        sigma_r1 = nan(1,9); 
-        sigma_r2 = nan(1,9); 
-        
         num_choices = sum(~isnan(actions(g,:)));
 
         for t=1:num_choices  % loop over forced-choice trials
@@ -70,18 +47,18 @@ function model_output = model_SM_KF_all_choices(params, actions, rewards, mdp, s
                     T = 1+info_bonus;
                     Y = 1+random_exp;
                 end
-%                 add scalar (pos or neg) that * num obs for a bandit
-                UCB1 = mu1(t) + sum(actions(g,1:t-1) == 1)*familiarity_bonus + (2*log(T)/(sum(actions(g,1:t-1) == 1)*outcome_informativeness))^.5 + bias;
-                UCB2 = mu2(t) + sum(actions(g,1:t-1) == 2)*familiarity_bonus + (2*log(T)/(sum(actions(g,1:t-1) == 2)*outcome_informativeness))^.5;
+                          
 
+                value_difference = mu1(t) - mu2(t) + (mu1(t) + 3*sigma1(t) - mu2(t) - 3*sigma2(t))*log(T) + (sum(actions(g,1:t-1) == 1) - sum(actions(g,1:t-1) == 2))*familiarity_bonus + bias;
+                
                 % total uncertainty = add variance of both arms and then square root 
                 % total uncertainty
                 total_uncertainty = (sigma1(t)^2 + sigma2(t)^2)^.5;
                 
-                decision_noise = total_uncertainty+2*log(Y);
+                decision_noise = total_uncertainty*log(Y)+1 + baseline_noise;
                 
                 % probability of choosing bandit 1
-                p = exp(UCB1 / decision_noise) / (exp(UCB1 / decision_noise) + exp(UCB2 / decision_noise));
+                p = 1 / (1 + exp(-value_difference/(decision_noise)));
                 
                 if sim
                     % simulate behavior
@@ -97,28 +74,14 @@ function model_output = model_SM_KF_all_choices(params, actions, rewards, mdp, s
                 
                 action_probs(g,t) = mod(actions(g,t),2)*p + (1-mod(actions(g,t),2))*(1-p);
             end
-            
-            outcomes_bandit1 = rewards(g,actions(g,1:t) == 1);
-            outcomes_bandit2 = rewards(g,actions(g,1:t) == 2);
                 
-            if length(outcomes_bandit1)<=1
-                sigma_r1(t) = initial_sigma_r;
-            else
-                sigma_r1(t) = std(outcomes_bandit1);
-            end
-            
-            if length(outcomes_bandit2)<=1
-                sigma_r2(t) = initial_sigma_r;
-            else
-                sigma_r2(t) = std(outcomes_bandit2);
-            end
             
             % left bandit choice so mu1 updates
             if (actions(g,t) == 1) 
                 % update sigma and LR
-                temp = 1/(sigma1(t)^2 + sigma_d^2) + 1/(sigma_r1(t)^2);
+                temp = 1/(sigma1(t)^2 + sigma_d^2) + 1/(sigma_r^2);
                 sigma1(t+1) = (1/temp)^.5;
-                alpha1(t) = (sigma1(t+1)/(sigma_r1(t)))^2; 
+                alpha1(t) = (sigma1(t+1)/(sigma_r))^2; 
                 
                 temp = sigma2(t)^2 + sigma_d^2;
                 sigma2(t+1) = temp^.5; 
@@ -131,9 +94,9 @@ function model_output = model_SM_KF_all_choices(params, actions, rewards, mdp, s
                 mu2(t+1) = mu2(t); 
             else % right bandit choice so mu2 updates
                 % update LR
-                temp = 1/(sigma2(t)^2 + sigma_d^2) + 1/(sigma_r2(t)^2);
+                temp = 1/(sigma2(t)^2 + sigma_d^2) + 1/(sigma_r^2);
                 sigma2(t+1) = (1/temp)^.5;
-                alpha2(t) = (sigma2(t+1)/(sigma_r2(t)))^2; 
+                alpha2(t) = (sigma2(t+1)/(sigma_r))^2; 
                  
                 temp = sigma1(t)^2 + sigma_d^2;
                 sigma1(t+1) = temp^.5; 

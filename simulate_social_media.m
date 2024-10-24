@@ -1,23 +1,21 @@
 function simulate_social_media(params, gen_mean_difference, horizon, truncate_h5)
-    % Load the MDP file
+    % Load the MDP file to get bandit schedule
     load('./social_media_mdp.mat');
-
-
-
-
 
     % Locate games of interest based on gen_mean_difference and horizon
     if truncate_h5
         horizon = 5;
-        model_output = model_SM_KF_all_choices(params, mdp.actions, mdp.rewards, mdp);
+        % run model unnecessarily to locate games of interest within H5
+        model_output = model_SM_KF_all_choices(params, mdp.actions, mdp.rewards, mdp, 1);
         games_of_interest = locate_games_of_interest(mdp, model_output, gen_mean_difference, horizon);
+        % run the model again treating every game like H1
         mdp.C1 = ones(1,40);
         mdp.actions(:, 6:9) = NaN;
         mdp.rewards(:, 6:9) = NaN;
-        model_output = model_SM_KF_all_choices(params, mdp.actions, mdp.rewards, mdp);
+        model_output = model_SM_KF_all_choices(params, mdp.actions, mdp.rewards, mdp, 1);
 
     else
-        model_output = model_SM_KF_all_choices(params, mdp.actions, mdp.rewards, mdp);
+        model_output = model_SM_KF_all_choices(params, mdp.actions, mdp.rewards, mdp, 1);
         games_of_interest = locate_games_of_interest(mdp, model_output, gen_mean_difference, horizon);
     end
 
@@ -48,7 +46,7 @@ function games_of_interest = locate_games_of_interest(mdp, model_output, gen_mea
     rows_with_gen_mean_diff = find(ismember(mean_diff, target_values));
 
     % Count the number of NaN values in each row for horizon filtering
-    nan_counts = sum(isnan(model_output.simmed_free_choices), 2);
+    nan_counts = sum(isnan(model_output.actions), 2);
     if horizon == 1
         rows_with_horizon = find(nan_counts == 4);
     else
@@ -72,9 +70,9 @@ function plot_bandit_games(model_output, games_of_interest)
         game = games_of_interest(game_idx);
         
         % Extract free choices and rewards for the current game
-        free_choices = model_output.simmed_free_choices(game, :);
-        rewards = model_output.simmed_rewards(game, :);
-        action_probs = model_output.simmed_action_probs(game, :);
+        free_choices = model_output.actions(game, :);
+        rewards = model_output.rewards(game, :);
+        action_probs = model_output.action_probs(game, :);
         action_probs(isnan(action_probs)) = 1;
 
         % Create a subplot for the game
