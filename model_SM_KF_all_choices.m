@@ -9,7 +9,7 @@ function model_output = model_SM_KF_all_choices(params, actions, rewards, mdp, s
     bias = params.side_bias;
     sigma_r = params.sigma_r;
     initial_sigma = params.initial_sigma;
-    familiarity_bonus = params.familiarity_bonus;
+    baseline_info_bonus = params.baseline_info_bonus;
     baseline_noise = params.baseline_noise;
     info_bonus = params.info_bonus;
     random_exp = params.random_exp;
@@ -47,18 +47,19 @@ function model_output = model_SM_KF_all_choices(params, actions, rewards, mdp, s
                     T = 1+info_bonus;
                     Y = 1+random_exp;
                 end
-                          
+               
+               %decision = 1/(1+exp(Q1-Q2)/noise))
+                Q1 = mu1(t) - sum(actions(g,1:t-1) == 1)*baseline_info_bonus + sigma1(t)*log(T) + bias;
+                Q2 = mu2(t) - sum(actions(g,1:t-1) == 2)*baseline_info_bonus + sigma2(t)*log(T);
 
-                value_difference = mu1(t) - mu2(t) + (mu1(t) + 3*sigma1(t) - mu2(t) - 3*sigma2(t))*log(T) + (sum(actions(g,1:t-1) == 1) - sum(actions(g,1:t-1) == 2))*familiarity_bonus + bias;
-                
                 % total uncertainty = add variance of both arms and then square root 
                 % total uncertainty
                 total_uncertainty = (sigma1(t)^2 + sigma2(t)^2)^.5;
                 
-                decision_noise = total_uncertainty*log(Y)+1 + baseline_noise;
+                decision_noise = 1+total_uncertainty*log(Y)+ baseline_noise;
                 
                 % probability of choosing bandit 1
-                p = 1 / (1 + exp(-value_difference/(decision_noise)));
+                p = 1 / (1 + exp(-(Q1-Q2)/(decision_noise)));
                 
                 if sim
                     % simulate behavior

@@ -67,7 +67,7 @@ for i = 1:length(DCM.field)
             pE.(field) = log(DCM.params.(field));               % in log-space (to keep positive)
             pC{i,i}    = prior_variance;  
         elseif ismember(field,{'info_bonus_h1', 'info_bonus_h5','side_bias_h1', 'side_bias_h5', 'side_bias', ...
-                'familiarity_bonus'})
+                'baseline_info_bonus'})
             pE.(field) = DCM.params.(field); 
             pC{i,i}    = prior_variance;
         else
@@ -123,7 +123,7 @@ function L = spm_mdp_L(P,M,U,Y)
                 'sigma_r'})
             params.(field{i}) = exp(P.(field{i}));
         elseif ismember(field{i},{'info_bonus_h1', 'info_bonus_h5','side_bias_h1', 'side_bias_h5','side_bias',...
-                'familiarity_bonus'})
+                'baseline_info_bonus'})
             params.(field{i}) = P.(field{i});
         else
             error("Param not transformed properly");

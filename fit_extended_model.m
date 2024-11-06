@@ -104,7 +104,7 @@ function [fits, model_output] = fit_extended_model(formatted_file, result_dir, M
                 'info_bonus', 'random_exp', 'initial_sigma_r', 'initial_sigma', 'initial_mu', 'baseline_noise',...
                 'sigma_r'})
             fits.(field{i}) = exp(DCM.Ep.(field{i}));
-        elseif ismember(field{i},{'info_bonus_h1', 'info_bonus_h5','side_bias_h1', 'side_bias_h5', 'side_bias', 'familiarity_bonus'})
+        elseif ismember(field{i},{'info_bonus_h1', 'info_bonus_h5','side_bias_h1', 'side_bias_h5', 'side_bias', 'baseline_info_bonus'})
             fits.(field{i}) = DCM.Ep.(field{i});
         else
             disp(field{i});
@@ -144,7 +144,7 @@ function [fits, model_output] = fit_extended_model(formatted_file, result_dir, M
                 'sigma_d', 'info_bonus', 'random_exp','initial_sigma_r', 'initial_sigma', 'initial_mu', 'baseline_noise',...
                 'sigma_r'})
             fits.(['simfit_' field{i}]) = exp(simfit_DCM.Ep.(field{i}));
-        elseif ismember(field{i},{'info_bonus_h1', 'info_bonus_h5','side_bias_h1', 'side_bias_h5','side_bias','familiarity_bonus'})
+        elseif ismember(field{i},{'info_bonus_h1', 'info_bonus_h5','side_bias_h1', 'side_bias_h5','side_bias','baseline_info_bonus'})
             fits.(['simfit_' field{i}]) = simfit_DCM.Ep.(field{i});
         else
             disp(field{i});

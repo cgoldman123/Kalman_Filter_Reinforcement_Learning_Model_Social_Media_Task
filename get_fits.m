@@ -1,7 +1,7 @@
-function varargout = get_fits(root,study,model,room_type, results_dir, MDP, id)
+function varargout = get_fits(root,study,room_type, results_dir, MDP, id)
 timestamp = datestr(datetime('now'), 'mm_dd_yy_THH-MM-SS');
 
-disp(root);disp(study);disp(model);disp(room_type);disp(results_dir);
+disp(root);disp(study);disp(room_type);disp(results_dir);
 %% Import matjags library and model-specific fitting function
 addpath([root 'rsmith/all-studies/core/matjags']);
 addpath([root 'rsmith/all-studies/models/extended-horizon']);
