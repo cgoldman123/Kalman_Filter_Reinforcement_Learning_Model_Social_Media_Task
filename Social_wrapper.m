@@ -15,15 +15,19 @@ if ispc
     room = 'Like';
     model = 'UCB';
     results_dir = sprintf([root 'rsmith/lab-members/cgoldman/Wellbeing/social_media/output/%s/%s/'], experiment, model);
-    id = '666878a27888fdd27f529c64'; % 666878a27888fdd27f529c64 60caf58c38ce3e0f5a51f62b 668d6d380fb72b01a09dee54
+    id = '668d6d380fb72b01a09dee54'; % 666878a27888fdd27f529c64 60caf58c38ce3e0f5a51f62b 668d6d380fb72b01a09dee54
+    MDP.field = {'sigma_d', 'info_bonus', 'baseline_noise', 'random_exp', 'side_bias', 'sigma_r', 'baseline_info_bonus', 'reward_sensitivity'};
+
 elseif ismac
     root = '/Volumes/labs/';
 elseif isunix 
-    root = '/media/labs/';
-    results_dir = getenv('RESULTS');   % run = 1,2,3
-    room = getenv('ROOM'); %Like and/or Dislike
-    experiment = getenv('EXPERIMENT');
-    id = getenv('ID');
+    root = '/media/labs/'
+    results_dir = getenv('RESULTS')   % run = 1,2,3
+    room = getenv('ROOM') %Like and/or Dislike
+    experiment = getenv('EXPERIMENT')
+    id = getenv('ID')
+    MDP.field = strsplit(getenv('FIELD'), ',')
+
 end
 
 addpath([root '/rsmith/all-studies/util/spm12/']);
@@ -32,18 +36,27 @@ addpath([root '/rsmith/all-studies/util/spm12/toolbox/DEM/']);
 %% Set parameters or run loop over all-----
 % study = 'prolific'; %prolific or local
 
+if any(strcmp('info_bonus', MDP.field))
+    MDP.params.info_bonus = 5; 
+else
+    MDP.params.info_bonus = 0; 
+end
+if any(strcmp('random_exp', MDP.field))
+    MDP.params.random_exp = 2.5;
+else
+    MDP.params.random_exp = 0;
+end
+
+
 MDP.params.sigma_d = .25;
-MDP.params.info_bonus = 5; 
-% MDP.params.info_bonus = 0;
-MDP.params.random_exp = 5;
-MDP.params.side_bias = 0; % unbounded
+MDP.params.side_bias = 0; 
 MDP.params.initial_sigma = 1000;
 MDP.params.sigma_r = 4;
-MDP.params.baseline_info_bonus = 0; % turn to novelty bonus
+MDP.params.baseline_info_bonus = 0; 
 MDP.params.initial_mu = 50;
 MDP.params.baseline_noise = 1;
+MDP.params.reward_sensitivity = 1;
 
-MDP.field = {'sigma_d', 'info_bonus', 'baseline_noise', 'random_exp', 'side_bias', 'sigma_r', 'baseline_info_bonus'};
 
 if SIM
     % choose generative mean difference of 2, 4, 8, 12, 24

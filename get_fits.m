@@ -49,10 +49,19 @@ end
 save(sprintf([results_dir 'model_output_%s_%s.mat'], room_type, timestamp),'model_output');
 fits_table.id = string(subj_mapping{:, 1});
 fits_table.has_practice_effects = (ismember(fits_table.id, flag));
-fields = fieldnames(fits);
-for i = 1:length(fields)
-    fits_table.(fields{i}) = fits.(fields{i});
+fits_table.room_type = room_type;
+vars = fieldnames(fits);
+for i = 1:length(vars)
+    if any(strcmp(vars{i}, MDP.field))
+        fits_table.(['prior_' vars{i}]) = MDP.params.(vars{i});
+        fits_table.(['posterior_' vars{i}]) = fits.(vars{i});
+    elseif contains(vars{i}, 'simfit') || contains(vars{i}, 'model_acc') || contains(vars{i}, 'average_action_prob')
+        fits_table.(vars{i}) = fits.(vars{i});
+    else
+        fits_table.(['fixed_' vars{i}]) = fits.(vars{i});
+    end
 end
+
 outpath_fits = sprintf([results_dir '%s_fits_%s_%s.csv'], fits_table.id, room_type, timestamp);
 writetable(struct2table(fits_table), outpath_fits);
 varargout{1} = fits_table;

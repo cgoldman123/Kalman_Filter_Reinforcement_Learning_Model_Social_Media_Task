@@ -1,5 +1,5 @@
 function model_output = model_SM_KF_all_choices(params, actions, rewards, mdp, sim)
-
+% hi toru
 % note that mu2 == right bandit ==  c=2 == free choice = 1
 
     dbstop if error;
@@ -14,6 +14,7 @@ function model_output = model_SM_KF_all_choices(params, actions, rewards, mdp, s
     info_bonus = params.info_bonus;
     random_exp = params.random_exp;
     initial_mu = params.initial_mu;
+    reward_sensitivity = params.reward_sensitivity;
     
     %%% FIT BEHAVIOR
     action_probs = nan(G,9);
@@ -88,7 +89,7 @@ function model_output = model_SM_KF_all_choices(params, actions, rewards, mdp, s
                 sigma2(t+1) = temp^.5; 
         
                 exp_vals(g,t) = mu1(t);
-                pred_errors(g,t) = (rewards(g,t) - exp_vals(g,t));
+                pred_errors(g,t) = (reward_sensitivity*rewards(g,t)) - exp_vals(g,t);
                 alpha(g,t) = alpha1(t);
                 pred_errors_alpha(g,t) = alpha1(t) * pred_errors(g,t);
                 mu1(t+1) = mu1(t) + pred_errors_alpha(g,t);
@@ -103,7 +104,7 @@ function model_output = model_SM_KF_all_choices(params, actions, rewards, mdp, s
                 sigma1(t+1) = temp^.5; 
                 
                 exp_vals(g,t) = mu2(t);
-                pred_errors(g,t) = (rewards(g,t) - exp_vals(g,t));
+                pred_errors(g,t) = (reward_sensitivity*rewards(g,t)) - exp_vals(g,t);
                 alpha(g,t) = alpha2(t);
                 pred_errors_alpha(g,t) = alpha2(t) * pred_errors(g,t);
                 mu2(t+1) = mu2(t) + pred_errors_alpha(g,t);
