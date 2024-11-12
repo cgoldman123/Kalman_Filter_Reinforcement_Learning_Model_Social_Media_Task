@@ -55,7 +55,7 @@ for i = 1:length(vars)
     if any(strcmp(vars{i}, MDP.field))
         fits_table.(['prior_' vars{i}]) = MDP.params.(vars{i});
         fits_table.(['posterior_' vars{i}]) = fits.(vars{i});
-    elseif contains(vars{i}, 'simfit') || contains(vars{i}, 'model_acc') || contains(vars{i}, 'average_action_prob')
+    elseif contains(vars{i}, 'simfit') || strcmp(vars{i}, 'model_acc') || strcmp(vars{i}, 'average_action_prob') ||  strcmp(vars{i}, 'F')
         fits_table.(vars{i}) = fits.(vars{i});
     else
         fits_table.(['fixed_' vars{i}]) = fits.(vars{i});

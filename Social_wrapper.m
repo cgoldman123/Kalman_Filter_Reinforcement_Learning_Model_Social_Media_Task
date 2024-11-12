@@ -12,11 +12,11 @@ dbstop if error
 if ispc
     root = 'L:/';
     experiment = 'prolific'; % indicate local or prolific
-    room = 'Like';
+    room = 'Dislike';
     model = 'UCB';
     results_dir = sprintf([root 'rsmith/lab-members/cgoldman/Wellbeing/social_media/output/%s/%s/'], experiment, model);
-    id = '668d6d380fb72b01a09dee54'; % 666878a27888fdd27f529c64 60caf58c38ce3e0f5a51f62b 668d6d380fb72b01a09dee54
-    MDP.field = {'sigma_d', 'info_bonus', 'baseline_noise', 'random_exp', 'side_bias', 'sigma_r', 'baseline_info_bonus', 'reward_sensitivity'};
+    id = '60caf58c38ce3e0f5a51f62b'; % 666878a27888fdd27f529c64 60caf58c38ce3e0f5a51f62b 668d6d380fb72b01a09dee54
+    MDP.field = {'sigma_d', 'baseline_noise', 'DE_RE_horizon', 'side_bias', 'sigma_r', 'baseline_info_bonus', 'reward_sensitivity'};
 
 elseif ismac
     root = '/Volumes/labs/';
@@ -36,17 +36,28 @@ addpath([root '/rsmith/all-studies/util/spm12/toolbox/DEM/']);
 %% Set parameters or run loop over all-----
 % study = 'prolific'; %prolific or local
 
-if any(strcmp('info_bonus', MDP.field))
-    MDP.params.info_bonus = 5; 
+% indicate if you want the same parameter to control directed exploration
+% (increased likelihood of choosing high info option in H5) and random
+% exploration (increased choice randomness on H5 trials)
+MDP.combined_DE_RE_horizon = 1;
+if MDP.combined_DE_RE_horizon
+    if any(strcmp('DE_RE_horizon', MDP.field))
+        MDP.params.DE_RE_horizon = 2.5;
+    else
+        MDP.params.DE_RE_horizon = 0;
+    end
 else
-    MDP.params.info_bonus = 0; 
+    if any(strcmp('info_bonus', MDP.field))
+        MDP.params.info_bonus = 5; 
+    else
+        MDP.params.info_bonus = 0; 
+    end
+    if any(strcmp('random_exp', MDP.field))
+        MDP.params.random_exp = 2.5;
+    else
+        MDP.params.random_exp = 0;
+    end
 end
-if any(strcmp('random_exp', MDP.field))
-    MDP.params.random_exp = 2.5;
-else
-    MDP.params.random_exp = 0;
-end
-
 
 MDP.params.sigma_d = .25;
 MDP.params.side_bias = 0; 

@@ -11,10 +11,16 @@ function model_output = model_SM_KF_all_choices(params, actions, rewards, mdp, s
     initial_sigma = params.initial_sigma;
     baseline_info_bonus = params.baseline_info_bonus;
     baseline_noise = params.baseline_noise;
-    info_bonus = params.info_bonus;
-    random_exp = params.random_exp;
     initial_mu = params.initial_mu;
     reward_sensitivity = params.reward_sensitivity;
+    
+    % indicate if want one parameter to control DE/RE or keep separate
+    if mdp.combined_DE_RE_horizon
+        DE_RE_horizon = params.DE_RE_horizon;
+    else
+        info_bonus = params.info_bonus;
+        random_exp = params.random_exp;
+    end
     
     %%% FIT BEHAVIOR
     action_probs = nan(G,9);
@@ -45,8 +51,13 @@ function model_output = model_SM_KF_all_choices(params, actions, rewards, mdp, s
                     T = 1;
                     Y = 1;
                 else
-                    T = 1+info_bonus;
-                    Y = 1+random_exp;
+                    if mdp.combined_DE_RE_horizon
+                        T = 1+DE_RE_horizon;
+                        Y = 1+DE_RE_horizon;
+                    else
+                        T = 1+info_bonus;
+                        Y = 1+random_exp;                    
+                    end
                 end
                
                %decision = 1/(1+exp(Q1-Q2)/noise))
