@@ -15,7 +15,7 @@ function model_output = model_SM_KF_all_choices(params, actions, rewards, mdp, s
     reward_sensitivity = params.reward_sensitivity;
     
     % indicate if want one parameter to control DE/RE or keep separate
-    if mdp.combined_DE_RE_horizon
+    if any(strcmp('DE_RE_horizon', param_names))
         DE_RE_horizon = params.DE_RE_horizon;
     else
         info_bonus = params.info_bonus;
@@ -53,7 +53,7 @@ function model_output = model_SM_KF_all_choices(params, actions, rewards, mdp, s
                     Y = 1;
                 else
                     % horizon is 5
-                    if mdp.combined_DE_RE_horizon
+                    if any(strcmp('DE_RE_horizon', param_names))
                         T = 1+DE_RE_horizon;
                         Y = 1+DE_RE_horizon;
                     else

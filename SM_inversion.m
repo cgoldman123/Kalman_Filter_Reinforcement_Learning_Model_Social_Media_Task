@@ -58,13 +58,13 @@ for i = 1:length(DCM.field)
         pC{i,i}    = diag(param);
     else
         % transform the parameters that we fit
-        if ismember(field, {'alpha_start', 'alpha_inf', 'associability_weight','noise_learning_rate', 'learning_rate_win',...
-                'learning_rate_loss', 'learning_rate', 'initial_associability'})
+        if ismember(field, {'alpha_start', 'alpha_inf', 'associability_weight','noise_learning_rate', 'learning_rate_pos',...
+                'learning_rate_neg', 'learning_rate'})
             pE.(field) = log(DCM.params.(field)/(1-DCM.params.(field)));  % bound between 0 and 1
             pC{i,i}    = prior_variance;
         elseif ismember(field, {'dec_noise_h1_13', 'dec_noise_h5_13', 'outcome_informativeness', 'sigma_d', ...
                 'info_bonus', 'random_exp', 'initial_sigma_r', 'initial_sigma', 'initial_mu', 'baseline_noise',...
-                'sigma_r', 'reward_sensitivity', 'DE_RE_horizon'})
+                'sigma_r', 'reward_sensitivity', 'DE_RE_horizon', 'initial_associability'})
             pE.(field) = log(DCM.params.(field));               % in log-space (to keep positive)
             pC{i,i}    = prior_variance;  
         elseif ismember(field,{'info_bonus_h1', 'info_bonus_h5','side_bias_h1', 'side_bias_h5', 'side_bias', ...
@@ -86,6 +86,7 @@ M.L     = @(P,M,U,Y)spm_mdp_L(P,M,U,Y);  % log-likelihood function
 M.pE    = pE;                            % prior means (parameters)
 M.pC    = pC;                            % prior variance (parameters)
 M.params = DCM.params;                   % includes fixed and fitted params
+M.model = DCM.model;
 
 % Variational Laplace
 %--------------------------------------------------------------------------
@@ -117,12 +118,12 @@ function L = spm_mdp_L(P,M,U,Y)
     params   = M.params; % includes fitted and fixed params. Write over fitted params below. 
     field = fieldnames(M.pE);
     for i = 1:length(field)
-        if ismember(field{i},{'alpha_start', 'alpha_inf', 'associability_weight','noise_learning_rate', 'learning_rate_win',...
-                'learning_rate_loss', 'learning_rate', 'initial_associability'})
+        if ismember(field{i},{'alpha_start', 'alpha_inf', 'associability_weight','noise_learning_rate', 'learning_rate_pos',...
+                'learning_rate_neg', 'learning_rate'})
             params.(field{i}) = 1/(1+exp(-P.(field{i})));
         elseif ismember(field{i},{'dec_noise_h1_13', 'dec_noise_h5_13', 'outcome_informativeness', 'sigma_d',...
                 'info_bonus', 'random_exp','initial_sigma_r', 'initial_sigma', 'initial_mu', 'baseline_noise',...
-                'sigma_r', 'reward_sensitivity', 'DE_RE_horizon'})
+                'sigma_r', 'reward_sensitivity', 'DE_RE_horizon', 'initial_associability'})
             params.(field{i}) = exp(P.(field{i}));
         elseif ismember(field{i},{'info_bonus_h1', 'info_bonus_h5','side_bias_h1', 'side_bias_h5','side_bias',...
                 'baseline_info_bonus'})
@@ -138,8 +139,8 @@ function L = spm_mdp_L(P,M,U,Y)
     mdp = U;
         
     % note that mu2 == right bandit ==  c=2 == free choice = 1
-    model_output = model_SM_KF_all_choices(params,actions, rewards,mdp, 0);
-    log_probs = log(model_output.action_probs);
+    model_output = M.model(params,actions, rewards,mdp, 0);
+    log_probs = log(model_output.action_probs+eps);
     log_probs(isnan(log_probs)) = eps; % Replace NaN in log output with eps for summing
     L = sum(log_probs, 'all');
 

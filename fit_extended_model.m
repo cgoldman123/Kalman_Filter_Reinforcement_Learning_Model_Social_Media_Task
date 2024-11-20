@@ -75,8 +75,7 @@ function [fits, model_output] = fit_extended_model(formatted_file, result_dir, M
         'C1', C1, 'nC1', nC1, ...
         'NS', NS, 'G',  G,  'T',   T, ...
         'dI', dI, 'actions',  sub.a,  'rewards', sub.r, 'bandit1_schedule', sub.bandit1_schedule,...
-        'bandit2_schedule', sub.bandit2_schedule, 'result_dir', result_dir, 'combined_DE_RE_horizon',...
-        MDP.combined_DE_RE_horizon);
+        'bandit2_schedule', sub.bandit2_schedule, 'result_dir', result_dir);
     
 
     if ispc
@@ -99,12 +98,12 @@ function [fits, model_output] = fit_extended_model(formatted_file, result_dir, M
     % get fitted and fixed params
     fits = DCM.params;
     for i = 1:length(field)
-        if ismember(field{i},{'alpha_start', 'alpha_inf', 'associability_weight','noise_learning_rate', 'learning_rate_win',...
-                'learning_rate_loss', 'learning_rate', 'initial_associability' })
+        if ismember(field{i},{'alpha_start', 'alpha_inf', 'associability_weight','noise_learning_rate', 'learning_rate_pos',...
+                'learning_rate_neg', 'learning_rate' })
             fits.(field{i}) = 1/(1+exp(-DCM.Ep.(field{i})));
         elseif ismember(field{i},{'dec_noise_h1_13', 'dec_noise_h5_13', 'outcome_informativeness', 'sigma_d', ...
                 'info_bonus', 'random_exp', 'initial_sigma_r', 'initial_sigma', 'initial_mu', 'baseline_noise',...
-                'sigma_r', 'reward_sensitivity', 'DE_RE_horizon'})
+                'sigma_r', 'reward_sensitivity', 'DE_RE_horizon', 'initial_associability'})
             fits.(field{i}) = exp(DCM.Ep.(field{i}));
         elseif ismember(field{i},{'info_bonus_h1', 'info_bonus_h5','side_bias_h1', 'side_bias_h5', 'side_bias', 'baseline_info_bonus'})
             fits.(field{i}) = DCM.Ep.(field{i});
@@ -121,15 +120,16 @@ function [fits, model_output] = fit_extended_model(formatted_file, result_dir, M
     mdp = datastruct;
     % note that mu2 == right bandit ==  c=2 == free choice = 1
 
-
-    model_output = model_SM_KF_all_choices(fits,actions, rewards,mdp, 0);    
+    
+    
+    model_output = MDP.model(fits,actions, rewards,mdp, 0);    
     fits.average_action_prob = mean(model_output.action_probs(~isnan(model_output.action_probs)), 'all');
     fits.model_acc = sum(model_output.action_probs(~isnan(model_output.action_probs)) > 0.5) / numel(model_output.action_probs(~isnan(model_output.action_probs)));
     fits.F = DCM.F;
     
                 
     % simulate behavior with fitted params
-    simmed_model_output = model_SM_KF_all_choices(fits,actions, rewards,mdp, 1);    
+    simmed_model_output = MDP.model(fits,actions, rewards,mdp, 1);    
 
     datastruct.actions = simmed_model_output.actions;
     datastruct.rewards = simmed_model_output.rewards;
@@ -140,12 +140,12 @@ function [fits, model_output] = fit_extended_model(formatted_file, result_dir, M
     simfit_DCM = SM_inversion(MDP);
 
     for i = 1:length(field)
-        if ismember(field{i},{'alpha_start', 'alpha_inf', 'associability_weight','noise_learning_rate', 'learning_rate_win',...
-                'learning_rate_loss', 'learning_rate', 'initial_associability'})
+        if ismember(field{i},{'alpha_start', 'alpha_inf', 'associability_weight','noise_learning_rate', 'learning_rate_pos',...
+                'learning_rate_neg', 'learning_rate'})
             fits.(['simfit_' field{i}]) = 1/(1+exp(-simfit_DCM.Ep.(field{i})));
         elseif ismember(field{i},{'dec_noise_h1_13', 'dec_noise_h5_13', 'info_bonus', 'outcome_informativeness',...
                 'sigma_d', 'info_bonus', 'random_exp','initial_sigma_r', 'initial_sigma', 'initial_mu', 'baseline_noise',...
-                'sigma_r', 'reward_sensitivity', 'DE_RE_horizon'})
+                'sigma_r', 'reward_sensitivity', 'DE_RE_horizon', 'initial_associability'})
             fits.(['simfit_' field{i}]) = exp(simfit_DCM.Ep.(field{i}));
         elseif ismember(field{i},{'info_bonus_h1', 'info_bonus_h5','side_bias_h1', 'side_bias_h5','side_bias','baseline_info_bonus'})
             fits.(['simfit_' field{i}]) = simfit_DCM.Ep.(field{i});

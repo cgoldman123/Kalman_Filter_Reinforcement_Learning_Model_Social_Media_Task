@@ -5,30 +5,23 @@ function model_output = model_SM_RL_all_choices(params, actions, rewards, mdp, s
     dbstop if error;
     G = mdp.G; % num of games
 
-    associability_weight = params.associability_weight;
-    initial_associability = params.initial_associability;
     side_bias = params.side_bias;
     noise_learning_rate = params.noise_learning_rate;
     baseline_info_bonus = params.baseline_info_bonus;
     baseline_noise = params.baseline_noise;
     initial_mu = params.initial_mu;
-    learning_rate = params.learning_rate;
-    reward_sensitivity = params.reward_sensitivity;
+    reward_sensitivity = params.reward_sensitvity;
+
+    param_names = fieldnames(params);
+
 
     
-    % indicate if want one parameter to control DE/RE or keep separate
-    if mdp.combined_DE_RE_horizon
-        DE_RE_horizon = params.DE_RE_horizon;
-    else
-        info_bonus = params.info_bonus;
-        random_exp = params.random_exp;
-    end
     
     %%% FIT BEHAVIOR
     action_probs = nan(G,9);
     pred_errors = nan(G,10);
     pred_errors_alpha = nan(G,9);
-    exp_vals = nan(G,10);
+    exp_vals = nan(G,9);
     alpha = nan(G,10);
     for g=1:G  % loop over games
         % horizon is 1
@@ -37,20 +30,22 @@ function model_output = model_SM_RL_all_choices(params, actions, rewards, mdp, s
             Y = 1;
         else
             % horizon is 5
-            if mdp.combined_DE_RE_horizon
-                T = 1+DE_RE_horizon;
-                Y = 1+DE_RE_horizon;
+            if any(strcmp('DE_RE_horizon', param_names))
+                T = 1+params.DE_RE_horizon;
+                Y = 1+params.DE_RE_horizon;
             else
-                T = 1+info_bonus;
-                Y = 1+random_exp;                    
+                T = 1+params.info_bonus;
+                Y = 1+params.random_exp;                    
             end
         end
         mu1 = [initial_mu nan nan nan nan nan nan nan nan];
         mu2 = [initial_mu nan nan nan nan nan nan nan nan];
         noise = [baseline_noise * Y nan nan nan nan nan nan nan nan]; 
-        associability1 = [initial_associability nan nan nan nan nan nan nan nan];
-        associability2 = [initial_associability nan nan nan nan nan nan nan nan];
-
+        if any(strcmp('associability_weight', param_names))
+            associability1 = [params.initial_associability nan nan nan nan nan nan nan nan];
+            associability2 = [params.initial_associability nan nan nan nan nan nan nan nan];
+        end
+        
         num_choices = sum(~isnan(actions(g,:)));
 
         for t=1:num_choices  % loop over forced-choice trials
@@ -86,30 +81,49 @@ function model_output = model_SM_RL_all_choices(params, actions, rewards, mdp, s
             if (actions(g,t) == 1) 
                 exp_vals(g,t) = mu1(t);
                 pred_errors(g,t) = (reward_sensitivity*rewards(g,t)) - exp_vals(g,t);
-                alpha(g,t) = learning_rate * associability1(g,t);
-                pred_errors_alpha(g,t) = alpha(t) * pred_errors(g,t);
+                if any(strcmp('associability_weight', param_names))
+                    alpha(g,t) = params.learning_rate * associability1(t);
+                    associability1(t+1) = (1 - params.associability_weight)*associability1(t) + params.associability_weight*abs(pred_errors(g,t));
+                    associability2(t+1) = associability2(t);
+                elseif any(strcmp('learning_rate_pos', param_names)) && any(strcmp('learning_rate_neg', param_names))
+                    if pred_errors(g,t) > 0
+                        alpha(g,t) = params.learning_rate_pos;
+                    else
+                        alpha(g,t) = params.learning_rate_neg;
+                    end
+                else 
+                    alpha(g,t) = params.learning_rate;
+                end
+                pred_errors_alpha(g,t) = alpha(g,t) * pred_errors(g,t);
                 mu1(t+1) = mu1(t) + pred_errors_alpha(g,t);
                 mu2(t+1) = mu2(t); 
                 
-                associability1(g,t+1) = (1 - associability_weight)*associability1(g,t) + associability_weight*abs(pred_errors(g,t));
-                associability2(g,t+1) = associability2(g,t);
+
                 
             else % right bandit choice so mu2 updates
                 exp_vals(g,t) = mu2(t);
                 pred_errors(g,t) = (reward_sensitivity*rewards(g,t)) - exp_vals(g,t);
-                alpha(g,t) = learning_rate * associability2(g,t);
-                pred_errors_alpha(g,t) = alpha(t) * pred_errors(g,t);
+                if any(strcmp('associability_weight', param_names))
+                    alpha(g,t) = params.learning_rate * associability1(t);
+                    associability1(t+1) = (1 - params.associability_weight)*associability1(t) + params.associability_weight*abs(pred_errors(g,t));
+                    associability2(t+1) = associability2(t);
+                elseif any(strcmp('learning_rate_pos', param_names)) && any(strcmp('learning_rate_neg', param_names))
+                    if pred_errors(g,t) > 0
+                        alpha(g,t) = params.learning_rate_pos;
+                    else
+                        alpha(g,t) = params.learning_rate_neg;
+                    end
+                else 
+                    alpha(g,t) = params.learning_rate;
+                end
+                pred_errors_alpha(g,t) = alpha(g,t) * pred_errors(g,t);
                 mu2(t+1) = mu2(t) + pred_errors_alpha(g,t);
                 mu1(t+1) = mu1(t); 
-                
-                associability1(g,t+1) = associability1(g,t);
-                associability2(g,t+1) = (1 - associability_weight)*associability2(g,t) + associability_weight*abs(pred_errors(g,t));
-
             end
             
-            % update noise
-            
-
+            % update noise with softplus function. should become more deterministic with wins.
+            noise_raw = noise(t) - noise_learning_rate*(pred_errors(g,t));
+            noise(t+1) = log(1+exp(noise_raw));
         end
     end
 
