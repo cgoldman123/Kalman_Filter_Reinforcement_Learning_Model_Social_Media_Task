@@ -9,6 +9,7 @@ rng(23);
 
 dbstop if error
 
+model = "RL";
 if ispc
     root = 'L:/';
     experiment = 'prolific'; % indicate local or prolific
@@ -33,18 +34,12 @@ addpath([root '/rsmith/all-studies/util/spm12/']);
 addpath([root '/rsmith/all-studies/util/spm12/toolbox/DEM/']);
 
 %% Set parameters or run loop over all-----
-% study = 'prolific'; %prolific or local
 
-% indicate if you want the same parameter to control directed exploration
-% (increased likelihood of choosing high info option in H5) and random
-% exploration (increased choice randomness on H5 trials)
 if any(strcmp('DE_RE_horizon', MDP.field))
     MDP.combined_DE_RE_horizon = 1; % setting to combine DE and RE
     MDP.params.DE_RE_horizon = 2.5; % prior on this value
 else
     MDP.combined_DE_RE_horizon = 0; % setting to NOT combine DE and RE
-%     MDP.params.DE_RE_horizon = 0; % prior that doesn't get fit
-
     if any(strcmp('info_bonus', MDP.field))
         MDP.params.info_bonus = 5; 
     else
@@ -57,10 +52,8 @@ else
     end
 end
 
-MDP.params.sigma_d = .25;
 MDP.params.side_bias = 0; 
 MDP.params.initial_sigma = 1000;
-MDP.params.sigma_r = 4;
 MDP.params.baseline_info_bonus = 0; 
 MDP.params.initial_mu = 50;
 MDP.params.baseline_noise = 1;

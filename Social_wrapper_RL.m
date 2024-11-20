@@ -9,6 +9,7 @@ rng(23);
 
 dbstop if error
 
+model = "RL";
 if ispc
     root = 'L:/';
     experiment = 'prolific'; % indicate local or prolific
@@ -16,7 +17,7 @@ if ispc
     model = 'UCB';
     results_dir = sprintf([root 'rsmith/lab-members/cgoldman/Wellbeing/social_media/output/%s/%s/'], experiment, model);
     id = '659ab1b4640b25ce093058a2'; % 666878a27888fdd27f529c64 60caf58c38ce3e0f5a51f62b 668d6d380fb72b01a09dee54 659ab1b4640b25ce093058a2
-    MDP.field = {'sigma_d', 'baseline_noise', 'side_bias', 'sigma_r', 'DE_RE_horizon', 'baseline_info_bonus', 'reward_sensitivity'};
+    MDP.field = {'baseline_noise', 'side_bias', 'baseline_info_bonus'};
 elseif ismac
     root = '/Volumes/labs/';
 elseif isunix 
@@ -33,18 +34,12 @@ addpath([root '/rsmith/all-studies/util/spm12/']);
 addpath([root '/rsmith/all-studies/util/spm12/toolbox/DEM/']);
 
 %% Set parameters or run loop over all-----
-% study = 'prolific'; %prolific or local
 
-% indicate if you want the same parameter to control directed exploration
-% (increased likelihood of choosing high info option in H5) and random
-% exploration (increased choice randomness on H5 trials)
 if any(strcmp('DE_RE_horizon', MDP.field))
     MDP.combined_DE_RE_horizon = 1; % setting to combine DE and RE
     MDP.params.DE_RE_horizon = 2.5; % prior on this value
 else
     MDP.combined_DE_RE_horizon = 0; % setting to NOT combine DE and RE
-%     MDP.params.DE_RE_horizon = 0; % prior that doesn't get fit
-
     if any(strcmp('info_bonus', MDP.field))
         MDP.params.info_bonus = 5; 
     else
@@ -57,14 +52,18 @@ else
     end
 end
 
-MDP.params.sigma_d = .25;
-MDP.params.side_bias = 0; 
-MDP.params.initial_sigma = 1000;
-MDP.params.sigma_r = 4;
-MDP.params.baseline_info_bonus = 0; 
+% learning
+MDP.params.learning_rate = .5;
+MDP.params.associability_weight = .5;
+MDP.params.initial_associability = .5;
 MDP.params.initial_mu = 50;
+MDP.params.reward_sensitvity = 1;
+
+% choice
+MDP.params.side_bias = 0; 
+MDP.params.baseline_info_bonus = 0; 
 MDP.params.baseline_noise = 1;
-MDP.params.reward_sensitivity = 1;
+MDP.params.noise_learning_rate = .5;
 
 
 if SIM

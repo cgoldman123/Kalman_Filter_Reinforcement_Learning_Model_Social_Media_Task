@@ -99,7 +99,8 @@ function [fits, model_output] = fit_extended_model(formatted_file, result_dir, M
     % get fitted and fixed params
     fits = DCM.params;
     for i = 1:length(field)
-        if ismember(field{i},{'alpha_start', 'alpha_inf'})
+        if ismember(field{i},{'alpha_start', 'alpha_inf', 'associability_weight','noise_learning_rate', 'learning_rate_win',...
+                'learning_rate_loss', 'learning_rate', 'initial_associability' })
             fits.(field{i}) = 1/(1+exp(-DCM.Ep.(field{i})));
         elseif ismember(field{i},{'dec_noise_h1_13', 'dec_noise_h5_13', 'outcome_informativeness', 'sigma_d', ...
                 'info_bonus', 'random_exp', 'initial_sigma_r', 'initial_sigma', 'initial_mu', 'baseline_noise',...
@@ -139,7 +140,8 @@ function [fits, model_output] = fit_extended_model(formatted_file, result_dir, M
     simfit_DCM = SM_inversion(MDP);
 
     for i = 1:length(field)
-        if ismember(field{i},{'alpha_start', 'alpha_inf'})
+        if ismember(field{i},{'alpha_start', 'alpha_inf', 'associability_weight','noise_learning_rate', 'learning_rate_win',...
+                'learning_rate_loss', 'learning_rate', 'initial_associability'})
             fits.(['simfit_' field{i}]) = 1/(1+exp(-simfit_DCM.Ep.(field{i})));
         elseif ismember(field{i},{'dec_noise_h1_13', 'dec_noise_h5_13', 'info_bonus', 'outcome_informativeness',...
                 'sigma_d', 'info_bonus', 'random_exp','initial_sigma_r', 'initial_sigma', 'initial_mu', 'baseline_noise',...

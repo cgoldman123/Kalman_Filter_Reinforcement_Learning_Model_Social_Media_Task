@@ -20,39 +20,39 @@ with open(subject_list_path) as infile:
 
 
 models = [
-    {'field': 'baseline_noise,side_bias,sigma_r'},
-    {'field': 'baseline_noise,side_bias,sigma_r,info_bonus'},
-    {'field': 'baseline_noise,side_bias,sigma_r,baseline_info_bonus'},
-    {'field': 'baseline_noise,side_bias,sigma_r,random_exp'},
-    {'field': 'baseline_noise,side_bias,sigma_r,reward_sensitivity'},
-    {'field': 'baseline_noise,side_bias,sigma_r,info_bonus,baseline_info_bonus'},
-    {'field': 'baseline_noise,side_bias,sigma_r,info_bonus,random_exp'},
-    {'field': 'baseline_noise,side_bias,sigma_r,info_bonus,reward_sensitivity'},
-    {'field': 'baseline_noise,side_bias,sigma_r,baseline_info_bonus,random_exp'},
-    {'field': 'baseline_noise,side_bias,sigma_r,baseline_info_bonus,reward_sensitivity'},
-    {'field': 'baseline_noise,side_bias,sigma_r,random_exp,reward_sensitivity'},
-    {'field': 'baseline_noise,side_bias,sigma_r,info_bonus,baseline_info_bonus,random_exp'},
-    {'field': 'baseline_noise,side_bias,sigma_r,info_bonus,baseline_info_bonus,reward_sensitivity'},
-    {'field': 'baseline_noise,side_bias,sigma_r,info_bonus,random_exp,reward_sensitivity'},
-    {'field': 'baseline_noise,side_bias,sigma_r,baseline_info_bonus,random_exp,reward_sensitivity'},
-    {'field': 'baseline_noise,side_bias,sigma_r,info_bonus,baseline_info_bonus,random_exp,reward_sensitivity'},
+    {'field': 'sigma_d,baseline_noise,side_bias,sigma_r'},
+    {'field': 'sigma_d,baseline_noise,side_bias,sigma_r,info_bonus'},
+    {'field': 'sigma_d,baseline_noise,side_bias,sigma_r,baseline_info_bonus'},
+    {'field': 'sigma_d,baseline_noise,side_bias,sigma_r,random_exp'},
+    {'field': 'sigma_d,baseline_noise,side_bias,sigma_r,reward_sensitivity'},
+    {'field': 'sigma_d,baseline_noise,side_bias,sigma_r,info_bonus,baseline_info_bonus'}, 
+    {'field': 'sigma_d,baseline_noise,side_bias,sigma_r,info_bonus,random_exp'}, # winner for dislike (same as when sigma d is included)
+    {'field': 'sigma_d,baseline_noise,side_bias,sigma_r,info_bonus,reward_sensitivity'},
+    {'field': 'sigma_d,baseline_noise,side_bias,sigma_r,baseline_info_bonus,random_exp'},
+    {'field': 'sigma_d,baseline_noise,side_bias,sigma_r,baseline_info_bonus,reward_sensitivity'},
+    {'field': 'sigma_d,baseline_noise,side_bias,sigma_r,random_exp,reward_sensitivity'},
+    {'field': 'sigma_d,baseline_noise,side_bias,sigma_r,info_bonus,baseline_info_bonus,random_exp'},  # winner for like (same as when sigma d is included)
+    {'field': 'sigma_d,baseline_noise,side_bias,sigma_r,info_bonus,baseline_info_bonus,reward_sensitivity'},
+    {'field': 'sigma_d,baseline_noise,side_bias,sigma_r,info_bonus,random_exp,reward_sensitivity'},
+    {'field': 'sigma_d,baseline_noise,side_bias,sigma_r,baseline_info_bonus,random_exp,reward_sensitivity'},
+    {'field': 'sigma_d,baseline_noise,side_bias,sigma_r,info_bonus,baseline_info_bonus,random_exp,reward_sensitivity'},
 
-    {'field': 'baseline_noise,side_bias,sigma_r,DE_RE_horizon'},
-    {'field': 'baseline_noise,side_bias,sigma_r,DE_RE_horizon,baseline_info_bonus'},
-    {'field': 'baseline_noise,side_bias,sigma_r,DE_RE_horizon,reward_sensitivity'},
-    {'field': 'baseline_noise,side_bias,sigma_r,DE_RE_horizon,baseline_info_bonus,reward_sensitivity'},
+    {'field': 'sigma_d,baseline_noise,side_bias,sigma_r,DE_RE_horizon'},
+    {'field': 'sigma_d,baseline_noise,side_bias,sigma_r,DE_RE_horizon,baseline_info_bonus'},
+    {'field': 'sigma_d,baseline_noise,side_bias,sigma_r,DE_RE_horizon,reward_sensitivity'},
+    {'field': 'sigma_d,baseline_noise,side_bias,sigma_r,DE_RE_horizon,baseline_info_bonus,reward_sensitivity'},
 ]
 
 
 room_type = ["Like", "Dislike"]
 for room in room_type:
+    if room == "Like":
+        continue
     results = result_stem + room + "/"
 
     for index, model in enumerate(models, start=1):
-        # test four additional models
         if index < 17:
             continue
-    
         combined_results_dir = os.path.join(results, f"model{index}/")
         field = model['field']
         
