@@ -27,7 +27,7 @@ export EXPERIMENT
 FIELD=$5
 export FIELD
 
-MODEL=$5
+MODEL=$6
 
 module load matlab/2022a
 # Conditional assignment of run_file based on MODEL value
