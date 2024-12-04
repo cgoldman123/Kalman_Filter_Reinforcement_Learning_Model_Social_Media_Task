@@ -28,15 +28,9 @@ FIELD=$5
 export FIELD
 
 MODEL=$6
+export MODEL
 
 module load matlab/2022a
-# Conditional assignment of run_file based on MODEL value
-if [ "$MODEL" = "RL" ]; then
-    run_file='/media/labs/rsmith/lab-members/cgoldman/Wellbeing/social_media/VB_scripts/Social_wrapper_RL.m'
-elif [ "$MODEL" = "UCB" ]; then
-    run_file='/media/labs/rsmith/lab-members/cgoldman/Wellbeing/social_media/VB_scripts/Social_wrapper.m'
-else
-    echo "Error: Invalid model type specified. Use 'RL' or 'UCB'."
-    exit 1
-fi
+
+run_file='/media/labs/rsmith/lab-members/cgoldman/Wellbeing/social_media/VB_scripts/Social_wrapper.m'
 matlab -nodisplay -nosplash < ${run_file}
