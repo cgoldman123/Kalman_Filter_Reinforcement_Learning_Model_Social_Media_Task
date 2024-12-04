@@ -99,14 +99,17 @@ function [fits, model_output] = fit_extended_model(formatted_file, result_dir, M
     fits = DCM.params;
     for i = 1:length(field)
         if ismember(field{i},{'alpha_start', 'alpha_inf', 'associability_weight','noise_learning_rate', 'learning_rate_pos',...
-                'learning_rate_neg', 'learning_rate' })
+                'learning_rate_neg', 'learning_rate', 'starting_bias', 'drift_mod', 'bias_mod' })
             fits.(field{i}) = 1/(1+exp(-DCM.Ep.(field{i})));
         elseif ismember(field{i},{'dec_noise_h1_13', 'dec_noise_h5_13', 'outcome_informativeness', 'sigma_d', ...
                 'info_bonus', 'random_exp', 'initial_sigma_r', 'initial_sigma', 'initial_mu', 'baseline_noise',...
-                'sigma_r', 'reward_sensitivity', 'DE_RE_horizon', 'initial_associability'})
+                'sigma_r', 'reward_sensitivity', 'DE_RE_horizon', 'initial_associability', 'decision_thresh'})
             fits.(field{i}) = exp(DCM.Ep.(field{i}));
-        elseif ismember(field{i},{'info_bonus_h1', 'info_bonus_h5','side_bias_h1', 'side_bias_h5', 'side_bias', 'baseline_info_bonus'})
+        elseif ismember(field{i},{'info_bonus_h1', 'info_bonus_h5','side_bias_h1', 'side_bias_h5', 'side_bias',...
+                'baseline_info_bonus', 'drift_baseline', 'drift'})
             fits.(field{i}) = DCM.Ep.(field{i});
+        elseif any(strcmp(field{i},{'nondecision_time'}))
+            fits.(field{i}) = 0.1 + (0.3 - 0.1) ./ (1 + exp(-DCM.Ep.(field{i})));  
         else
             disp(field{i});
             error("Param not propertly transformed");
@@ -141,14 +144,17 @@ function [fits, model_output] = fit_extended_model(formatted_file, result_dir, M
 
     for i = 1:length(field)
         if ismember(field{i},{'alpha_start', 'alpha_inf', 'associability_weight','noise_learning_rate', 'learning_rate_pos',...
-                'learning_rate_neg', 'learning_rate'})
+                'learning_rate_neg', 'learning_rate', 'starting_bias', 'drift_mod', 'bias_mod'})
             fits.(['simfit_' field{i}]) = 1/(1+exp(-simfit_DCM.Ep.(field{i})));
         elseif ismember(field{i},{'dec_noise_h1_13', 'dec_noise_h5_13', 'info_bonus', 'outcome_informativeness',...
                 'sigma_d', 'info_bonus', 'random_exp','initial_sigma_r', 'initial_sigma', 'initial_mu', 'baseline_noise',...
-                'sigma_r', 'reward_sensitivity', 'DE_RE_horizon', 'initial_associability'})
+                'sigma_r', 'reward_sensitivity', 'DE_RE_horizon', 'initial_associability', 'decision_thresh'})
             fits.(['simfit_' field{i}]) = exp(simfit_DCM.Ep.(field{i}));
-        elseif ismember(field{i},{'info_bonus_h1', 'info_bonus_h5','side_bias_h1', 'side_bias_h5','side_bias','baseline_info_bonus'})
+        elseif ismember(field{i},{'info_bonus_h1', 'info_bonus_h5','side_bias_h1', 'side_bias_h5','side_bias',...
+                'baseline_info_bonus', 'drift_baseline', 'drift'})
             fits.(['simfit_' field{i}]) = simfit_DCM.Ep.(field{i});
+        elseif any(strcmp(field{i},{'nondecision_time'}))
+            fits.(['simfit_' field{i}]) = 0.1 + (0.3 - 0.1) ./ (1 + exp(-simfit_DCM.Ep.(field{i})));     
         else
             disp(field{i});
             error("Param not propertly transformed");

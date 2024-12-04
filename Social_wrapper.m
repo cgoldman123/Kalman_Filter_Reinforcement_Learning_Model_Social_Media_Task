@@ -9,6 +9,19 @@ rng(23);
 
 dbstop if error
 
+model = "KF DDM";
+model_functions = containers.Map(...
+    {'KF UCB', 'RL', 'KF DDM'}, ...
+    {@model_SM_KF_all_choices, @model_SM_RL_all_choices, @model_SM_KF_DDM_all_choices} ...
+);
+% Save the selected function handle to a variable
+if isKey(model_functions, model)
+    MDP.model = model_functions(model);
+else
+    error('Unknown model specified in MDP.model');
+end
+
+
 if ispc
     root = 'L:/';
     experiment = 'prolific'; % indicate local or prolific
@@ -16,7 +29,9 @@ if ispc
     model = 'UCB';
     results_dir = sprintf([root 'rsmith/lab-members/cgoldman/Wellbeing/social_media/output/%s/%s/'], experiment, model);
     id = '659ab1b4640b25ce093058a2'; % 666878a27888fdd27f529c64 60caf58c38ce3e0f5a51f62b 668d6d380fb72b01a09dee54 659ab1b4640b25ce093058a2
-    MDP.field = {'sigma_d', 'baseline_noise', 'side_bias', 'sigma_r', 'DE_RE_horizon', 'baseline_info_bonus', 'reward_sensitivity'};
+    
+    MDP.field = {'learning_rate', 'baseline_noise', 'side_bias', 'baseline_info_bonus', 'DE_RE_horizon' };
+
 elseif ismac
     root = '/Volumes/labs/';
 elseif isunix 
@@ -33,18 +48,10 @@ addpath([root '/rsmith/all-studies/util/spm12/']);
 addpath([root '/rsmith/all-studies/util/spm12/toolbox/DEM/']);
 
 %% Set parameters or run loop over all-----
-% study = 'prolific'; %prolific or local
 
-% indicate if you want the same parameter to control directed exploration
-% (increased likelihood of choosing high info option in H5) and random
-% exploration (increased choice randomness on H5 trials)
 if any(strcmp('DE_RE_horizon', MDP.field))
-    MDP.combined_DE_RE_horizon = 1; % setting to combine DE and RE
     MDP.params.DE_RE_horizon = 2.5; % prior on this value
 else
-    MDP.combined_DE_RE_horizon = 0; % setting to NOT combine DE and RE
-%     MDP.params.DE_RE_horizon = 0; % prior that doesn't get fit
-
     if any(strcmp('info_bonus', MDP.field))
         MDP.params.info_bonus = 5; 
     else
@@ -57,14 +64,30 @@ else
     end
 end
 
-MDP.params.sigma_d = .25;
-MDP.params.side_bias = 0; 
-MDP.params.initial_sigma = 1000;
-MDP.params.sigma_r = 4;
-MDP.params.baseline_info_bonus = 0; 
+% learning
+if any(strcmp('associability_weight', MDP.field))
+    % associability model
+    MDP.params.associability_weight = .1;
+    MDP.params.initial_associability = 1;
+    MDP.params.learning_rate = .5;
+elseif any(strcmp('learning_rate_pos', MDP.field)) && any(strcmp('learning_rate_neg', MDP.field))
+    % split learning rate, no associability
+    MDP.params.learning_rate_pos = .5;
+    MDP.params.learning_rate_neg = .5;
+else
+    % basic RL model, no associability
+    MDP.params.learning_rate = .5;
+end
+
+
 MDP.params.initial_mu = 50;
+MDP.params.reward_sensitvity = 1;
+
+% choice
+MDP.params.side_bias = 0; 
+MDP.params.baseline_info_bonus = 0; 
 MDP.params.baseline_noise = 1;
-MDP.params.reward_sensitivity = 1;
+MDP.params.noise_learning_rate = .1;
 
 
 if SIM

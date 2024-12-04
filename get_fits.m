@@ -48,6 +48,7 @@ for i = 1:numel(model_output)
 end
 save(sprintf([results_dir 'model_output_%s_%s.mat'], room_type, timestamp),'model_output');
 fits_table.id = string(subj_mapping{:, 1});
+fits_table.model = func2str(MDP.model);
 fits_table.has_practice_effects = (ismember(fits_table.id, flag));
 fits_table.room_type = room_type;
 vars = fieldnames(fits);

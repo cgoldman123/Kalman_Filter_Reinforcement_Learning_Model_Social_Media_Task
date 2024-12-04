@@ -9,10 +9,10 @@ rng(23);
 
 dbstop if error
 
-model = "RL";
+model = "KF DDM";
 model_functions = containers.Map(...
-    {'KF', 'RL'}, ...
-    {@model_SM_KF_all_choices, @model_SM_RL_all_choices} ...
+    {'KF UCB', 'RL', 'KF DDM'}, ...
+    {@model_SM_KF_all_choices, @model_SM_RL_all_choices, @model_SM_KF_DDM_all_choices} ...
 );
 % Save the selected function handle to a variable
 if isKey(model_functions, model)
@@ -29,9 +29,7 @@ if ispc
     model = 'UCB';
     results_dir = sprintf([root 'rsmith/lab-members/cgoldman/Wellbeing/social_media/output/%s/%s/'], experiment, model);
     id = '659ab1b4640b25ce093058a2'; % 666878a27888fdd27f529c64 60caf58c38ce3e0f5a51f62b 668d6d380fb72b01a09dee54 659ab1b4640b25ce093058a2
-    MDP.field = {'learning_rate', 'baseline_noise', 'side_bias', 'baseline_info_bonus', 'info_bonus', 'random_exp','associability_weight', 'initial_associability' };
-    MDP.field = {'learning_rate_pos','learning_rate_neg', 'baseline_noise', 'side_bias', 'baseline_info_bonus', 'info_bonus', 'random_exp' };
-    MDP.field = {'learning_rate', 'baseline_noise', 'side_bias', 'baseline_info_bonus', 'info_bonus', 'random_exp' };
+    
     MDP.field = {'learning_rate', 'baseline_noise', 'side_bias', 'baseline_info_bonus', 'DE_RE_horizon' };
 
 elseif ismac

@@ -59,18 +59,21 @@ for i = 1:length(DCM.field)
     else
         % transform the parameters that we fit
         if ismember(field, {'alpha_start', 'alpha_inf', 'associability_weight','noise_learning_rate', 'learning_rate_pos',...
-                'learning_rate_neg', 'learning_rate'})
+                'learning_rate_neg', 'learning_rate', 'starting_bias', 'drift_mod', 'bias_mod'})
             pE.(field) = log(DCM.params.(field)/(1-DCM.params.(field)));  % bound between 0 and 1
             pC{i,i}    = prior_variance;
         elseif ismember(field, {'dec_noise_h1_13', 'dec_noise_h5_13', 'outcome_informativeness', 'sigma_d', ...
                 'info_bonus', 'random_exp', 'initial_sigma_r', 'initial_sigma', 'initial_mu', 'baseline_noise',...
-                'sigma_r', 'reward_sensitivity', 'DE_RE_horizon', 'initial_associability'})
+                'sigma_r', 'reward_sensitivity', 'DE_RE_horizon', 'initial_associability', 'decision_thresh'})
             pE.(field) = log(DCM.params.(field));               % in log-space (to keep positive)
             pC{i,i}    = prior_variance;  
         elseif ismember(field,{'info_bonus_h1', 'info_bonus_h5','side_bias_h1', 'side_bias_h5', 'side_bias', ...
-                'baseline_info_bonus'})
+                'baseline_info_bonus', 'drift_baseline', 'drift'})
             pE.(field) = DCM.params.(field); 
             pC{i,i}    = prior_variance;
+        elseif any(strcmp(field,{'nondecision_time'})) % bound between .1 and .3
+            pE.(field) =  -log((0.3 - 0.1) ./ (DCM.params.(field) - 0.1) - 1);             
+            pC{i,i}    = prior_variance;      
         else
             disp(field);
             error("Param not properly transformed");
@@ -119,15 +122,17 @@ function L = spm_mdp_L(P,M,U,Y)
     field = fieldnames(M.pE);
     for i = 1:length(field)
         if ismember(field{i},{'alpha_start', 'alpha_inf', 'associability_weight','noise_learning_rate', 'learning_rate_pos',...
-                'learning_rate_neg', 'learning_rate'})
+                'learning_rate_neg', 'learning_rate', 'starting_bias', 'drift_mod', 'bias_mod'})
             params.(field{i}) = 1/(1+exp(-P.(field{i})));
         elseif ismember(field{i},{'dec_noise_h1_13', 'dec_noise_h5_13', 'outcome_informativeness', 'sigma_d',...
                 'info_bonus', 'random_exp','initial_sigma_r', 'initial_sigma', 'initial_mu', 'baseline_noise',...
-                'sigma_r', 'reward_sensitivity', 'DE_RE_horizon', 'initial_associability'})
+                'sigma_r', 'reward_sensitivity', 'DE_RE_horizon', 'initial_associability', 'decision_thresh'})
             params.(field{i}) = exp(P.(field{i}));
         elseif ismember(field{i},{'info_bonus_h1', 'info_bonus_h5','side_bias_h1', 'side_bias_h5','side_bias',...
-                'baseline_info_bonus'})
+                'baseline_info_bonus', 'drift_baseline', 'drift'})
             params.(field{i}) = P.(field{i});
+        elseif any(strcmp(field{i},{'nondecision_time'}))
+            params.(field{i}) = 0.1 + (0.3 - 0.1) ./ (1 + exp(-P.(field{i})));     
         else
             error("Param not transformed properly");
         end
