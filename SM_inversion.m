@@ -138,13 +138,14 @@ function L = spm_mdp_L(P,M,U,Y)
         end
     end
 
-    actions = U.actions;
+    actions_and_rts.actions = U.actions;
+    actions_and_rts.RTs = U.RTs;
     rewards = U.rewards;
 
     mdp = U;
         
     % note that mu2 == right bandit ==  c=2 == free choice = 1
-    model_output = M.model(params,actions, rewards,mdp, 0);
+    model_output = M.model(params,actions_and_rts, rewards,mdp, 0);
     log_probs = log(model_output.action_probs+eps);
     log_probs(isnan(log_probs)) = eps; % Replace NaN in log output with eps for summing
     L = sum(log_probs, 'all');

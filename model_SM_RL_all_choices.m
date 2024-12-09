@@ -10,7 +10,7 @@ function model_output = model_SM_RL_all_choices(params, actions, rewards, mdp, s
     baseline_info_bonus = params.baseline_info_bonus;
     baseline_noise = params.baseline_noise;
     initial_mu = params.initial_mu;
-    reward_sensitivity = params.reward_sensitvity;
+    reward_sensitivity = params.reward_sensitivity;
 
     param_names = fieldnames(params);
 

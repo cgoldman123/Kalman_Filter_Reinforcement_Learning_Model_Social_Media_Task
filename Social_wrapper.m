@@ -9,17 +9,22 @@ rng(23);
 
 dbstop if error
 if ispc
-    model = "KF UCB DDM";
+    model = "KF_UCB_DDM"; % indicate if RL, KF_UCB, or KF_UCB_DDM
     root = 'L:/';
     experiment = 'prolific'; % indicate local or prolific
     room = 'Like';
-    model = 'UCB';
-    results_dir = sprintf([root 'rsmith/lab-members/cgoldman/Wellbeing/social_media/output/%s/%s/'], experiment, model);
-    id = '659ab1b4640b25ce093058a2'; % 666878a27888fdd27f529c64 60caf58c38ce3e0f5a51f62b 668d6d380fb72b01a09dee54 659ab1b4640b25ce093058a2
+    results_dir = sprintf([root 'rsmith/lab-members/cgoldman/Wellbeing/social_media/output/test/']);
+    id = '5590a34cfdf99b729d4f69dc'; % 666878a27888fdd27f529c64 60caf58c38ce3e0f5a51f62b 668d6d380fb72b01a09dee54 659ab1b4640b25ce093058a2 5590a34cfdf99b729d4f69dc 53b98f20fdf99b472f4700e4
     
-    MDP.field = {'learning_rate', 'baseline_noise', 'side_bias', 'baseline_info_bonus', 'DE_RE_horizon' };
-
-elseif isunix 
+    MDP.field = {'drift_mod', 'drift_baseline', 'decision_thresh', 'starting_bias', 'info_bonus', 'random_exp', 'sigma_r', 'side_bias', 'baseline_info_bonus', 'baseline_noise' };
+    if model == "KF_UCB_DDM"
+        MDP.settings.drift_mapping = 'action_prob';
+        MDP.settings.thresh_mapping = '';
+        MDP.settings.bias_mapping = '';
+        MDP.settings.max_rt = 3;
+    end
+    
+elseif isunix
     model = getenv('MODEL')
     root = '/media/labs/'
     results_dir = getenv('RESULTS')   % run = 1,2,3
@@ -35,7 +40,7 @@ addpath([root '/rsmith/all-studies/util/spm12/toolbox/DEM/']);
 
 
 model_functions = containers.Map(...
-    {'KF UCB', 'RL', 'KF UCB DDM'}, ...
+    {'KF_UCB', 'RL', 'KF_UCB_DDM'}, ...
     {@model_SM_KF_all_choices, @model_SM_RL_all_choices, @model_SM_KF_DDM_all_choices} ...
 );
 if isKey(model_functions, model)
@@ -71,11 +76,11 @@ end
 
 
 % parameters specific to one of the models
-if model == "KF UCB" || "KF UCB DDM"
+if ismember(model, {'KF_UCB', 'KF_UCB_DDM'})
     MDP.params.sigma_d = .25;
     MDP.params.initial_sigma = 1000;
     MDP.params.sigma_r = 4;
-elseif model == "RL"
+elseif ismember(model, {'RL'})
     MDP.params.noise_learning_rate = .1;
     if any(strcmp('associability_weight', MDP.field))
         % associability model
@@ -90,6 +95,28 @@ elseif model == "RL"
         % basic RL model, no associability
         MDP.params.learning_rate = .5;
     end
+end
+if ismember(model, {'KF_UCB_DDM'})
+%     MDP.params.nondecision_time = .15;
+    if strcmp(MDP.settings.drift_mapping,'action_prob')
+        MDP.params.drift_baseline = .085;
+        MDP.params.drift_mod = .5;  
+    else
+        MDP.params.drift = 0;
+    end
+    if strcmp(MDP.settings.bias_mapping,'action_prob')
+        MDP.params.bias_mod = .5;  
+    else
+        MDP.params.starting_bias = .5;
+    end
+    if strcmp(MDP.settings.thresh_mapping,'action_prob')
+        MDP.params.thresh_baseline = .085;
+        MDP.params.thresh_mod = .5;  
+    else
+        MDP.params.decision_thresh = 2;
+    end
+    
+    
 end
 
 

@@ -4,6 +4,8 @@ function model_output = model_SM_KF_DDM_all_choices(params, actions_and_rts, rew
     G = mdp.G; % num of games
     T = 9; % num of choices
     
+    max_rt = mdp.settings.max_rt;
+    
     % initialize params
     sigma_d = params.sigma_d;
     bias = params.side_bias;
@@ -12,10 +14,9 @@ function model_output = model_SM_KF_DDM_all_choices(params, actions_and_rts, rew
     baseline_info_bonus = params.baseline_info_bonus;
     baseline_noise = params.baseline_noise;
     initial_mu = params.initial_mu;
-    reward_sensitivity = params.reward_sensitivity;
-    nondecision_time = params.nondecision_time;
+    reward_sensitivity = params.reward_sensitivity;    
     % indicate if want one parameter to control DE/RE or keep separate
-    if any(strcmp('DE_RE_horizon', param_names))
+    if any(strcmp('DE_RE_horizon', fieldnames(params)))
         DE_RE_horizon = params.DE_RE_horizon;
     else
         info_bonus = params.info_bonus;
@@ -28,7 +29,7 @@ function model_output = model_SM_KF_DDM_all_choices(params, actions_and_rts, rew
         rts = nan(G,T);
     else 
         actions = actions_and_rts.actions;
-        rts = actions_and_rts.rts;
+        rts = actions_and_rts.RTs;
         rt_pdf = nan(G,9);
         action_probs = nan(G,9);
         model_acc = nan(G,9);
@@ -64,7 +65,7 @@ function model_output = model_SM_KF_DDM_all_choices(params, actions_and_rts, rew
                     Y = 1;
                 else
                     % horizon is 5
-                    if any(strcmp('DE_RE_horizon', param_names))
+                    if any(strcmp('DE_RE_horizon', fieldnames(params)))
                         T = 1+DE_RE_horizon;
                         Y = 1+DE_RE_horizon;
                     else
@@ -88,17 +89,17 @@ function model_output = model_SM_KF_DDM_all_choices(params, actions_and_rts, rew
                 
                 
                 
-                if contains(mdp.drift_mapping, 'action_prob')
+                if contains(mdp.settings.drift_mapping, 'action_prob')
                     drift = params.drift_baseline + params.drift_mod*(p - .5);
                 else
                     drift = params.drift;
                 end
-                if contains(mdp.bias_mapping, 'action_prob')
+                if contains(mdp.settings.bias_mapping, 'action_prob')
                     starting_bias = .5 + params.bias_mod*(p - .5);
                 else
                     starting_bias = params.starting_bias;
                 end
-                if contains(mdp.threshold_mapping, 'action_prob')
+                if contains(mdp.settings.thresh_mapping, 'action_prob')
                     decision_thresh_untransformed = params.thresh_baseline + params.thresh_mod*(p - .5);
                     % softplus function to keep positive
                     decision_thresh = log(1+exp(decision_thresh_untransformed));
@@ -108,7 +109,7 @@ function model_output = model_SM_KF_DDM_all_choices(params, actions_and_rts, rew
 
 
                 if sim
-                    [simmed_rt, chose_left] = simulate_DDM(drift, decision_thresh, nondecision_time, starting_bias, 1, .001, realmax);
+                    [simmed_rt, chose_left] = simulate_DDM(drift, decision_thresh, 0, starting_bias, 1, .001, realmax);
                     % accepted dot motion
                     if chose_left
                         actions(g,t) = 1;
@@ -119,15 +120,18 @@ function model_output = model_SM_KF_DDM_all_choices(params, actions_and_rts, rew
                     end
                     rts(g,t) = simmed_rt;
                 else
-                   % negative drift and lower bias entail greater
-                   % probability of choosing right
-                    if  actions(g,t) == 2 % chose right
-                        drift = drift * -1;
-                        starting_bias = 1 - starting_bias;
-                    end
-                    rt_pdf(g,t) = wfpt(rts(g,t) - nondecision_time, drift, decision_thresh, starting_bias);
-                    action_probs(g,t) = integral(@(y) wfpt(y,drift,decision_thresh,starting_bias),0,max_rt - nondecision_time); % participants have .8 seconds to accept/reject dot motion
-                    model_acc(g,t) =  action_probs(g,t) > .5;
+                    % if RT is less than max, consider in log likelihood
+                    if rts(g,t) < max_rt
+                        if  actions(g,t) == 1 % chose left
+                            % negative drift and lower bias entail greater
+                            % probability of choosing left bandit
+                            drift = drift * -1;
+                            starting_bias = 1 - starting_bias;
+                        end
+                        rt_pdf(g,t) = wfpt(rts(g,t), drift, decision_thresh, starting_bias);
+                        action_probs(g,t) = integral(@(y) wfpt(y,drift,decision_thresh,starting_bias),0,max_rt);
+                        model_acc(g,t) =  action_probs(g,t) > .5;
+                   end
                 end
                 
             end

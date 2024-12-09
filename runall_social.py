@@ -3,7 +3,7 @@ from datetime import datetime
 
 result_stem = sys.argv[1]
 experiment = sys.argv[2]
-model_class = "RL" # indicate if 'KF UCB', 'RL', or 'KF UCB DDM' model
+model_class = "RL" # indicate if 'KF_UCB', 'RL', or 'KF_UCB_DDM' model
 
 current_datetime = datetime.now().strftime("%m-%d-%Y_%H-%M-%S")
 result_stem = f"{result_stem}_{current_datetime}/"
@@ -17,7 +17,7 @@ with open(subject_list_path) as infile:
         if 'ID' not in line:
             subjects.append(line.strip())
 
-if model_class=="KF UCB":
+if model_class=="KF_UCB":
     models = [
         {'field': 'sigma_d,baseline_noise,side_bias,sigma_r'},
         {'field': 'sigma_d,baseline_noise,side_bias,sigma_r,info_bonus'},
@@ -50,7 +50,7 @@ elif model_class == "RL":
         {'field': 'learning_rate_pos,learning_rate_neg,baseline_noise,side_bias,baseline_info_bonus,DE_RE_horizon'},
         {'field': 'learning_rate,baseline_noise,side_bias,baseline_info_bonus,DE_RE_horizon'},
     ]
-elif model_class == "KF UCB DDM":
+elif model_class == "KF_UCB_DDM":
     models = [
         {'field': 'sigma_d,baseline_noise,side_bias,sigma_r,baseline_info_bonus,random_exp,reward_sensitivity'},
         {'field': 'sigma_d,baseline_noise,side_bias,sigma_r,info_bonus,baseline_info_bonus,random_exp,reward_sensitivity'},

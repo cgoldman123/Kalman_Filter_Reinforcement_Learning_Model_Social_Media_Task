@@ -48,21 +48,13 @@ function [fits, model_output] = fit_extended_model(formatted_file, result_dir, M
 
         G(sn) = length(dum);
 
-        % uncertainty condition 
-        dum = abs(sub(sn).uc - 2) + 1;
-        UC(sn, 1:size(dum,1)) = dum;
-
-        % difference in information
+        % information difference
         dum = sub(sn).uc - 2;
         dI(sn, 1:size(dum,1)) = -dum;
 
 
     end
 
-    dum = GL(:); dum(dum==0) = [];
-    H = length(unique(dum));
-    dum = UC(:); dum(dum==0) = [];
-    U = length(unique(dum));
     GL(GL==5) = 1;
     GL(GL==9) = 2; %used to be 10
 
@@ -74,8 +66,8 @@ function [fits, model_output] = fit_extended_model(formatted_file, result_dir, M
     datastruct = struct(...
         'C1', C1, 'nC1', nC1, ...
         'NS', NS, 'G',  G,  'T',   T, ...
-        'dI', dI, 'actions',  sub.a,  'rewards', sub.r, 'bandit1_schedule', sub.bandit1_schedule,...
-        'bandit2_schedule', sub.bandit2_schedule, 'result_dir', result_dir);
+        'dI', dI, 'actions',  sub.a,  'RTs', sub.RT, 'rewards', sub.r, 'bandit1_schedule', sub.bandit1_schedule,...
+        'bandit2_schedule', sub.bandit2_schedule, 'settings', MDP.settings, 'result_dir', result_dir);
     
 
     if ispc
@@ -117,7 +109,8 @@ function [fits, model_output] = fit_extended_model(formatted_file, result_dir, M
     end
     
     
-    actions = datastruct.actions;
+    actions_and_rts.actions = datastruct.actions;
+    actions_and_rts.RTs = datastruct.RTs;
     rewards = datastruct.rewards;
 
     mdp = datastruct;
@@ -125,7 +118,7 @@ function [fits, model_output] = fit_extended_model(formatted_file, result_dir, M
 
     
     
-    model_output = MDP.model(fits,actions, rewards,mdp, 0);    
+    model_output = MDP.model(fits,actions_and_rts, rewards,mdp, 0);    
     fits.average_action_prob = mean(model_output.action_probs(~isnan(model_output.action_probs)), 'all');
     fits.model_acc = sum(model_output.action_probs(~isnan(model_output.action_probs)) > 0.5) / numel(model_output.action_probs(~isnan(model_output.action_probs)));
     fits.F = DCM.F;

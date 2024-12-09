@@ -13,7 +13,8 @@ function model_output = model_SM_KF_all_choices(params, actions, rewards, mdp, s
     baseline_noise = params.baseline_noise;
     initial_mu = params.initial_mu;
     reward_sensitivity = params.reward_sensitivity;
-    
+    param_names = fieldnames(params);
+
     % indicate if want one parameter to control DE/RE or keep separate
     if any(strcmp('DE_RE_horizon', param_names))
         DE_RE_horizon = params.DE_RE_horizon;
