@@ -8,20 +8,9 @@ function [fits, model_output] = fit_extended_model(formatted_file, result_dir, M
 
     %formatted_file = 'L:\rsmith\wellbeing\tasks\SocialMedia\output\prolific\kf\beh_Dislike_06_03_24_T16-03-52.csv';  %% remember to comment out
     addpath([root 'rsmith/lab-members/cgoldman/general/']);
-    %addpath('~/Documents/MATLAB/MatJAGS/');
 
 
-    
-    fundir      = pwd;%[maindir 'TMS_code/'];
-    datadir     = pwd;%[maindir 'TMS_code/'];
-    savedir     = pwd;%[maindir];
-    addpath(fundir);
-    cd(fundir);
-    %defaultPlotParameters
-
-%     sub = load_TMS_v1([datadir '/EIT_HorizonTaskOutput_HierarchicalModelFormat_v2.csv']);
     sub = load_TMS_v1(formatted_file);
-%     sub = sub(1,:); % REMEMBER TO COMMENT OUT
     disp(sub);
     
     %% ========================================================================
@@ -91,14 +80,14 @@ function [fits, model_output] = fit_extended_model(formatted_file, result_dir, M
     fits = DCM.params;
     for i = 1:length(field)
         if ismember(field{i},{'alpha_start', 'alpha_inf', 'associability_weight','noise_learning_rate', 'learning_rate_pos',...
-                'learning_rate_neg', 'learning_rate', 'starting_bias', 'drift_mod', 'bias_mod' })
+                'learning_rate_neg', 'learning_rate', 'starting_bias', 'drift_action_prob_mod', 'drift_reward_diff_mod', 'bias_mod', 'thresh_mod' })
             fits.(field{i}) = 1/(1+exp(-DCM.Ep.(field{i})));
-        elseif ismember(field{i},{'dec_noise_h1_13', 'dec_noise_h5_13', 'outcome_informativeness', 'sigma_d', ...
+        elseif ismember(field{i},{'h1_dec_noise', 'h5_baseline_dec_noise', 'outcome_informativeness', 'sigma_d', ...
                 'info_bonus', 'random_exp', 'initial_sigma_r', 'initial_sigma', 'initial_mu', 'baseline_noise',...
                 'sigma_r', 'reward_sensitivity', 'DE_RE_horizon', 'initial_associability', 'decision_thresh'})
             fits.(field{i}) = exp(DCM.Ep.(field{i}));
-        elseif ismember(field{i},{'info_bonus_h1', 'info_bonus_h5','side_bias_h1', 'side_bias_h5', 'side_bias',...
-                'baseline_info_bonus', 'drift_baseline', 'drift'})
+        elseif ismember(field{i},{'h5_baseline_info_bonus', 'h5_slope_info_bonus', 'h1_info_bonus','side_bias_h1', 'side_bias_h5', 'side_bias',...
+                'h5_slope_dec_noise', 'drift_baseline', 'drift', 'thresh_baseline'})
             fits.(field{i}) = DCM.Ep.(field{i});
         elseif any(strcmp(field{i},{'nondecision_time'}))
             fits.(field{i}) = 0.1 + (0.3 - 0.1) ./ (1 + exp(-DCM.Ep.(field{i})));  
@@ -125,10 +114,11 @@ function [fits, model_output] = fit_extended_model(formatted_file, result_dir, M
     
                 
     % simulate behavior with fitted params
-    simmed_model_output = MDP.model(fits,actions, rewards,mdp, 1);    
+    simmed_model_output = MDP.model(fits,actions_and_rts, rewards,mdp, 1);    
 
     datastruct.actions = simmed_model_output.actions;
     datastruct.rewards = simmed_model_output.rewards;
+    datastruct.RTs = simmed_model_output.rts;
     MDP.datastruct = datastruct;
     % note old social media model model_KFcond_v2_SMT
     fprintf( 'Running VB to fit simulated behavior! \n' );
@@ -137,14 +127,14 @@ function [fits, model_output] = fit_extended_model(formatted_file, result_dir, M
 
     for i = 1:length(field)
         if ismember(field{i},{'alpha_start', 'alpha_inf', 'associability_weight','noise_learning_rate', 'learning_rate_pos',...
-                'learning_rate_neg', 'learning_rate', 'starting_bias', 'drift_mod', 'bias_mod'})
+                'learning_rate_neg', 'learning_rate', 'starting_bias', 'drift_action_prob_mod', 'drift_reward_diff_mod', 'bias_mod', 'thresh_mod'})
             fits.(['simfit_' field{i}]) = 1/(1+exp(-simfit_DCM.Ep.(field{i})));
-        elseif ismember(field{i},{'dec_noise_h1_13', 'dec_noise_h5_13', 'info_bonus', 'outcome_informativeness',...
+        elseif ismember(field{i},{'h1_dec_noise', 'h5_baseline_dec_noise', 'info_bonus', 'outcome_informativeness',...
                 'sigma_d', 'info_bonus', 'random_exp','initial_sigma_r', 'initial_sigma', 'initial_mu', 'baseline_noise',...
                 'sigma_r', 'reward_sensitivity', 'DE_RE_horizon', 'initial_associability', 'decision_thresh'})
             fits.(['simfit_' field{i}]) = exp(simfit_DCM.Ep.(field{i}));
-        elseif ismember(field{i},{'info_bonus_h1', 'info_bonus_h5','side_bias_h1', 'side_bias_h5','side_bias',...
-                'baseline_info_bonus', 'drift_baseline', 'drift'})
+        elseif ismember(field{i},{'h5_baseline_info_bonus', 'h5_slope_info_bonus', 'h1_info_bonus', 'side_bias_h1', 'side_bias_h5','side_bias',...
+                'h5_slope_dec_noise', 'drift_baseline', 'drift', 'thresh_baseline'})
             fits.(['simfit_' field{i}]) = simfit_DCM.Ep.(field{i});
         elseif any(strcmp(field{i},{'nondecision_time'}))
             fits.(['simfit_' field{i}]) = 0.1 + (0.3 - 0.1) ./ (1 + exp(-simfit_DCM.Ep.(field{i})));     

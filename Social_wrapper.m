@@ -16,11 +16,13 @@ if ispc
     results_dir = sprintf([root 'rsmith/lab-members/cgoldman/Wellbeing/social_media/output/test/']);
     id = '5590a34cfdf99b729d4f69dc'; % 666878a27888fdd27f529c64 60caf58c38ce3e0f5a51f62b 668d6d380fb72b01a09dee54 659ab1b4640b25ce093058a2 5590a34cfdf99b729d4f69dc 53b98f20fdf99b472f4700e4
     
-    MDP.field = {'drift_mod', 'drift_baseline', 'decision_thresh', 'starting_bias', 'info_bonus', 'random_exp', 'sigma_r', 'side_bias', 'baseline_info_bonus', 'baseline_noise' };
+    MDP.field = {'decision_thresh', 'drift', 'bias_mod', 'h5_baseline_info_bonus', 'h5_baseline_dec_noise', 'sigma_r', 'side_bias', 'h1_info_bonus', 'h1_dec_noise' };
     if model == "KF_UCB_DDM"
-        MDP.settings.drift_mapping = 'action_prob';
-        MDP.settings.thresh_mapping = '';
-        MDP.settings.bias_mapping = '';
+        % possible mappings are action_prob, reward_diff, UCB,
+        % side_bias, decsision_noise
+        MDP.settings.drift_mapping = {'UCB', 'reward_diff'};
+        MDP.settings.thresh_mapping = {};
+        MDP.settings.bias_mapping = {'action_prob'};
         MDP.settings.max_rt = 3;
     end
     
@@ -54,23 +56,25 @@ end
 
 % parameters fit across models
 MDP.params.side_bias = 0; 
-MDP.params.baseline_info_bonus = 0; 
-MDP.params.baseline_noise = 1;
-MDP.params.noise_learning_rate = .1;
+MDP.params.h1_info_bonus = 0; 
+MDP.params.h1_dec_noise = 1;
+MDP.params.h5_slope_dec_noise = 0;
+MDP.params.h5_slope_info_bonus = 0;
+
 MDP.params.reward_sensitivity = 1;
 MDP.params.initial_mu = 50;
 if any(strcmp('DE_RE_horizon', MDP.field))
     MDP.params.DE_RE_horizon = 2.5; % prior on this value
 else
-    if any(strcmp('info_bonus', MDP.field))
-        MDP.params.info_bonus = 5; 
+    if any(strcmp('h5_baseline_info_bonus', MDP.field))
+        MDP.params.h5_baseline_info_bonus = 5; 
     else
-        MDP.params.info_bonus = 0; 
+        MDP.params.h5_baseline_info_bonus = 0; 
     end
-    if any(strcmp('random_exp', MDP.field))
-        MDP.params.random_exp = 2.5;
+    if any(strcmp('h5_baseline_dec_noise', MDP.field))
+        MDP.params.h5_baseline_dec_noise = 2.5;
     else
-        MDP.params.random_exp = 0;
+        MDP.params.h5_baseline_dec_noise = 0;
     end
 end
 
@@ -115,9 +119,12 @@ if ismember(model, {'KF_UCB_DDM'})
     else
         MDP.params.decision_thresh = 2;
     end
-    
-    
 end
+
+if ismember(model, {'RL'})
+    MDP.params.noise_learning_rate = .1;
+end
+
 
 
 
@@ -135,7 +142,7 @@ if FIT
 end
 
 
-% Effect of DE - people more likely to pick high info in H6 vs H1
+% Effect of DE - people more likely to pick high info in H5 vs H1
 % Effect of RE - people behave more randomly in H5 vs H1. Easier to see when set info_bonus to 0 and gen_mean>4. 
 % Increasing confidence within game - can see in some games e.g., game 8
 % (gen_mean=4), game 2 (gen_mean=8)
