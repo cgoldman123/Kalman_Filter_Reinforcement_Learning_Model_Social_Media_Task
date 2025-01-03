@@ -82,15 +82,14 @@ elif model_class=="KF_UCB_DDM":
 
 
 room_type = ["Like", "Dislike"]
-i = 0
+
 for room in room_type:
     # if room == "Like":
     #     continue
     results = result_stem + room + "/"
 
     for index, model in enumerate(models, start=1):
-        if i ==2:
-            break
+        i = 0
         combined_results_dir = os.path.join(results, f"model{index}/")
         field = model['field']
         # return empty string if not found
@@ -111,7 +110,10 @@ for room in room_type:
             stderr_name = f"{combined_results_dir}/logs/SM-{model_class}-model_{index}-{room}_room-{subject}-%J.stderr"
             jobname = f'SM-{model_class}-model_{index}-{room}_room-{subject}'
             
-            os.system(f"sbatch -J {jobname} -o {stdout_name} -e {stderr_name} {ssub_path} {subject} {combined_results_dir} {room} {experiment} {field} {model_class} {drift_mapping} {bias_mapping} {thresh_mapping}")
+            drift_map = drift_mapping if drift_mapping else "none"
+            bias_map = bias_mapping if bias_mapping else "none"
+            thresh_map = thresh_mapping if thresh_mapping else "none"
+            os.system(f"sbatch -J {jobname} -o {stdout_name} -e {stderr_name} {ssub_path} {subject} {combined_results_dir} {room} {experiment} {field} {model_class} {drift_map} {bias_map} {thresh_map}")
 
             print(f"SUBMITTED JOB [{jobname}]")
             i = i+1

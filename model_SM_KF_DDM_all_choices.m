@@ -29,16 +29,13 @@ function model_output = model_SM_KF_DDM_all_choices(params, actions_and_rts, rew
     
     
     % initialize variables
-    if sim
-        actions = nan(G,T);
-        rts = nan(G,T);
-    else 
-        actions = actions_and_rts.actions;
-        rts = actions_and_rts.RTs;
-        rt_pdf = nan(G,9);
-        action_probs = nan(G,9);
-        model_acc = nan(G,9);
-    end
+
+    actions = actions_and_rts.actions;
+    rts = actions_and_rts.RTs;
+    rt_pdf = nan(G,9);
+    action_probs = nan(G,9);
+    model_acc = nan(G,9);
+    
     pred_errors = nan(G,10);
     pred_errors_alpha = nan(G,9);
     exp_vals = nan(G,10);
@@ -86,16 +83,16 @@ function model_output = model_SM_KF_DDM_all_choices(params, actions_and_rts, rew
                 % DRIFT
                 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                     drift = params.drift_baseline;
-                    if contains(mdp.settings.drift_mapping, 'action_prob')
+                    if any(contains(mdp.settings.drift_mapping, 'action_prob'))
                         drift = drift + params.drift_action_prob_mod*(p - .5);
                     end
-                    if contains(mdp.settings.drift_mapping, 'reward_diff')
+                    if any(contains(mdp.settings.drift_mapping, 'reward_diff'))
                         drift = drift + params.drift_reward_diff_mod*reward_diff;
                     end
-                    if contains(mdp.settings.drift_mapping, 'UCB_diff')
+                    if any(contains(mdp.settings.drift_mapping, 'UCB_diff'))
                         drift = drift + params.drift_UCB_diff_mod*UCB_diff;
                     end
-                    if contains(mdp.settings.drift_mapping, 'side_bias')
+                    if any(contains(mdp.settings.drift_mapping, 'side_bias'))
                         drift = drift + side_bias;
                     end    
                     
@@ -104,16 +101,16 @@ function model_output = model_SM_KF_DDM_all_choices(params, actions_and_rts, rew
                     % Transform baseline starting bias so in sigmoid space
                     % (must be between 0 and 1)
                     starting_bias = log(params.starting_bias_baseline/(1-params.starting_bias_baseline));
-                    if contains(mdp.settings.bias_mapping, 'action_prob')
+                    if any(contains(mdp.settings.bias_mapping, 'action_prob'))
                         starting_bias = starting_bias + params.starting_bias_action_prob_mod*(p - .5);
                     end
-                    if contains(mdp.settings.bias_mapping, 'reward_diff')
+                    if any(contains(mdp.settings.bias_mapping, 'reward_diff'))
                         starting_bias = starting_bias + params.starting_bias_reward_diff_mod*reward_diff;
                     end
-                    if contains(mdp.settings.bias_mapping, 'UCB_diff')
+                    if any(contains(mdp.settings.bias_mapping, 'UCB_diff'))
                         starting_bias = starting_bias + params.starting_bias_UCB_diff_mod*UCB_diff;
                     end
-                    if contains(mdp.settings.bias_mapping, 'side_bias')
+                    if any(contains(mdp.settings.bias_mapping, 'side_bias'))
                         starting_bias = starting_bias + side_bias;
                     end    
                     % Transform starting_bias to be between 0 and 1 using sigmoid
@@ -124,19 +121,19 @@ function model_output = model_SM_KF_DDM_all_choices(params, actions_and_rts, rew
                     % Transform decision threshold so in soft log space
                     % (must be positive)
                     decision_thresh = log(exp(params.decision_thresh_baseline) - 1); 
-                    if contains(mdp.settings.thresh_mapping, 'action_prob')
+                    if any(contains(mdp.settings.thresh_mapping, 'action_prob'))
                         decision_thresh = decision_thresh + params.decision_thresh_action_prob_mod*(p - .5);
                     end
-                    if contains(mdp.settings.thresh_mapping, 'reward_diff')
+                    if any(contains(mdp.settings.thresh_mapping, 'reward_diff'))
                         decision_thresh = decision_thresh + params.thresh_reward_diff_mod*reward_diff;
                     end
-                    if contains(mdp.settings.thresh_mapping, 'UCB_diff')
+                    if any(contains(mdp.settings.thresh_mapping, 'UCB_diff'))
                         decision_thresh = decision_thresh + params.thresh_UCB_diff_mod*UCB_diff;
                     end
-                    if contains(mdp.settings.thresh_mapping, 'side_bias')
+                    if any(contains(mdp.settings.thresh_mapping, 'side_bias'))
                         decision_thresh = decision_thresh + side_bias;
                     end 
-                    if contains(mdp.settings.thresh_mapping, 'decision_noise')
+                    if any(contains(mdp.settings.thresh_mapping, 'decision_noise'))
                         decision_thresh = decision_thresh + decision_noise;
                     end
                     decision_thresh = log(1+exp(decision_thresh));
