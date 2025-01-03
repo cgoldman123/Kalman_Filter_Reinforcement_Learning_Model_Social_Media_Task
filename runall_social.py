@@ -48,18 +48,35 @@ elif model_class == "RL":
         {'field': 'learning_rate,baseline_noise,side_bias,baseline_info_bonus,info_bonus,random_exp'},
         {'field': 'learning_rate,baseline_noise,side_bias,baseline_info_bonus,DE_RE_horizon,associability_weight,initial_associability'},
         {'field': 'learning_rate_pos,learning_rate_neg,baseline_noise,side_bias,baseline_info_bonus,DE_RE_horizon'},
-        {'field': 'learning_rate,baseline_noise,side_bias,baseline_info_bonus,DE_RE_horizon'},
+        {'field': 'learning_rate,baseline_noise,side_bias,baseline_info_bonus,DE_RE_horizon'}, # winning RL model for like and dislike
     ]
+# Since winning KF_UCB models (for like and dislike) beat winning RL model,
+# we take winning KF_UCB models and add DDM parameters
 elif model_class=="KF_UCB_DDM":
     models = [
-        {'field': 'sigma_d,sigma_r,side_bias,decision_thresh_baseline,starting_bias_baseline,drift_baseline,h1_info_bonus,h5_slope_info_bonus,h5_baseline_info_bonus,h1_dec_noise,h5_slope_dec_noise,h5_baseline_dec_noise,drift_action_prob_mod', 'drift_mapping': 'action_prob','bias_mapping': '', 'thresh_mapping': ''},
-        {'field': 'sigma_d,sigma_r,side_bias,decision_thresh_baseline,starting_bias_baseline,drift_baseline,h1_info_bonus,h5_slope_info_bonus,h5_baseline_info_bonus,h1_dec_noise,h5_slope_dec_noise,h5_baseline_dec_noise,bias_action_prob_mod', 'drift_mapping': '','bias_mapping': 'action_prob', 'thresh_mapping': ''},
-        {'field': 'sigma_d,sigma_r,side_bias,decision_thresh_baseline,starting_bias_baseline,drift_baseline,h1_info_bonus,h5_slope_info_bonus,h5_baseline_info_bonus,h1_dec_noise,h5_slope_dec_noise,h5_baseline_dec_noise,decision_thresh_action_prob_mod', 'drift_mapping': '','bias_mapping': '', 'thresh_mapping': 'action_prob'},
-        {'field': 'sigma_d,sigma_r,side_bias,decision_thresh_baseline,starting_bias_baseline,drift_baseline,h1_info_bonus,h5_slope_info_bonus,h5_baseline_info_bonus,h1_dec_noise,h5_slope_dec_noise,h5_baseline_dec_noise,bias_UCB_diff_mod,drift_reward_diff_mod', 'drift_mapping': 'reward_diff','bias_mapping': 'side_bias,UCB_diff', 'thresh_mapping': 'decision_noise'},
-        {'field': 'sigma_d,sigma_r,side_bias,decision_thresh_baseline,starting_bias_baseline,drift_baseline,h1_info_bonus,h5_slope_info_bonus,h5_baseline_info_bonus,h1_dec_noise,h5_slope_dec_noise,h5_baseline_dec_noise,drift_reward_diff_mod,drift_UCB_diff_mod', 'drift_mapping': 'reward_diff,side_bias,UCB_diff','bias_mapping': '', 'thresh_mapping': 'decision_noise'},
-        {'field': 'sigma_d,sigma_r,side_bias,decision_thresh_baseline,starting_bias_baseline,drift_baseline,h1_info_bonus,h5_slope_info_bonus,h5_baseline_info_bonus,h1_dec_noise,h5_slope_dec_noise,h5_baseline_dec_noise,starting_bias_reward_diff_mod,drift_UCB_diff_mod', 'drift_mapping': 'side_bias,UCB_diff','bias_mapping': 'reward_diff', 'thresh_mapping': 'decision_noise'},
-        {'field': 'sigma_d,sigma_r,side_bias,decision_thresh_baseline,starting_bias_baseline,drift_baseline,h1_info_bonus,h5_slope_info_bonus,h5_baseline_info_bonus,h1_dec_noise,h5_slope_dec_noise,h5_baseline_dec_noise,starting_bias_reward_diff_mod,decision_thresh_UCB_diff_mod', 'drift_mapping': '','bias_mapping': 'reward_diff', 'thresh_mapping': 'side_bias,UCB_diff'},
-        {'field': 'sigma_d,sigma_r,side_bias,decision_thresh_baseline,starting_bias_baseline,drift_baseline,h1_info_bonus,h5_slope_info_bonus,h5_baseline_info_bonus,h1_dec_noise,h5_slope_dec_noise,h5_baseline_dec_noise,starting_bias_reward_diff_mod,starting_bias_UCB_diff_mod', 'drift_mapping': '','bias_mapping': 'reward_diff,side_bias,UCB_diff', 'thresh_mapping': 'decision_noise'},
+        # Action probability maps to drift rate
+        {'field': 'sigma_d,baseline_noise,side_bias,sigma_r,decision_thresh_baseline,starting_bias_baseline,drift_baseline,info_bonus,random_exp,baseline_info_bonus,drift_action_prob_mod', 'drift_mapping': 'action_prob','bias_mapping': '', 'thresh_mapping': ''},
+        {'field': 'sigma_d,baseline_noise,side_bias,sigma_r,decision_thresh_baseline,starting_bias_baseline,drift_baseline,info_bonus,random_exp,drift_action_prob_mod', 'drift_mapping': 'action_prob','bias_mapping': '', 'thresh_mapping': ''},
+        # Action probability maps to starting bias
+        {'field': 'sigma_d,baseline_noise,side_bias,sigma_r,decision_thresh_baseline,starting_bias_baseline,drift_baseline,info_bonus,random_exp,baseline_info_bonus,starting_bias_action_prob_mod', 'drift_mapping': '','bias_mapping': 'action_prob', 'thresh_mapping': ''},
+        {'field': 'sigma_d,baseline_noise,side_bias,sigma_r,decision_thresh_baseline,starting_bias_baseline,drift_baseline,info_bonus,random_exp,starting_bias_action_prob_mod', 'drift_mapping': '','bias_mapping': 'action_prob', 'thresh_mapping': ''},
+        # Action probability maps to decision threshold
+        {'field': 'sigma_d,baseline_noise,side_bias,sigma_r,decision_thresh_baseline,starting_bias_baseline,drift_baseline,info_bonus,random_exp,baseline_info_bonus,decision_thresh_action_prob_mod', 'drift_mapping': '','bias_mapping': '', 'thresh_mapping': 'action_prob'},
+        {'field': 'sigma_d,baseline_noise,side_bias,sigma_r,decision_thresh_baseline,starting_bias_baseline,drift_baseline,info_bonus,random_exp,decision_thresh_action_prob_mod', 'drift_mapping': '','bias_mapping': '', 'thresh_mapping': 'action_prob'},
+
+        # Reward difference maps to drift rate, side bias/UCB difference maps to starting bias, decision noise maps to decision threshold
+        {'field': 'sigma_d,baseline_noise,side_bias,sigma_r,decision_thresh_baseline,starting_bias_baseline,drift_baseline,info_bonus,random_exp,baseline_info_bonus,drift_reward_diff_mod,starting_bias_UCB_diff_mod', 'drift_mapping': 'reward_diff','bias_mapping': 'side_bias,UCB_diff', 'thresh_mapping': 'decision_noise'},
+        {'field': 'sigma_d,baseline_noise,side_bias,sigma_r,decision_thresh_baseline,starting_bias_baseline,drift_baseline,info_bonus,random_exp,drift_reward_diff_mod,starting_bias_UCB_diff_mod', 'drift_mapping': 'reward_diff','bias_mapping': 'side_bias,UCB_diff', 'thresh_mapping': 'decision_noise'},
+        # Reward difference maps to starting bias, side bias/UCB difference maps to drift rate, decision noise maps to decision threshold
+        {'field': 'sigma_d,baseline_noise,side_bias,sigma_r,decision_thresh_baseline,starting_bias_baseline,drift_baseline,info_bonus,random_exp,baseline_info_bonus,starting_bias_reward_diff_mod,drift_UCB_diff_mod', 'drift_mapping': 'side_bias,UCB_diff','bias_mapping': 'reward_diff', 'thresh_mapping': 'decision_noise'},
+        {'field': 'sigma_d,baseline_noise,side_bias,sigma_r,decision_thresh_baseline,starting_bias_baseline,drift_baseline,info_bonus,random_exp,starting_bias_reward_diff_mod,drift_UCB_diff_mod', 'drift_mapping': 'side_bias,UCB_diff','bias_mapping': 'reward_diff', 'thresh_mapping': 'decision_noise'},
+
+        # Reward difference/side bias/UCB difference maps to drift rate, decision noise maps to decision threshold
+        {'field': 'sigma_d,baseline_noise,side_bias,sigma_r,decision_thresh_baseline,starting_bias_baseline,drift_baseline,info_bonus,random_exp,baseline_info_bonus,drift_reward_diff_mod,drift_UCB_diff_mod', 'drift_mapping': 'reward_diff,side_bias,UCB_diff','bias_mapping': '', 'thresh_mapping': 'decision_noise'},
+        {'field': 'sigma_d,baseline_noise,side_bias,sigma_r,decision_thresh_baseline,starting_bias_baseline,drift_baseline,info_bonus,random_exp,drift_reward_diff_mod,drift_UCB_diff_mod', 'drift_mapping': 'reward_diff,side_bias,UCB_diff','bias_mapping': '', 'thresh_mapping': 'decision_noise'},
+        # Reward difference/side bias/UCB difference maps to starting bias, decision noise maps to decision threshold
+        {'field': 'sigma_d,baseline_noise,side_bias,sigma_r,decision_thresh_baseline,starting_bias_baseline,drift_baseline,info_bonus,random_exp,baseline_info_bonus,starting_bias_reward_diff_mod,starting_bias_UCB_diff_mod', 'drift_mapping': '','bias_mapping': 'reward_diff,side_bias,UCB_diff', 'thresh_mapping': 'decision_noise'},
+        {'field': 'sigma_d,baseline_noise,side_bias,sigma_r,decision_thresh_baseline,starting_bias_baseline,drift_baseline,info_bonus,random_exp,starting_bias_reward_diff_mod,starting_bias_UCB_diff_mod', 'drift_mapping': '','bias_mapping': 'reward_diff,side_bias,UCB_diff', 'thresh_mapping': 'decision_noise'},
     ]
 
 

@@ -11,14 +11,21 @@ function model_output = model_SM_KF_DDM_all_choices(params, actions_and_rts, rew
     side_bias = params.side_bias;
     sigma_r = params.sigma_r;
     initial_sigma = params.initial_sigma;
-    h1_info_bonus = params.h1_info_bonus;
-    h1_dec_noise = params.h1_dec_noise;
     initial_mu = params.initial_mu;
-    reward_sensitivity = params.reward_sensitivity;    
-    h5_baseline_info_bonus = params.h5_baseline_info_bonus;
-    h5_slope_info_bonus = params.h5_slope_info_bonus;
-    h5_baseline_dec_noise = params.h5_baseline_dec_noise;
-    h5_slope_dec_noise = params.h5_slope_dec_noise;
+    reward_sensitivity = params.reward_sensitivity;   
+    baseline_info_bonus = params.baseline_info_bonus;
+    info_bonus = params.info_bonus;
+    random_exp = params.random_exp;
+    baseline_noise = params.baseline_noise;
+    
+    
+    
+%     h1_info_bonus = params.h1_info_bonus;
+%     h1_dec_noise = params.h1_dec_noise;
+%     h5_baseline_info_bonus = params.h5_baseline_info_bonus;
+%     h5_slope_info_bonus = params.h5_slope_info_bonus;
+%     h5_baseline_dec_noise = params.h5_baseline_dec_noise;
+%     h5_slope_dec_noise = params.h5_slope_dec_noise;
     
     
     % initialize variables
@@ -56,16 +63,21 @@ function model_output = model_SM_KF_DDM_all_choices(params, actions_and_rts, rew
 
         for t=1:num_choices  % loop over forced-choice trials
             if t >= 5
+                if mdp.C1(g)==1 % horizon is 1
+                    T = 1;
+                    Y = 1;
+                else % horizon is 5
+                    T = 1+info_bonus;
+                    Y = 1+random_exp;                    
+                end
+                
+                reward_diff = mu1(t) - mu2(t);
+                UCB_diff = (- sum(actions(g,1:t-1) == 1)*baseline_info_bonus + sigma1(t)*log(T)) - (- sum(actions(g,1:t-1) == 2)*baseline_info_bonus + sigma2(t)*log(T));
+
                 % total uncertainty is variance of both arms
                 total_uncertainty = (sigma1(t)^2 + sigma2(t)^2)^.5;
-                if mdp.C1(g)==1 % horizon is 1
-                    UCB_diff = h1_info_bonus; % *(sigma1(t) - sigma2(t));
-                    decision_noise = h1_dec_noise; %*total_uncertainty;
-                else   % horizon is 5
-                    decision_noise = h5_baseline_dec_noise + h5_slope_dec_noise*(t-5); %*total_uncertainty;
-                    UCB_diff = (h5_baseline_info_bonus+(h5_slope_info_bonus*(t-5))); %*(sigma1(t) - sigma2(t));
-                end
-                reward_diff = mu1(t) - mu2(t);
+                decision_noise = 1+total_uncertainty*log(Y)+ baseline_noise;
+
        
                 % probability of choosing bandit 1
                 p = 1 / (1 + exp(-(reward_diff+UCB_diff+side_bias)/(decision_noise)));
@@ -73,9 +85,6 @@ function model_output = model_SM_KF_DDM_all_choices(params, actions_and_rts, rew
                 % Set DDM params
                 % DRIFT
                 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                if isempty(mdp.settings.drift_mapping)
-                    drift = params.drift_baseline;
-                else
                     drift = params.drift_baseline;
                     if contains(mdp.settings.drift_mapping, 'action_prob')
                         drift = drift + params.drift_action_prob_mod*(p - .5);
@@ -89,14 +98,12 @@ function model_output = model_SM_KF_DDM_all_choices(params, actions_and_rts, rew
                     if contains(mdp.settings.drift_mapping, 'side_bias')
                         drift = drift + side_bias;
                     end    
-                end
                     
                 % STARTING BIAS
                 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                if isempty(mdp.settings.bias_mapping)
-                    starting_bias = params.starting_bias_baseline;
-                else
-                    starting_bias = params.starting_bias_baseline;
+                    % Transform baseline starting bias so in sigmoid space
+                    % (must be between 0 and 1)
+                    starting_bias = log(params.starting_bias_baseline/(1-params.starting_bias_baseline));
                     if contains(mdp.settings.bias_mapping, 'action_prob')
                         starting_bias = starting_bias + params.starting_bias_action_prob_mod*(p - .5);
                     end
@@ -111,16 +118,14 @@ function model_output = model_SM_KF_DDM_all_choices(params, actions_and_rts, rew
                     end    
                     % Transform starting_bias to be between 0 and 1 using sigmoid
                     starting_bias = 1 / (1 + exp(-starting_bias));
-                end                    
                     
                 % DECISION THRESHOLD
                 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                if isempty(mdp.settings.thresh_mapping)
-                    decision_thresh = params.decision_thresh_baseline;
-                else
-                    decision_thresh = params.decision_thresh_baseline;
+                    % Transform decision threshold so in soft log space
+                    % (must be positive)
+                    decision_thresh = log(exp(params.decision_thresh_baseline) - 1); 
                     if contains(mdp.settings.thresh_mapping, 'action_prob')
-                        decision_thresh = decision_thresh + params.thresh_action_prob_mod*(p - .5);
+                        decision_thresh = decision_thresh + params.decision_thresh_action_prob_mod*(p - .5);
                     end
                     if contains(mdp.settings.thresh_mapping, 'reward_diff')
                         decision_thresh = decision_thresh + params.thresh_reward_diff_mod*reward_diff;
@@ -135,7 +140,7 @@ function model_output = model_SM_KF_DDM_all_choices(params, actions_and_rts, rew
                         decision_thresh = decision_thresh + decision_noise;
                     end
                     decision_thresh = log(1+exp(decision_thresh));
-                end   
+                   
                 
                 if sim
                     % higher drift rate / bias entails greater prob of
