@@ -30,6 +30,15 @@ export FIELD
 MODEL=$6
 export MODEL
 
+DRIFT_MAPPING=$7
+export DRIFT_MAPPING
+
+BIAS_MAPPING=$8
+export BIAS_MAPPING
+
+THRESH_MAPPING=$9
+export THRESH_MAPPING
+
 module load matlab/2022a
 
 run_file='/media/labs/rsmith/lab-members/cgoldman/Wellbeing/social_media/VB_scripts/Social_wrapper.m'

@@ -14,15 +14,15 @@ if ispc
     experiment = 'prolific'; % indicate local or prolific
     room = 'Like';
     results_dir = sprintf([root 'rsmith/lab-members/cgoldman/Wellbeing/social_media/output/test/']);
-    id = '5590a34cfdf99b729d4f69dc'; % 666878a27888fdd27f529c64 60caf58c38ce3e0f5a51f62b 668d6d380fb72b01a09dee54 659ab1b4640b25ce093058a2 5590a34cfdf99b729d4f69dc 53b98f20fdf99b472f4700e4
+    id = '60caf58c38ce3e0f5a51f62b'; % 666878a27888fdd27f529c64 60caf58c38ce3e0f5a51f62b 668d6d380fb72b01a09dee54 659ab1b4640b25ce093058a2 5590a34cfdf99b729d4f69dc 53b98f20fdf99b472f4700e4
     
-    MDP.field = {'decision_thresh', 'drift', 'bias_mod', 'h5_baseline_info_bonus', 'h5_baseline_dec_noise', 'sigma_r', 'side_bias', 'h1_info_bonus', 'h1_dec_noise' };
+    MDP.field = {'sigma_r', 'side_bias', 'decision_thresh_baseline', 'starting_bias', 'drift_baseline', 'drift_action_prob_mod', 'h1_info_bonus', 'h5_slope_info_bonus', 'h5_baseline_info_bonus', 'h1_dec_noise', 'h5_slope_dec_noise', 'h5_baseline_dec_noise'};
     if model == "KF_UCB_DDM"
         % possible mappings are action_prob, reward_diff, UCB,
         % side_bias, decsision_noise
-        MDP.settings.drift_mapping = {'UCB', 'reward_diff'};
+        MDP.settings.drift_mapping = {'action_prob'};
         MDP.settings.thresh_mapping = {};
-        MDP.settings.bias_mapping = {'action_prob'};
+        MDP.settings.bias_mapping = {};
         MDP.settings.max_rt = 3;
     end
     
@@ -34,7 +34,13 @@ elseif isunix
     experiment = getenv('EXPERIMENT')
     id = getenv('ID')
     MDP.field = strsplit(getenv('FIELD'), ',')
+    if model == "KF_UCB_DDM"
+        MDP.settings.drift_mapping = strsplit(getenv('DRIFT_MAPPING'), ','); display(MDP.settings.drift_mapping)
+        MDP.settings.bias_mapping = strsplit(getenv('BIAS_MAPPING'), ','); display(MDP.settings.bias_mapping)
+        MDP.settings.thresh_mapping = strsplit(getenv('THRESH_MAPPING'), ','); display(MDP.settings.thresh_mapping)
+        MDP.settings.max_rt = 3;
 
+    end
 end
 
 addpath([root '/rsmith/all-studies/util/spm12/']);
@@ -67,12 +73,12 @@ if any(strcmp('DE_RE_horizon', MDP.field))
     MDP.params.DE_RE_horizon = 2.5; % prior on this value
 else
     if any(strcmp('h5_baseline_info_bonus', MDP.field))
-        MDP.params.h5_baseline_info_bonus = 5; 
+        MDP.params.h5_baseline_info_bonus = 0; 
     else
         MDP.params.h5_baseline_info_bonus = 0; 
     end
     if any(strcmp('h5_baseline_dec_noise', MDP.field))
-        MDP.params.h5_baseline_dec_noise = 2.5;
+        MDP.params.h5_baseline_dec_noise = 1;
     else
         MDP.params.h5_baseline_dec_noise = 0;
     end
@@ -100,24 +106,51 @@ elseif ismember(model, {'RL'})
         MDP.params.learning_rate = .5;
     end
 end
+
 if ismember(model, {'KF_UCB_DDM'})
-%     MDP.params.nondecision_time = .15;
-    if strcmp(MDP.settings.drift_mapping,'action_prob')
+    if isempty(MDP.settings.drift_mapping)
+        MDP.params.drift_baseline = 0;
+    else
         MDP.params.drift_baseline = .085;
-        MDP.params.drift_mod = .5;  
-    else
-        MDP.params.drift = 0;
+        if contains(MDP.settings.drift_mapping,'action_prob')
+            MDP.params.drift_action_prob_mod = .5;  
+        end
+        if contains(MDP.settings.drift_mapping,'reward_diff')
+            MDP.params.drift_reward_diff_mod = .5;
+        end
+        if contains(MDP.settings.drift_mapping,'UCB_diff')
+            MDP.params.drift_UCB_diff_mod = .5;
+        end
     end
-    if strcmp(MDP.settings.bias_mapping,'action_prob')
-        MDP.params.bias_mod = .5;  
+
+    if isempty(MDP.settings.bias_mapping)
+        MDP.params.starting_bias_baseline = .5;
     else
-        MDP.params.starting_bias = .5;
+        MDP.params.starting_bias_baseline = .5;
+        if contains(MDP.settings.bias_mapping,'action_prob')
+            MDP.params.bias_action_prob_mod = .5;  
+        end
+        if contains(MDP.settings.bias_mapping,'reward_diff')
+            MDP.params.bias_reward_diff_mod = .5;
+        end
+        if contains(MDP.settings.bias_mapping,'UCB_diff')
+            MDP.params.bias_UCB_diff_mod = .5;
+        end
     end
-    if strcmp(MDP.settings.thresh_mapping,'action_prob')
-        MDP.params.thresh_baseline = .085;
-        MDP.params.thresh_mod = .5;  
+
+    if isempty(MDP.settings.thresh_mapping)
+        MDP.params.decision_thresh_baseline = 2;
     else
-        MDP.params.decision_thresh = 2;
+        MDP.params.decision_thresh_baseline = .085;
+        if contains(MDP.settings.thresh_mapping,'action_prob')
+            MDP.params.thresh_action_prob_mod = .5;  
+        end
+        if contains(MDP.settings.thresh_mapping,'reward_diff')
+            MDP.params.thresh_reward_diff_mod = .5;
+        end
+        if contains(MDP.settings.thresh_mapping,'UCB_diff')
+            MDP.params.thresh_UCB_diff_mod = .5;
+        end
     end
 end
 
@@ -125,7 +158,8 @@ if ismember(model, {'RL'})
     MDP.params.noise_learning_rate = .1;
 end
 
-
+% display the MDP.params
+disp(MDP.params)
 
 
 if SIM

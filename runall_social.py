@@ -3,7 +3,7 @@ from datetime import datetime
 
 result_stem = sys.argv[1]
 experiment = sys.argv[2]
-model_class = "RL" # indicate if 'KF_UCB', 'RL', or 'KF_UCB_DDM' model
+model_class = "KF_UCB_DDM" # indicate if 'KF_UCB', 'RL', or 'KF_UCB_DDM' model
 
 current_datetime = datetime.now().strftime("%m-%d-%Y_%H-%M-%S")
 result_stem = f"{result_stem}_{current_datetime}/"
@@ -50,28 +50,36 @@ elif model_class == "RL":
         {'field': 'learning_rate_pos,learning_rate_neg,baseline_noise,side_bias,baseline_info_bonus,DE_RE_horizon'},
         {'field': 'learning_rate,baseline_noise,side_bias,baseline_info_bonus,DE_RE_horizon'},
     ]
-elif model_class == "KF_UCB_DDM":
+elif model_class=="KF_UCB_DDM":
     models = [
-        {'field': 'sigma_d,baseline_noise,side_bias,sigma_r,baseline_info_bonus,random_exp,reward_sensitivity'},
-        {'field': 'sigma_d,baseline_noise,side_bias,sigma_r,info_bonus,baseline_info_bonus,random_exp,reward_sensitivity'},
-
-        {'field': 'sigma_d,baseline_noise,side_bias,sigma_r,DE_RE_horizon'},
-        {'field': 'sigma_d,baseline_noise,side_bias,sigma_r,DE_RE_horizon,baseline_info_bonus'},
-    ]   
+        {'field': 'sigma_d,sigma_r,side_bias,decision_thresh_baseline,starting_bias_baseline,drift_baseline,h1_info_bonus,h5_slope_info_bonus,h5_baseline_info_bonus,h1_dec_noise,h5_slope_dec_noise,h5_baseline_dec_noise,drift_action_prob_mod', 'drift_mapping': 'action_prob','bias_mapping': '', 'thresh_mapping': ''},
+        {'field': 'sigma_d,sigma_r,side_bias,decision_thresh_baseline,starting_bias_baseline,drift_baseline,h1_info_bonus,h5_slope_info_bonus,h5_baseline_info_bonus,h1_dec_noise,h5_slope_dec_noise,h5_baseline_dec_noise,bias_action_prob_mod', 'drift_mapping': '','bias_mapping': 'action_prob', 'thresh_mapping': ''},
+        {'field': 'sigma_d,sigma_r,side_bias,decision_thresh_baseline,starting_bias_baseline,drift_baseline,h1_info_bonus,h5_slope_info_bonus,h5_baseline_info_bonus,h1_dec_noise,h5_slope_dec_noise,h5_baseline_dec_noise,decision_thresh_action_prob_mod', 'drift_mapping': '','bias_mapping': '', 'thresh_mapping': 'action_prob'},
+        {'field': 'sigma_d,sigma_r,side_bias,decision_thresh_baseline,starting_bias_baseline,drift_baseline,h1_info_bonus,h5_slope_info_bonus,h5_baseline_info_bonus,h1_dec_noise,h5_slope_dec_noise,h5_baseline_dec_noise,bias_UCB_diff_mod,drift_reward_diff_mod', 'drift_mapping': 'reward_diff','bias_mapping': 'side_bias,UCB_diff', 'thresh_mapping': 'decision_noise'},
+        {'field': 'sigma_d,sigma_r,side_bias,decision_thresh_baseline,starting_bias_baseline,drift_baseline,h1_info_bonus,h5_slope_info_bonus,h5_baseline_info_bonus,h1_dec_noise,h5_slope_dec_noise,h5_baseline_dec_noise,drift_reward_diff_mod,drift_UCB_diff_mod', 'drift_mapping': 'reward_diff,side_bias,UCB_diff','bias_mapping': '', 'thresh_mapping': 'decision_noise'},
+        {'field': 'sigma_d,sigma_r,side_bias,decision_thresh_baseline,starting_bias_baseline,drift_baseline,h1_info_bonus,h5_slope_info_bonus,h5_baseline_info_bonus,h1_dec_noise,h5_slope_dec_noise,h5_baseline_dec_noise,starting_bias_reward_diff_mod,drift_UCB_diff_mod', 'drift_mapping': 'side_bias,UCB_diff','bias_mapping': 'reward_diff', 'thresh_mapping': 'decision_noise'},
+        {'field': 'sigma_d,sigma_r,side_bias,decision_thresh_baseline,starting_bias_baseline,drift_baseline,h1_info_bonus,h5_slope_info_bonus,h5_baseline_info_bonus,h1_dec_noise,h5_slope_dec_noise,h5_baseline_dec_noise,starting_bias_reward_diff_mod,decision_thresh_UCB_diff_mod', 'drift_mapping': '','bias_mapping': 'reward_diff', 'thresh_mapping': 'side_bias,UCB_diff'},
+        {'field': 'sigma_d,sigma_r,side_bias,decision_thresh_baseline,starting_bias_baseline,drift_baseline,h1_info_bonus,h5_slope_info_bonus,h5_baseline_info_bonus,h1_dec_noise,h5_slope_dec_noise,h5_baseline_dec_noise,starting_bias_reward_diff_mod,starting_bias_UCB_diff_mod', 'drift_mapping': '','bias_mapping': 'reward_diff,side_bias,UCB_diff', 'thresh_mapping': 'decision_noise'},
+    ]
 
 
 
 room_type = ["Like", "Dislike"]
+i = 0
 for room in room_type:
     # if room == "Like":
     #     continue
     results = result_stem + room + "/"
 
     for index, model in enumerate(models, start=1):
-        # if index < 17:
-        #     continue
+        if i ==2:
+            break
         combined_results_dir = os.path.join(results, f"model{index}/")
         field = model['field']
+        # return empty string if not found
+        drift_mapping = model.get('drift_mapping', '')
+        bias_mapping = model.get('bias_mapping', '')
+        thresh_mapping = model.get('thresh_mapping', '')
         
         if not os.path.exists(combined_results_dir):
             os.makedirs(combined_results_dir)
@@ -80,18 +88,18 @@ for room in room_type:
         if not os.path.exists(f"{combined_results_dir}/logs"):
             os.makedirs(f"{combined_results_dir}/logs")
             print(f"Created results-logs directory {combined_results_dir}/logs")
-        # i = 0
         for subject in subjects:
             
             stdout_name = f"{combined_results_dir}/logs/SM-{model_class}-model_{index}-{room}_room-{subject}-%J.stdout"
             stderr_name = f"{combined_results_dir}/logs/SM-{model_class}-model_{index}-{room}_room-{subject}-%J.stderr"
             jobname = f'SM-{model_class}-model_{index}-{room}_room-{subject}'
-            os.system(f"sbatch -J {jobname} -o {stdout_name} -e {stderr_name} {ssub_path} {subject} {combined_results_dir} {room} {experiment} {field} {model_class}")
+            
+            os.system(f"sbatch -J {jobname} -o {stdout_name} -e {stderr_name} {ssub_path} {subject} {combined_results_dir} {room} {experiment} {field} {model_class} {drift_mapping} {bias_mapping} {thresh_mapping}")
 
             print(f"SUBMITTED JOB [{jobname}]")
-            # i = i+1
-            # if i ==4:
-            #     break
+            i = i+1
+            if i ==2:
+                break
 
 
-# python3 /media/labs/rsmith/lab-members/cgoldman/Wellbeing/social_media/VB_scripts/runall_social.py /media/labs/rsmith/lab-members/cgoldman/Wellbeing/social_media/output/SM_fits_RL_model "prolific"
+# python3 /media/labs/rsmith/lab-members/cgoldman/Wellbeing/social_media/VB_scripts/runall_social.py /media/labs/rsmith/lab-members/cgoldman/Wellbeing/social_media/output/SM_fits_KF_UCB_DDM_model "prolific"

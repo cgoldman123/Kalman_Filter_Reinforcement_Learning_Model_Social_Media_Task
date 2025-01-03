@@ -15,15 +15,11 @@ function model_output = model_SM_KF_DDM_all_choices(params, actions_and_rts, rew
     h1_dec_noise = params.h1_dec_noise;
     initial_mu = params.initial_mu;
     reward_sensitivity = params.reward_sensitivity;    
-    % indicate if want one parameter to control DE/RE or keep separate
-    if any(strcmp('DE_RE_horizon', fieldnames(params)))
-        DE_RE_horizon = params.DE_RE_horizon;
-    else
-        h5_baseline_info_bonus = params.h5_baseline_info_bonus;
-        h5_slope_info_bonus = params.h5_slope_info_bonus;
-        h5_baseline_dec_noise = params.h5_baseline_dec_noise;
-        h5_slope_dec_noise = params.h5_slope_dec_noise;
-    end
+    h5_baseline_info_bonus = params.h5_baseline_info_bonus;
+    h5_slope_info_bonus = params.h5_slope_info_bonus;
+    h5_baseline_dec_noise = params.h5_baseline_dec_noise;
+    h5_slope_dec_noise = params.h5_slope_dec_noise;
+    
     
     % initialize variables
     if sim
@@ -63,11 +59,11 @@ function model_output = model_SM_KF_DDM_all_choices(params, actions_and_rts, rew
                 % total uncertainty is variance of both arms
                 total_uncertainty = (sigma1(t)^2 + sigma2(t)^2)^.5;
                 if mdp.C1(g)==1 % horizon is 1
-                    UCB_diff = h1_info_bonus* (sigma1(t) - sigma2(t));
-                    decision_noise = h1_dec_noise*total_uncertainty;
+                    UCB_diff = h1_info_bonus; % *(sigma1(t) - sigma2(t));
+                    decision_noise = h1_dec_noise; %*total_uncertainty;
                 else   % horizon is 5
-                    decision_noise = h5_baseline_dec_noise + h5_slope_dec_noise*(t-5)*total_uncertainty;
-                    UCB_diff = (h5_baseline_info_bonus+(h5_slope_info_bonus*(t-5)))*(sigma1(t) - sigma2(t));
+                    decision_noise = h5_baseline_dec_noise + h5_slope_dec_noise*(t-5); %*total_uncertainty;
+                    UCB_diff = (h5_baseline_info_bonus+(h5_slope_info_bonus*(t-5))); %*(sigma1(t) - sigma2(t));
                 end
                 reward_diff = mu1(t) - mu2(t);
        
@@ -78,7 +74,7 @@ function model_output = model_SM_KF_DDM_all_choices(params, actions_and_rts, rew
                 % DRIFT
                 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                 if isempty(mdp.settings.drift_mapping)
-                    drift = params.drift;
+                    drift = params.drift_baseline;
                 else
                     drift = params.drift_baseline;
                     if contains(mdp.settings.drift_mapping, 'action_prob')
@@ -98,29 +94,31 @@ function model_output = model_SM_KF_DDM_all_choices(params, actions_and_rts, rew
                 % STARTING BIAS
                 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                 if isempty(mdp.settings.bias_mapping)
-                    starting_bias = params.starting_bias;
+                    starting_bias = params.starting_bias_baseline;
                 else
-                    starting_bias = .5;
+                    starting_bias = params.starting_bias_baseline;
                     if contains(mdp.settings.bias_mapping, 'action_prob')
-                        starting_bias = starting_bias + params.bias_action_prob_mod*(p - .5);
+                        starting_bias = starting_bias + params.starting_bias_action_prob_mod*(p - .5);
                     end
                     if contains(mdp.settings.bias_mapping, 'reward_diff')
-                        starting_bias = starting_bias + params.bias_reward_diff_mod*reward_diff;
+                        starting_bias = starting_bias + params.starting_bias_reward_diff_mod*reward_diff;
                     end
                     if contains(mdp.settings.bias_mapping, 'UCB_diff')
-                        starting_bias = starting_bias + params.bias_UCB_diff_mod*UCB_diff;
+                        starting_bias = starting_bias + params.starting_bias_UCB_diff_mod*UCB_diff;
                     end
                     if contains(mdp.settings.bias_mapping, 'side_bias')
                         starting_bias = starting_bias + side_bias;
                     end    
+                    % Transform starting_bias to be between 0 and 1 using sigmoid
+                    starting_bias = 1 / (1 + exp(-starting_bias));
                 end                    
                     
                 % DECISION THRESHOLD
                 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                 if isempty(mdp.settings.thresh_mapping)
-                    decision_thresh = params.decision_thresh;
+                    decision_thresh = params.decision_thresh_baseline;
                 else
-                    decision_thresh = params.thresh_baseline;
+                    decision_thresh = params.decision_thresh_baseline;
                     if contains(mdp.settings.thresh_mapping, 'action_prob')
                         decision_thresh = decision_thresh + params.thresh_action_prob_mod*(p - .5);
                     end
@@ -133,8 +131,10 @@ function model_output = model_SM_KF_DDM_all_choices(params, actions_and_rts, rew
                     if contains(mdp.settings.thresh_mapping, 'side_bias')
                         decision_thresh = decision_thresh + side_bias;
                     end 
+                    if contains(mdp.settings.thresh_mapping, 'decision_noise')
+                        decision_thresh = decision_thresh + decision_noise;
+                    end
                     decision_thresh = log(1+exp(decision_thresh));
-
                 end   
                 
                 if sim
