@@ -154,7 +154,14 @@ function L = spm_mdp_L(P,M,U,Y)
         
     % note that mu2 == right bandit ==  c=2 == free choice = 1
     model_output = M.model(params,actions_and_rts, rewards,mdp, 0);
-    log_probs = log(model_output.action_probs+eps);
+
+    % Fit to reaction time pdfs if DDM, fit to action probabilities if
+    % choice model
+    if strcmp(func2str(M.model), 'model_SM_KF_DDM_all_choices')
+        log_probs = log(model_output.rt_pdf+eps);
+    else
+        log_probs = log(model_output.action_probs+eps);
+    end
     log_probs(isnan(log_probs)) = eps; % Replace NaN in log output with eps for summing
     L = sum(log_probs, 'all');
 
