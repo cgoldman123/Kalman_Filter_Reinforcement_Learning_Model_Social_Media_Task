@@ -16,13 +16,16 @@ if ispc
     results_dir = sprintf([root 'rsmith/lab-members/cgoldman/Wellbeing/social_media/output/test/']);
     id = '60caf58c38ce3e0f5a51f62b'; % 666878a27888fdd27f529c64 60caf58c38ce3e0f5a51f62b 668d6d380fb72b01a09dee54 659ab1b4640b25ce093058a2 5590a34cfdf99b729d4f69dc 53b98f20fdf99b472f4700e4
     
-    MDP.field = {'sigma_d','baseline_noise','side_bias','sigma_r','decision_thresh_baseline','starting_bias_baseline','drift_baseline','info_bonus','random_exp','baseline_info_bonus','starting_bias_action_prob_mod'};
+    MDP.field = {'sigma_d', 'baseline_noise', 'side_bias', 'sigma_r', 'decision_thresh_baseline', ...
+                 'starting_bias_baseline', 'drift_baseline', 'info_bonus', 'random_exp', ...
+                 'baseline_info_bonus', 'decision_thresh_action_prob_mod'};
+    MDP.field = {'sigma_d', 'baseline_noise'};
     if model == "KF_UCB_DDM"
         % possible mappings are action_prob, reward_diff, UCB,
         % side_bias, decsision_noise
         MDP.settings.drift_mapping = {};
-        MDP.settings.thresh_mapping = {};
-        MDP.settings.bias_mapping = {'action_prob'};
+        MDP.settings.thresh_mapping = {'action_prob'};
+        MDP.settings.bias_mapping = {};
         MDP.settings.max_rt = 3;
     end
     
@@ -150,13 +153,13 @@ if ismember(model, {'KF_UCB_DDM'})
     % set decision threshold params
     MDP.params.decision_thresh_baseline = 2;
     if any(contains(MDP.settings.thresh_mapping,'action_prob'))
-        MDP.params.thresh_action_prob_mod = .5;  
+        MDP.params.decision_thresh_action_prob_mod = .5;  
     end
     if any(contains(MDP.settings.thresh_mapping,'reward_diff'))
-        MDP.params.thresh_reward_diff_mod = .1;
+        MDP.params.decision_thresh_reward_diff_mod = .1;
     end
     if any(contains(MDP.settings.thresh_mapping,'UCB_diff'))
-        MDP.params.thresh_UCB_diff_mod = .5;
+        MDP.params.decision_thresh_UCB_diff_mod = .5;
     end
 end
 

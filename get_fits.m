@@ -50,6 +50,34 @@ fits_table.id = string(subj_mapping{:, 1});
 fits_table.model = func2str(MDP.model);
 fits_table.has_practice_effects = (ismember(fits_table.id, flag));
 fits_table.room_type = room_type;
+% Add mapping fields if they exist in MDP.settings
+if isfield(MDP.settings, 'drift_mapping')
+    if isempty(MDP.settings.drift_mapping)
+        fits_table.drift_mapping = ' ';
+    else
+        fits_table.drift_mapping = strjoin(MDP.settings.drift_mapping);
+    end
+end
+
+if isfield(MDP.settings, 'bias_mapping')
+    if isempty(MDP.settings.bias_mapping)
+        fits_table.bias_mapping = ' ';
+    else
+        fits_table.bias_mapping = strjoin(MDP.settings.bias_mapping);
+    end
+end
+
+if isfield(MDP.settings, 'thresh_mapping')
+    if isempty(MDP.settings.thresh_mapping)
+        fits_table.thresh_mapping = ' ';
+    else
+        fits_table.thresh_mapping = strjoin(MDP.settings.thresh_mapping);
+    end
+end
+
+
+
+
 vars = fieldnames(fits);
 for i = 1:length(vars)
     if any(strcmp(vars{i}, MDP.field))

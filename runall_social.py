@@ -14,8 +14,7 @@ subject_list_path = '/media/labs/rsmith/lab-members/cgoldman/Wellbeing/social_me
 subjects = []
 with open(subject_list_path) as infile:
     for line in infile:
-        if 'ID' not in line:
-            subjects.append(line.strip())
+        subjects.append(line.strip())
 
 if model_class=="KF_UCB":
     models = [
@@ -89,7 +88,7 @@ for room in room_type:
     results = result_stem + room + "/"
 
     for index, model in enumerate(models, start=1):
-        i = 0
+        # i = 0
         combined_results_dir = os.path.join(results, f"model{index}/")
         field = model['field']
         # return empty string if not found
@@ -116,9 +115,9 @@ for room in room_type:
             os.system(f"sbatch -J {jobname} -o {stdout_name} -e {stderr_name} {ssub_path} {subject} {combined_results_dir} {room} {experiment} {field} {model_class} {drift_map} {bias_map} {thresh_map}")
 
             print(f"SUBMITTED JOB [{jobname}]")
-            i = i+1
-            if i ==2:
-                break
+            # i = i+1
+            # if i ==2:
+            #     break
 
 
 # python3 /media/labs/rsmith/lab-members/cgoldman/Wellbeing/social_media/VB_scripts/runall_social.py /media/labs/rsmith/lab-members/cgoldman/Wellbeing/social_media/output/SM_fits_KF_UCB_DDM_model "prolific"

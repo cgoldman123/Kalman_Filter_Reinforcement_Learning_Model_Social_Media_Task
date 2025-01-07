@@ -125,10 +125,10 @@ function model_output = model_SM_KF_DDM_all_choices(params, actions_and_rts, rew
                         decision_thresh = decision_thresh + params.decision_thresh_action_prob_mod*(p - .5);
                     end
                     if any(contains(mdp.settings.thresh_mapping, 'reward_diff'))
-                        decision_thresh = decision_thresh + params.thresh_reward_diff_mod*reward_diff;
+                        decision_thresh = decision_thresh + params.decision_thresh_reward_diff_mod*reward_diff;
                     end
                     if any(contains(mdp.settings.thresh_mapping, 'UCB_diff'))
-                        decision_thresh = decision_thresh + params.thresh_UCB_diff_mod*UCB_diff;
+                        decision_thresh = decision_thresh + params.decision_thresh_UCB_diff_mod*UCB_diff;
                     end
                     if any(contains(mdp.settings.thresh_mapping, 'side_bias'))
                         decision_thresh = decision_thresh + side_bias;
