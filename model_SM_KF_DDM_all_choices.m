@@ -134,7 +134,7 @@ function model_output = model_SM_KF_DDM_all_choices(params, actions_and_rts, rew
                         decision_thresh = decision_thresh + side_bias;
                     end 
                     if any(contains(mdp.settings.thresh_mapping, 'decision_noise'))
-                        decision_thresh = decision_thresh + decision_noise;
+                        decision_thresh = decision_thresh + params.decision_thresh_decision_noise_mod*decision_noise;
                     end
                     decision_thresh = log(1+exp(decision_thresh));
                    
@@ -162,6 +162,7 @@ function model_output = model_SM_KF_DDM_all_choices(params, actions_and_rts, rew
                             starting_bias = 1 - starting_bias;
                         end
                         rt_pdf(g,t) = wfpt(rts(g,t), drift, decision_thresh, starting_bias);
+                        % plot_ddm_pdf(drift,starting_bias,decision_thresh);
                         action_probs(g,t) = integral(@(y) wfpt(y,drift,decision_thresh,starting_bias),0,max_rt);
                         model_acc(g,t) =  action_probs(g,t) > .5;
                    end

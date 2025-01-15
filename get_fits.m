@@ -45,8 +45,14 @@ for i = 1:numel(model_output)
     model_output(i).results.room_type = room_type;
     model_output(i).results.cb = subj_mapping{i, 3};  
 end
-save(sprintf([results_dir 'model_output_%s_%s.mat'], room_type, timestamp),'model_output');
-fits_table.id = string(subj_mapping{:, 1});
+id = subj_mapping{1, 1};
+if MDP.get_rts_and_dont_fit_model
+    varargout{1} = model_output.results;
+    return;
+end
+
+save(sprintf([results_dir 'model_output_%s_%s_%s.mat'], id{:}, room_type, timestamp),'model_output');
+fits_table.id = id;
 fits_table.model = func2str(MDP.model);
 fits_table.has_practice_effects = (ismember(fits_table.id, flag));
 fits_table.room_type = room_type;
@@ -90,7 +96,7 @@ for i = 1:length(vars)
     end
 end
 
-outpath_fits = sprintf([results_dir '%s_fits_%s_%s.csv'], fits_table.id, room_type, timestamp);
+outpath_fits = sprintf([results_dir '%s_fits_%s_%s.csv'], fits_table.id{:}, room_type, timestamp);
 writetable(struct2table(fits_table), outpath_fits);
 varargout{1} = fits_table;
 

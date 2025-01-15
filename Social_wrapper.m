@@ -1,8 +1,13 @@
+function [fits_table] = Social_wrapper(varargin)
+
 %% Clear workspace
-clear all
-SIM = 0;
-FIT = 1;
+clearvars -except varargin
+SIM = 0; % Simulate the model
+FIT = 1; % Fit the model
+MDP.get_rts_and_dont_fit_model = 0; % Get the rts and dont fit the model
+
 rng(23);
+
 % warning('off', 'all');
 %% Construct the appropriate path depending on the system this is run on
 % If running on the analysis cluster, some parameters will be supplied by 
@@ -13,18 +18,24 @@ if ispc
     model = "KF_UCB_DDM"; % indicate if RL, KF_UCB, or KF_UCB_DDM
     root = 'L:/';
     experiment = 'prolific'; % indicate local or prolific
-    room = 'Like';
     results_dir = sprintf([root 'rsmith/lab-members/cgoldman/Wellbeing/social_media/output/test/']);
-    id = '60fe8de5380ae67bf7370ac8'; % 666878a27888fdd27f529c64 60caf58c38ce3e0f5a51f62b 668d6d380fb72b01a09dee54 659ab1b4640b25ce093058a2 5590a34cfdf99b729d4f69dc 53b98f20fdf99b472f4700e4
+    if nargin > 0
+        id = varargin{1};
+        room = varargin{2};
+    else
+        id = '607eafaf008af56a5a3ba462'; % 666878a27888fdd27f529c64 60caf58c38ce3e0f5a51f62b 668d6d380fb72b01a09dee54 659ab1b4640b25ce093058a2 5590a34cfdf99b729d4f69dc 53b98f20fdf99b472f4700e4
+        room = 'Dislike';
+    end
+
     
-    MDP.field = {'sigma_d', 'baseline_noise','side_bias','sigma_r','decision_thresh_baseline','starting_bias_baseline','drift_baseline','info_bonus','random_exp','baseline_info_bonus','starting_bias_reward_diff_mod','starting_bias_UCB_diff_mod'};
+    MDP.field = {'sigma_d','baseline_noise','side_bias','sigma_r','decision_thresh_baseline','starting_bias_baseline','drift_baseline','info_bonus','random_exp','baseline_info_bonus','drift_reward_diff_mod','starting_bias_UCB_diff_mod'};
     if model == "KF_UCB_DDM"
         % possible mappings are action_prob, reward_diff, UCB,
         % side_bias, decsision_noise
-        MDP.settings.drift_mapping = {};
+        MDP.settings.drift_mapping = {'reward_diff'};
         MDP.settings.thresh_mapping = {'decision_noise'};
-        MDP.settings.bias_mapping = {'reward_diff,side_bias,UCB_diff'};
-        MDP.settings.max_rt = 3;
+        MDP.settings.bias_mapping = {'side_bias,UCB_diff'};
+        MDP.settings.max_rt = 7;
     end
     
 elseif isunix
@@ -54,8 +65,7 @@ elseif isunix
         fprintf('Drift mappings: %s\n', strjoin(MDP.settings.drift_mapping));
         fprintf('Bias mappings: %s\n', strjoin(MDP.settings.bias_mapping));
         fprintf('Threshold mappings: %s\n', strjoin(MDP.settings.thresh_mapping));
-        MDP.settings.max_rt = 3;
-
+        MDP.settings.max_rt = 7;
     end
 end
 
@@ -127,38 +137,43 @@ if ismember(model, {'KF_UCB_DDM'})
     % set drift params
     MDP.params.drift_baseline = 0;
     if any(contains(MDP.settings.drift_mapping,'action_prob'))
-        MDP.params.drift_action_prob_mod = .5;  
+        MDP.params.drift_action_prob_mod = .1;  
     end
     if any(contains(MDP.settings.drift_mapping,'reward_diff'))
         MDP.params.drift_reward_diff_mod = .1;
     end
     if any(contains(MDP.settings.drift_mapping,'UCB_diff'))
-        MDP.params.drift_UCB_diff_mod = .5;
+        MDP.params.drift_UCB_diff_mod = .1;
     end
     
     % set starting bias params
     MDP.params.starting_bias_baseline = .5;
     if any(contains(MDP.settings.bias_mapping,'action_prob'))
-        MDP.params.starting_bias_action_prob_mod = .5;  
+        MDP.params.starting_bias_action_prob_mod = .1;  
     end
     if any(contains(MDP.settings.bias_mapping,'reward_diff'))
         MDP.params.starting_bias_reward_diff_mod = .1;
     end
     if any(contains(MDP.settings.bias_mapping,'UCB_diff'))
-        MDP.params.starting_bias_UCB_diff_mod = .5;
+        MDP.params.starting_bias_UCB_diff_mod = .1;
     end
 
     % set decision threshold params
     MDP.params.decision_thresh_baseline = 2;
     if any(contains(MDP.settings.thresh_mapping,'action_prob'))
-        MDP.params.decision_thresh_action_prob_mod = .5;  
+        MDP.params.decision_thresh_action_prob_mod = .1;  
     end
     if any(contains(MDP.settings.thresh_mapping,'reward_diff'))
         MDP.params.decision_thresh_reward_diff_mod = .1;
     end
     if any(contains(MDP.settings.thresh_mapping,'UCB_diff'))
-        MDP.params.decision_thresh_UCB_diff_mod = .5;
+        MDP.params.decision_thresh_UCB_diff_mod = .1;
+    end    
+    if any(contains(MDP.settings.thresh_mapping,'decision_noise'))
+        MDP.params.decision_thresh_decision_noise_mod = .1;
     end
+
+
 end
 
 % display the MDP.params
@@ -177,7 +192,7 @@ end
 if FIT
     fits_table = get_fits(root, experiment, room, results_dir,MDP, id);
 end
-
+end
 
 % Effect of DE - people more likely to pick high info in H5 vs H1
 % Effect of RE - people behave more randomly in H5 vs H1. Easier to see when set info_bonus to 0 and gen_mean>4. 
