@@ -108,7 +108,7 @@ function [fits, model_output] = fit_extended_model(formatted_file, result_dir, M
         elseif any(strcmp(field{i},{'nondecision_time'}))
             fits.(field{i}) = 0.1 + (0.3 - 0.1) ./ (1 + exp(-DCM.Ep.(field{i})));  
         elseif any(strcmp(field{i},{'decision_thresh_baseline'}))
-            fits.(field{i}) = 1 + exp(DCM.Ep.(field{i})); 
+            fits.(field{i}) = .1 + (100 - .1) ./ (1 + exp(-DCM.Ep.(field{i}))); 
         else
             disp(field{i});
             error("Param not propertly transformed");
@@ -129,6 +129,7 @@ function [fits, model_output] = fit_extended_model(formatted_file, result_dir, M
     fits.average_action_prob = mean(model_output.action_probs(~isnan(model_output.action_probs)), 'all');
     fits.model_acc = sum(model_output.action_probs(~isnan(model_output.action_probs)) > 0.5) / numel(model_output.action_probs(~isnan(model_output.action_probs)));
     fits.F = DCM.F;
+    fits.num_rts_over_max = model_output.num_rts_over_max;
     
                 
     % simulate behavior with fitted params
@@ -162,7 +163,7 @@ function [fits, model_output] = fit_extended_model(formatted_file, result_dir, M
         elseif any(strcmp(field{i},{'nondecision_time'}))
             fits.(['simfit_' field{i}]) = 0.1 + (0.3 - 0.1) ./ (1 + exp(-simfit_DCM.Ep.(field{i})));     
         elseif any(strcmp(field{i},{'decision_thresh_baseline'}))
-            fits.(['simfit_' field{i}]) =  1 + exp(simfit_DCM.Ep.(field{i}));
+            fits.(['simfit_' field{i}]) = .1 + (100 - .1) ./ (1 + exp(-simfit_DCM.Ep.(field{i})));
         else            
             disp(field{i});
             error("Param not propertly transformed");

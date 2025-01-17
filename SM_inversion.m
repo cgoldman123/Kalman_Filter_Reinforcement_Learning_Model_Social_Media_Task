@@ -82,8 +82,8 @@ for i = 1:length(DCM.field)
         elseif any(strcmp(field,{'nondecision_time'})) % bound between .1 and .3
             pE.(field) =  -log((0.3 - 0.1) ./ (DCM.params.(field) - 0.1) - 1);             
             pC{i,i}    = prior_variance;      
-        elseif any(strcmp(field,{'decision_thresh_baseline'})) % bound greater than 1
-            pE.(field) = log(DCM.params.(field) - 1);
+        elseif any(strcmp(field,{'decision_thresh_baseline'})) % bound greater than .1 and less than 100
+            pE.(field) =  -log((100 - .1) ./ (DCM.params.(field) - .1) - 1);             
             pC{i,i}    = prior_variance;      
         else
             disp(field);
@@ -145,7 +145,7 @@ function L = spm_mdp_L(P,M,U,Y)
                 'drift_baseline', 'drift'})
             params.(field{i}) = P.(field{i});
         elseif ismember(field{i},{'decision_thresh_baseline'})
-            params.(field{i}) = 1 + exp(P.(field{i}));
+            params.(field{i}) = .1 + (100 - .1) ./ (1 + exp(-P.(field{i})));     
         else
             error("Param not transformed properly");
         end

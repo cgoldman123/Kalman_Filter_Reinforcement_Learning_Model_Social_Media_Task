@@ -41,6 +41,10 @@ function model_output = model_SM_KF_DDM_all_choices(params, actions_and_rts, rew
     exp_vals = nan(G,10);
     alpha = nan(G,10);
     
+    num_rts_over_max = 0;
+
+    decision_thresh = nan(G,9);
+
     
     for g=1:G  % loop over games
         % values
@@ -58,6 +62,7 @@ function model_output = model_SM_KF_DDM_all_choices(params, actions_and_rts, rew
         
         num_choices = sum(~isnan(rewards(g,:))); 
 
+
         for t=1:num_choices  % loop over forced-choice trials
             if t >= 5
                 if mdp.C1(g)==1 % horizon is 1
@@ -73,7 +78,7 @@ function model_output = model_SM_KF_DDM_all_choices(params, actions_and_rts, rew
 
                 % total uncertainty is variance of both arms
                 total_uncertainty = (sigma1(t)^2 + sigma2(t)^2)^.5;
-                decision_noise = 1+total_uncertainty*log(Y)+ baseline_noise;
+                decision_noise = total_uncertainty*log(Y)+ baseline_noise;
 
        
                 % probability of choosing bandit 1
@@ -120,29 +125,30 @@ function model_output = model_SM_KF_DDM_all_choices(params, actions_and_rts, rew
                 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                     % Transform decision threshold so in soft log space
                     % (must be positive)
-                    decision_thresh = log(exp(params.decision_thresh_baseline) - 1); 
-                    if any(contains(mdp.settings.thresh_mapping, 'action_prob'))
-                        decision_thresh = decision_thresh + params.decision_thresh_action_prob_mod*(p - .5);
-                    end
-                    if any(contains(mdp.settings.thresh_mapping, 'reward_diff'))
-                        decision_thresh = decision_thresh + params.decision_thresh_reward_diff_mod*reward_diff;
-                    end
-                    if any(contains(mdp.settings.thresh_mapping, 'UCB_diff'))
-                        decision_thresh = decision_thresh + params.decision_thresh_UCB_diff_mod*UCB_diff;
-                    end
-                    if any(contains(mdp.settings.thresh_mapping, 'side_bias'))
-                        decision_thresh = decision_thresh + side_bias;
-                    end 
+                    decision_thresh(g,t) = params.decision_thresh_baseline;
+                    % decision_thresh = 0;
+
+                    % if any(contains(mdp.settings.thresh_mapping, 'action_prob'))
+                    %     decision_thresh = decision_thresh + params.decision_thresh_action_prob_mod*(p - .5);
+                    % end
+                    % if any(contains(mdp.settings.thresh_mapping, 'reward_diff'))
+                    %     decision_thresh = decision_thresh + params.decision_thresh_reward_diff_mod*reward_diff;
+                    % end
+                    % if any(contains(mdp.settings.thresh_mapping, 'UCB_diff'))
+                    %     decision_thresh = decision_thresh + params.decision_thresh_UCB_diff_mod*UCB_diff;
+                    % end
+                    % if any(contains(mdp.settings.thresh_mapping, 'side_bias'))
+                    %     decision_thresh = decision_thresh + side_bias;
+                    % end 
                     if any(contains(mdp.settings.thresh_mapping, 'decision_noise'))
-                        decision_thresh = decision_thresh + params.decision_thresh_decision_noise_mod*decision_noise;
+                        decision_thresh(g,t) = decision_thresh(g,t) + params.decision_thresh_decision_noise_mod*decision_noise;
                     end
-                    decision_thresh = log(1+exp(decision_thresh));
-                   
+                    % decision_thresh = log(1+exp(decision_thresh));                   
                 
                 if sim
                     % higher drift rate / bias entails greater prob of
                     % choosing bandit 1
-                    [simmed_rt, chose_left] = simulate_DDM(drift, decision_thresh, 0, starting_bias, 1, .001, realmax);
+                    [simmed_rt, chose_left] = simulate_DDM(drift, decision_thresh(g,t), 0, starting_bias, 1, .001, realmax);
                     % accepted dot motion
                     if chose_left
                         actions(g,t) = 1;
@@ -161,9 +167,9 @@ function model_output = model_SM_KF_DDM_all_choices(params, actions_and_rts, rew
                             drift = drift * -1;
                             starting_bias = 1 - starting_bias;
                         end
-                        rt_pdf(g,t) = wfpt(rts(g,t), drift, decision_thresh, starting_bias);
+                        rt_pdf(g,t) = wfpt(rts(g,t), drift, decision_thresh(g,t), starting_bias);
                         % plot_ddm_pdf(drift,starting_bias,decision_thresh);
-                        action_probs(g,t) = integral(@(y) wfpt(y,drift,decision_thresh,starting_bias),0,max_rt);
+                        action_probs(g,t) = integral(@(y) wfpt(y,drift,decision_thresh(g,t),starting_bias),0,max_rt);
                         model_acc(g,t) =  action_probs(g,t) > .5;
                    end
                 end
@@ -204,6 +210,12 @@ function model_output = model_SM_KF_DDM_all_choices(params, actions_and_rts, rew
                 mu1(t+1) = mu1(t); 
             end
 
+            if ~sim
+                if rts(g,t) >= max_rt
+                    num_rts_over_max = num_rts_over_max + 1;
+                end
+            end
+
         end
     end
 
@@ -212,6 +224,7 @@ function model_output = model_SM_KF_DDM_all_choices(params, actions_and_rts, rew
         model_output.action_probs = action_probs;
         model_output.rt_pdf = rt_pdf;
         model_output.model_acc = model_acc;
+        model_output.num_rts_over_max = num_rts_over_max;
     end
     model_output.exp_vals = exp_vals;
     model_output.pred_errors = pred_errors;

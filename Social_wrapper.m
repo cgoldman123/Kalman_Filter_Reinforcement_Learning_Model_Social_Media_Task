@@ -23,18 +23,18 @@ if ispc
         id = varargin{1};
         room = varargin{2};
     else
-        id = '607eafaf008af56a5a3ba462'; % 666878a27888fdd27f529c64 60caf58c38ce3e0f5a51f62b 668d6d380fb72b01a09dee54 659ab1b4640b25ce093058a2 5590a34cfdf99b729d4f69dc 53b98f20fdf99b472f4700e4
+        id = '5f16f559325a640008bb9a07'; % 666878a27888fdd27f529c64 60caf58c38ce3e0f5a51f62b 668d6d380fb72b01a09dee54 659ab1b4640b25ce093058a2 5590a34cfdf99b729d4f69dc 53b98f20fdf99b472f4700e4
         room = 'Dislike';
     end
 
     
-    MDP.field = {'sigma_d','baseline_noise','side_bias','sigma_r','decision_thresh_baseline','starting_bias_baseline','drift_baseline','info_bonus','random_exp','baseline_info_bonus','drift_reward_diff_mod','starting_bias_UCB_diff_mod'};
+    MDP.field = {'decision_thresh_baseline','drift_reward_diff_mod','decision_thresh_decision_noise_mod','sigma_d','baseline_noise','side_bias','sigma_r','starting_bias_baseline','drift_baseline','info_bonus','random_exp','baseline_info_bonus'};
     if model == "KF_UCB_DDM"
         % possible mappings are action_prob, reward_diff, UCB,
         % side_bias, decsision_noise
-        MDP.settings.drift_mapping = {'reward_diff'};
+        MDP.settings.drift_mapping = {'reward_diff,side_bias'};
         MDP.settings.thresh_mapping = {'decision_noise'};
-        MDP.settings.bias_mapping = {'side_bias,UCB_diff'};
+        MDP.settings.bias_mapping = {};
         MDP.settings.max_rt = 7;
     end
     
@@ -89,7 +89,7 @@ end
 % parameters fit across models
 MDP.params.side_bias = 0; 
 MDP.params.baseline_info_bonus = 0; 
-MDP.params.baseline_noise = 1;
+MDP.params.baseline_noise = .1;
 MDP.params.reward_sensitivity = 1;
 MDP.params.initial_mu = 50;
 
@@ -159,7 +159,7 @@ if ismember(model, {'KF_UCB_DDM'})
     end
 
     % set decision threshold params
-    MDP.params.decision_thresh_baseline = 2;
+    MDP.params.decision_thresh_baseline = .5;
     if any(contains(MDP.settings.thresh_mapping,'action_prob'))
         MDP.params.decision_thresh_action_prob_mod = .1;  
     end
@@ -170,7 +170,7 @@ if ismember(model, {'KF_UCB_DDM'})
         MDP.params.decision_thresh_UCB_diff_mod = .1;
     end    
     if any(contains(MDP.settings.thresh_mapping,'decision_noise'))
-        MDP.params.decision_thresh_decision_noise_mod = .1;
+        MDP.params.decision_thresh_decision_noise_mod = 1;
     end
 
 
