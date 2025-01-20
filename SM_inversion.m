@@ -49,7 +49,7 @@ ALL = false;
 
 % prior expectations and covariance
 %--------------------------------------------------------------------------
-prior_variance = 2;
+prior_variance = 1/4;
 
 global params_old;
 params_old = [];
@@ -70,8 +70,8 @@ for i = 1:length(DCM.field)
                 'drift_action_prob_mod', 'drift_reward_diff_mod', 'drift_UCB_diff_mod',...
                 'starting_bias_action_prob_mod', 'starting_bias_reward_diff_mod', 'starting_bias_UCB_diff_mod',...
                 'decision_thresh_action_prob_mod', 'decision_thresh_reward_diff_mod', 'decision_thresh_UCB_diff_mod', 'decision_thresh_decision_noise_mod' ...
-                'outcome_informativeness', 'sigma_d', 'info_bonus', ...
-                'sigma_r', 'reward_sensitivity', 'DE_RE_horizon','baseline_noise', 'random_exp'})
+                'outcome_informativeness', 'info_bonus', ...
+                'reward_sensitivity', 'DE_RE_horizon', 'random_exp'})
             pE.(field) = log(DCM.params.(field));               % in log-space (to keep positive)
             pC{i,i}    = prior_variance;  
         elseif ismember(field, {'h5_baseline_info_bonus', 'h5_slope_info_bonus', 'h1_info_bonus', 'baseline_info_bonus',...
@@ -82,7 +82,7 @@ for i = 1:length(DCM.field)
         elseif any(strcmp(field,{'nondecision_time'})) % bound between .1 and .3
             pE.(field) =  -log((0.3 - 0.1) ./ (DCM.params.(field) - 0.1) - 1);             
             pC{i,i}    = prior_variance;      
-        elseif any(strcmp(field,{'decision_thresh_baseline'})) % bound greater than .1 and less than 100
+        elseif any(strcmp(field,{'decision_thresh_baseline', 'sigma_d', 'sigma_r', 'baseline_noise'})) % bound greater than .1 and less than 100
             pE.(field) =  -log((100 - .1) ./ (DCM.params.(field) - .1) - 1);             
             pC{i,i}    = prior_variance;      
         else
@@ -137,14 +137,14 @@ function L = spm_mdp_L(P,M,U,Y)
                 'drift_action_prob_mod', 'drift_reward_diff_mod', 'drift_UCB_diff_mod',...
                 'starting_bias_action_prob_mod', 'starting_bias_reward_diff_mod', 'starting_bias_UCB_diff_mod',...
                 'decision_thresh_action_prob_mod', 'decision_thresh_reward_diff_mod', 'decision_thresh_UCB_diff_mod', 'decision_thresh_decision_noise_mod'...
-                'outcome_informativeness', 'sigma_d', 'info_bonus', ...
-                'sigma_r', 'reward_sensitivity', 'DE_RE_horizon', 'random_exp', 'baseline_noise'})
+                'outcome_informativeness', 'info_bonus', ...
+                'reward_sensitivity', 'DE_RE_horizon', 'random_exp'})
             params.(field{i}) = exp(P.(field{i}));
         elseif ismember(field{i},{'h5_baseline_info_bonus', 'h5_slope_info_bonus', 'h1_info_bonus', 'baseline_info_bonus',...
                 'side_bias', 'side_bias_h1', 'side_bias_h5', ...
                 'drift_baseline', 'drift'})
             params.(field{i}) = P.(field{i});
-        elseif ismember(field{i},{'decision_thresh_baseline'})
+        elseif ismember(field{i},{'decision_thresh_baseline', 'baseline_noise','sigma_d','sigma_r'})
             params.(field{i}) = .1 + (100 - .1) ./ (1 + exp(-P.(field{i})));     
         else
             error("Param not transformed properly");
@@ -186,14 +186,14 @@ function L = spm_mdp_L(P,M,U,Y)
 
     % Fit to reaction time pdfs if DDM, fit to action probabilities if
     % choice model
-    if strcmp(func2str(M.model), 'model_SM_KF_DDM_all_choices')
+    if ismember(func2str(M.model), {'model_SM_KF_DDM_all_choices', 'model_SM_KF_SIGMA_DDM_all_choices'})
         log_probs = log(model_output.rt_pdf+eps);
         summed_log_probs = sum(log_probs(~isnan(log_probs)));
         % if any log probs were NaN that should not be, consider the action
         % prob to be realmin so the max penalty is given
-        number_nan_log_probs = 120 - sum(~isnan(log_probs(:)));
+        number_nan_log_probs = 120 - model_output.num_invalid_rts - sum(~isnan(log_probs(:)));
         if number_nan_log_probs > 0
-            foo = 9;
+            error("Error! NaNs encountered in the log likelihood!")
         end
         L = summed_log_probs + number_nan_log_probs*log(realmin);
 

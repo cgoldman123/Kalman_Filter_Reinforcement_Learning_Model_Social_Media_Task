@@ -3,7 +3,7 @@ from datetime import datetime
 
 result_stem = sys.argv[1]
 experiment = sys.argv[2]
-model_class = "KF_UCB_DDM" # indicate if 'KF_UCB', 'RL', or 'KF_UCB_DDM' model
+model_class = "KF_SIGMA_DDM" # indicate if 'KF_UCB', 'RL', or 'KF_UCB_DDM' model
 
 current_datetime = datetime.now().strftime("%m-%d-%Y_%H-%M-%S")
 result_stem = f"{result_stem}_{current_datetime}/"
@@ -78,7 +78,11 @@ elif model_class=="KF_UCB_DDM":
         {'field': 'sigma_d,baseline_noise,side_bias,sigma_r,decision_thresh_baseline,starting_bias_baseline,drift_baseline,info_bonus,random_exp,starting_bias_reward_diff_mod,starting_bias_UCB_diff_mod', 'drift_mapping': '','bias_mapping': 'reward_diff,side_bias,UCB_diff', 'thresh_mapping': 'decision_noise'},
     ]
 
-
+elif model_class=="KF_SIGMA_DDM":
+    models = [
+        # Action probability maps to drift rate
+        {'field': 'sigma_d,baseline_noise,side_bias,sigma_r,info_bonus,baseline_info_bonus,drift_reward_diff_mod', 'drift_mapping': 'reward_diff,side_bias','bias_mapping': 'info_diff', 'thresh_mapping': 'decision_noise'},
+    ]
 
 room_type = ["Like", "Dislike"]
 
@@ -120,4 +124,4 @@ for room in room_type:
             #     break
 
 
-# python3 /media/labs/rsmith/lab-members/cgoldman/Wellbeing/social_media/VB_scripts/runall_social.py /media/labs/rsmith/lab-members/cgoldman/Wellbeing/social_media/output/SM_fits_KF_UCB_DDM_model "prolific"
+# python3 /media/labs/rsmith/lab-members/cgoldman/Wellbeing/social_media/VB_scripts/runall_social.py /media/labs/rsmith/lab-members/cgoldman/Wellbeing/social_media/output/SM_fits_KF_SIGMA_DDM_model "prolific"

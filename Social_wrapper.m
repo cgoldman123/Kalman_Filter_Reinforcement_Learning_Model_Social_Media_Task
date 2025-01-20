@@ -15,7 +15,7 @@ rng(23);
 
 dbstop if error
 if ispc
-    model = "KF_UCB_DDM"; % indicate if RL, KF_UCB, or KF_UCB_DDM
+    model = "KF_SIGMA_DDM"; % indicate if RL, KF_UCB, or KF_UCB_DDM
     root = 'L:/';
     experiment = 'prolific'; % indicate local or prolific
     results_dir = sprintf([root 'rsmith/lab-members/cgoldman/Wellbeing/social_media/output/test/']);
@@ -23,18 +23,18 @@ if ispc
         id = varargin{1};
         room = varargin{2};
     else
-        id = '5f16f559325a640008bb9a07'; % 666878a27888fdd27f529c64 60caf58c38ce3e0f5a51f62b 668d6d380fb72b01a09dee54 659ab1b4640b25ce093058a2 5590a34cfdf99b729d4f69dc 53b98f20fdf99b472f4700e4
-        room = 'Dislike';
+        id = '63d6873b65a6170d64a652f6'; % 666878a27888fdd27f529c64 60caf58c38ce3e0f5a51f62b 668d6d380fb72b01a09dee54 659ab1b4640b25ce093058a2 5590a34cfdf99b729d4f69dc 53b98f20fdf99b472f4700e4
+        room = 'Like';
     end
 
     
-    MDP.field = {'decision_thresh_baseline','drift_reward_diff_mod','decision_thresh_decision_noise_mod','sigma_d','baseline_noise','side_bias','sigma_r','starting_bias_baseline','drift_baseline','info_bonus','random_exp','baseline_info_bonus'};
-    if model == "KF_UCB_DDM"
+    MDP.field = {'drift_reward_diff_mod','sigma_d','baseline_noise','side_bias','sigma_r','info_bonus','baseline_info_bonus'};
+    if ismember(model, {'KF_UCB_DDM', 'KF_SIGMA_DDM'})
         % possible mappings are action_prob, reward_diff, UCB,
         % side_bias, decsision_noise
         MDP.settings.drift_mapping = {'reward_diff,side_bias'};
+        MDP.settings.bias_mapping = {'info_diff'};
         MDP.settings.thresh_mapping = {'decision_noise'};
-        MDP.settings.bias_mapping = {};
         MDP.settings.max_rt = 7;
     end
     
@@ -46,7 +46,7 @@ elseif isunix
     experiment = getenv('EXPERIMENT')
     id = getenv('ID')
     MDP.field = strsplit(getenv('FIELD'), ',');
-    if model == "KF_UCB_DDM"
+    if ismember(model, {'KF_UCB_DDM', 'KF_SIGMA_DDM'})
         % Set up drift mapping
         MDP.settings.drift_mapping = strsplit(getenv('DRIFT_MAPPING'), ',');
         if  strcmp(MDP.settings.drift_mapping{1}, 'none')
@@ -74,8 +74,8 @@ addpath([root '/rsmith/all-studies/util/spm12/toolbox/DEM/']);
 
 
 model_functions = containers.Map(...
-    {'KF_UCB', 'RL', 'KF_UCB_DDM'}, ...
-    {@model_SM_KF_all_choices, @model_SM_RL_all_choices, @model_SM_KF_DDM_all_choices} ...
+    {'KF_UCB', 'RL', 'KF_UCB_DDM', 'KF_SIGMA_DDM'}, ...
+    {@model_SM_KF_all_choices, @model_SM_RL_all_choices, @model_SM_KF_DDM_all_choices, @model_SM_KF_SIGMA_DDM_all_choices} ...
 );
 if isKey(model_functions, model)
     MDP.model = model_functions(model);
@@ -88,8 +88,8 @@ end
 
 % parameters fit across models
 MDP.params.side_bias = 0; 
-MDP.params.baseline_info_bonus = 0; 
-MDP.params.baseline_noise = .1;
+MDP.params.baseline_info_bonus = 1; 
+MDP.params.baseline_noise = 1;
 MDP.params.reward_sensitivity = 1;
 MDP.params.initial_mu = 50;
 
@@ -99,20 +99,20 @@ if any(strcmp('DE_RE_horizon', MDP.field))
     MDP.params.DE_RE_horizon = 2.5; % prior on this value
 else
     if any(strcmp('info_bonus', MDP.field))
-        MDP.params.info_bonus = 5; 
+        MDP.params.info_bonus = 1; 
     else
         MDP.params.info_bonus = 0; 
     end
     if any(strcmp('random_exp', MDP.field))
-        MDP.params.random_exp = 2.5;
+        MDP.params.random_exp = 1;
     else
-        MDP.params.random_exp = 0;
+        MDP.params.random_exp = 1;
     end
 end
 
 
 % parameters specific to one of the models
-if ismember(model, {'KF_UCB', 'KF_UCB_DDM'})
+if ismember(model, {'KF_UCB', 'KF_UCB_DDM', 'KF_SIGMA_DDM'})
     MDP.params.sigma_d = .25;
     MDP.params.initial_sigma = 1000;
     MDP.params.sigma_r = 4;
@@ -175,6 +175,22 @@ if ismember(model, {'KF_UCB_DDM'})
 
 
 end
+
+if ismember(model, {'KF_SIGMA_DDM'})
+    MDP.params.starting_bias_baseline = .5;
+    MDP.params.drift_baseline = 0;
+    if any(contains(MDP.settings.drift_mapping,'reward_diff'))
+        MDP.params.drift_reward_diff_mod = .1;
+    end
+    if any(contains(MDP.settings.bias_mapping,'reward_diff'))
+        MDP.params.starting_bias_reward_diff_mod = .1;
+    end
+
+
+end
+
+
+
 
 % display the MDP.params
 disp(MDP.params)

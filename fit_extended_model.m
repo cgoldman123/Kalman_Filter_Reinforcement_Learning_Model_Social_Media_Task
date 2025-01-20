@@ -98,8 +98,8 @@ function [fits, model_output] = fit_extended_model(formatted_file, result_dir, M
                 'drift_action_prob_mod', 'drift_reward_diff_mod', 'drift_UCB_diff_mod',...
                 'starting_bias_action_prob_mod', 'starting_bias_reward_diff_mod', 'starting_bias_UCB_diff_mod',...
                 'decision_thresh_action_prob_mod', 'decision_thresh_reward_diff_mod', 'decision_thresh_UCB_diff_mod', 'decision_thresh_decision_noise_mod' ...
-                'outcome_informativeness', 'sigma_d', 'info_bonus', ...
-                'sigma_r', 'reward_sensitivity', 'DE_RE_horizon', 'random_exp', 'baseline_noise'})
+                'outcome_informativeness', 'info_bonus', ...
+                'reward_sensitivity', 'DE_RE_horizon', 'random_exp'})
             fits.(field{i}) = exp(DCM.Ep.(field{i}));
         elseif ismember(field{i},{'h5_baseline_info_bonus', 'h5_slope_info_bonus', 'h1_info_bonus', 'baseline_info_bonus',...
                 'side_bias', 'side_bias_h1', 'side_bias_h5', ...
@@ -107,7 +107,7 @@ function [fits, model_output] = fit_extended_model(formatted_file, result_dir, M
             fits.(field{i}) = DCM.Ep.(field{i});
         elseif any(strcmp(field{i},{'nondecision_time'}))
             fits.(field{i}) = 0.1 + (0.3 - 0.1) ./ (1 + exp(-DCM.Ep.(field{i})));  
-        elseif any(strcmp(field{i},{'decision_thresh_baseline'}))
+        elseif any(strcmp(field{i},{'decision_thresh_baseline', 'sigma_d', 'sigma_r', 'baseline_noise'}))
             fits.(field{i}) = .1 + (100 - .1) ./ (1 + exp(-DCM.Ep.(field{i}))); 
         else
             disp(field{i});
@@ -129,7 +129,7 @@ function [fits, model_output] = fit_extended_model(formatted_file, result_dir, M
     fits.average_action_prob = mean(model_output.action_probs(~isnan(model_output.action_probs)), 'all');
     fits.model_acc = sum(model_output.action_probs(~isnan(model_output.action_probs)) > 0.5) / numel(model_output.action_probs(~isnan(model_output.action_probs)));
     fits.F = DCM.F;
-    fits.num_rts_over_max = model_output.num_rts_over_max;
+    fits.num_invalid_rts = model_output.num_invalid_rts;
     
                 
     % simulate behavior with fitted params
@@ -153,8 +153,8 @@ function [fits, model_output] = fit_extended_model(formatted_file, result_dir, M
                 'drift_action_prob_mod', 'drift_reward_diff_mod', 'drift_UCB_diff_mod',...
                 'starting_bias_action_prob_mod', 'starting_bias_reward_diff_mod', 'starting_bias_UCB_diff_mod',...
                 'decision_thresh_action_prob_mod', 'decision_thresh_reward_diff_mod', 'decision_thresh_UCB_diff_mod', 'decision_thresh_decision_noise_mod'...
-                'outcome_informativeness', 'sigma_d', 'info_bonus',  ...
-                'sigma_r', 'reward_sensitivity', 'DE_RE_horizon', 'random_exp', 'baseline_noise'})
+                'outcome_informativeness', 'info_bonus',  ...
+                'reward_sensitivity', 'DE_RE_horizon', 'random_exp'})
             fits.(['simfit_' field{i}]) = exp(simfit_DCM.Ep.(field{i}));
         elseif ismember(field{i},{'h5_baseline_info_bonus', 'h5_slope_info_bonus', 'h1_info_bonus', 'baseline_info_bonus',...
                 'side_bias', 'side_bias_h1', 'side_bias_h5', ...
@@ -162,7 +162,7 @@ function [fits, model_output] = fit_extended_model(formatted_file, result_dir, M
             fits.(['simfit_' field{i}]) = simfit_DCM.Ep.(field{i});
         elseif any(strcmp(field{i},{'nondecision_time'}))
             fits.(['simfit_' field{i}]) = 0.1 + (0.3 - 0.1) ./ (1 + exp(-simfit_DCM.Ep.(field{i})));     
-        elseif any(strcmp(field{i},{'decision_thresh_baseline'}))
+        elseif any(strcmp(field{i},{'decision_thresh_baseline', 'sigma_d', 'sigma_r', 'baseline_noise'}))
             fits.(['simfit_' field{i}]) = .1 + (100 - .1) ./ (1 + exp(-simfit_DCM.Ep.(field{i})));
         else            
             disp(field{i});
