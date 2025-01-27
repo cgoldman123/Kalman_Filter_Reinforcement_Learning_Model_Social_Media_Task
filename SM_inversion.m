@@ -204,7 +204,7 @@ function L = spm_mdp_L(P,M,U,Y)
 
     else
         log_probs = log(model_output.action_probs+eps);
-        log_probs(isnan(log_probs)) = eps; % Replace NaN in log output with eps for summing
+        log_probs(isnan(log_probs)) = 0; % Replace NaN in log output with 0 for summing
         L = sum(log_probs, 'all');
     end
 
