@@ -99,7 +99,7 @@ function [fits, model_output] = fit_extended_model(formatted_file, result_dir, M
                 'starting_bias_action_prob_mod', 'starting_bias_reward_diff_mod', 'starting_bias_UCB_diff_mod',...
                 'decision_thresh_action_prob_mod', 'decision_thresh_reward_diff_mod', 'decision_thresh_UCB_diff_mod', 'decision_thresh_decision_noise_mod' ...
                 'outcome_informativeness', ...
-                'reward_sensitivity', 'DE_RE_horizon','decision_thresh_baseline'})
+                'reward_sensitivity', 'DE_RE_horizon'})
             fits.(field{i}) = exp(DCM.Ep.(field{i}));
         elseif ismember(field{i},{'h5_baseline_info_bonus', 'h5_slope_info_bonus', 'h1_info_bonus', 'baseline_info_bonus', 'baseline_noise', ...
                 'side_bias', 'side_bias_h1', 'side_bias_h5', 'info_bonus', 'random_exp',...
@@ -108,7 +108,7 @@ function [fits, model_output] = fit_extended_model(formatted_file, result_dir, M
         elseif any(strcmp(field{i},{'nondecision_time'}))
             fits.(field{i}) = 0.1 + (0.3 - 0.1) ./ (1 + exp(-DCM.Ep.(field{i})));  
         elseif any(strcmp(field{i},{'decision_thresh_baseline'}))
-            fits.(field{i}) = .1 + (100 - .1) ./ (1 + exp(-DCM.Ep.(field{i}))); 
+            fits.(field{i}) = .5 + (1000 - .5) ./ (1 + exp(-DCM.Ep.(field{i}))); 
         elseif any(strcmp(field{i},{'sigma_d', 'sigma_r'}))
             fits.(field{i}) = (40) ./ (1 + exp(-DCM.Ep.(field{i}))); 
         else
@@ -131,7 +131,11 @@ function [fits, model_output] = fit_extended_model(formatted_file, result_dir, M
     fits.average_action_prob = mean(model_output.action_probs(~isnan(model_output.action_probs)), 'all');
     fits.model_acc = sum(model_output.action_probs(~isnan(model_output.action_probs)) > 0.5) / numel(model_output.action_probs(~isnan(model_output.action_probs)));
     fits.F = DCM.F;
-    fits.num_invalid_rts = model_output.num_invalid_rts;
+
+    if ismember(func2str(MDP.model), {'model_SM_KF_DDM_all_choices', 'model_SM_KF_SIGMA_DDM_all_choices'})
+        fits.num_invalid_rts = model_output.num_invalid_rts;
+    end
+
     
                 
     % simulate behavior with fitted params
@@ -139,7 +143,11 @@ function [fits, model_output] = fit_extended_model(formatted_file, result_dir, M
 
     datastruct.actions = simmed_model_output.actions;
     datastruct.rewards = simmed_model_output.rewards;
-    datastruct.RTs = simmed_model_output.rts;
+    if ismember(func2str(MDP.model), {'model_SM_KF_DDM_all_choices', 'model_SM_KF_SIGMA_DDM_all_choices'})
+        datastruct.RTs = simmed_model_output.rts;
+    end
+
+
     MDP.datastruct = datastruct;
     % note old social media model model_KFcond_v2_SMT
     fprintf( 'Running VB to fit simulated behavior! \n' );
@@ -156,7 +164,7 @@ function [fits, model_output] = fit_extended_model(formatted_file, result_dir, M
                 'starting_bias_action_prob_mod', 'starting_bias_reward_diff_mod', 'starting_bias_UCB_diff_mod',...
                 'decision_thresh_action_prob_mod', 'decision_thresh_reward_diff_mod', 'decision_thresh_UCB_diff_mod', 'decision_thresh_decision_noise_mod'...
                 'outcome_informativeness',  ...
-                'reward_sensitivity', 'DE_RE_horizon','decision_thresh_baseline'})
+                'reward_sensitivity', 'DE_RE_horizon'})
             fits.(['simfit_' field{i}]) = exp(simfit_DCM.Ep.(field{i}));
         elseif ismember(field{i},{'h5_baseline_info_bonus', 'h5_slope_info_bonus', 'h1_info_bonus', 'baseline_info_bonus', 'baseline_noise',...
                 'side_bias', 'side_bias_h1', 'side_bias_h5', 'info_bonus', 'random_exp',...
@@ -165,7 +173,7 @@ function [fits, model_output] = fit_extended_model(formatted_file, result_dir, M
         elseif any(strcmp(field{i},{'nondecision_time'}))
             fits.(['simfit_' field{i}]) = 0.1 + (0.3 - 0.1) ./ (1 + exp(-simfit_DCM.Ep.(field{i})));     
         elseif any(strcmp(field{i},{'decision_thresh_baseline'}))
-            fits.(['simfit_' field{i}]) = .1 + (100 - .1) ./ (1 + exp(-simfit_DCM.Ep.(field{i})));
+            fits.(['simfit_' field{i}]) = .5 + (1000 - .5) ./ (1 + exp(-simfit_DCM.Ep.(field{i})));
         elseif any(strcmp(field{i},{'sigma_d', 'sigma_r'}))
             fits.(['simfit_' field{i}]) = (40) ./ (1 + exp(-simfit_DCM.Ep.(field{i})));
         else 

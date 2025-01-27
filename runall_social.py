@@ -80,9 +80,14 @@ elif model_class=="KF_UCB_DDM":
 
 elif model_class=="KF_SIGMA_DDM":
     models = [
-        # Action probability maps to drift rate
-        {'field': 'sigma_d,baseline_noise,side_bias,sigma_r,info_bonus,baseline_info_bonus,drift_reward_diff_mod', 'drift_mapping': 'reward_diff,side_bias','bias_mapping': 'info_diff', 'thresh_mapping': 'decision_noise'},
+        {'field': 'sigma_d,baseline_noise,side_bias,sigma_r,info_bonus,baseline_info_bonus,drift_reward_diff_mod,decision_thresh_baseline,random_exp', 'drift_mapping': 'reward_diff,decision_noise','bias_mapping': 'info_diff,side_bias', 'thresh_mapping': ''},
     ]
+
+elif model_class=="KF_SIGMA":
+    models = [
+        {'field': 'sigma_d,baseline_noise,side_bias,sigma_r,info_bonus,baseline_info_bonus,random_exp', 'drift_mapping': 'reward_diff,decision_noise','bias_mapping': 'info_diff,side_bias', 'thresh_mapping': ''},
+    ]
+
 
 room_type = ["Like", "Dislike"]
 

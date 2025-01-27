@@ -28,7 +28,7 @@ if ispc
     end
 
     
-    MDP.field = {'sigma_d','random_exp','side_bias','sigma_r','info_bonus'};
+    MDP.field = {'sigma_d','baseline_noise','random_exp','side_bias','sigma_r','info_bonus','baseline_info_bonus'};
     if ismember(model, {'KF_UCB_DDM', 'KF_SIGMA_DDM'})
         % possible mappings are action_prob, reward_diff, UCB,
         % side_bias, decsision_noise
@@ -94,20 +94,13 @@ end
 
 % parameters fit across models
 MDP.params.side_bias = 0; 
+MDP.params.baseline_info_bonus = 1; 
+MDP.params.baseline_noise = 1;
 MDP.params.reward_sensitivity = 1;
 MDP.params.initial_mu = 50;
 
-if any(strcmp('baseline_info_bonus', MDP.field))
-    MDP.params.baseline_info_bonus = 1; 
-else
-    MDP.params.baseline_info_bonus = 0; 
-end
+if any(strcmp('info_bonus', MDP.field))
 
-if any(strcmp('baseline_noise', MDP.field))
-    MDP.params.baseline_noise = 1; 
-else
-    MDP.params.baseline_noise = 0; 
-end
 
 
 % make directed exploration and random exploration same param or keep
@@ -130,13 +123,9 @@ end
 
 % parameters specific to one of the models
 if ismember(model, {'KF_UCB', 'KF_UCB_DDM', 'KF_SIGMA_DDM', 'KF_SIGMA'})
-    if any(strcmp('sigma_d', MDP.field))
-        MDP.params.sigma_d = .25;
-    else
-        MDP.params.sigma_d = 0;
-    end
-    MDP.params.sigma_r = 8;
-    MDP.params.initial_sigma = 10000;
+    MDP.params.sigma_d = .25;
+    MDP.params.initial_sigma = 1000;
+    MDP.params.sigma_r = 4;
 elseif ismember(model, {'RL'})
     MDP.params.noise_learning_rate = .1;
     if any(strcmp('associability_weight', MDP.field))

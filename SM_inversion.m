@@ -71,7 +71,7 @@ for i = 1:length(DCM.field)
                 'starting_bias_action_prob_mod', 'starting_bias_reward_diff_mod', 'starting_bias_UCB_diff_mod',...
                 'decision_thresh_action_prob_mod', 'decision_thresh_reward_diff_mod', 'decision_thresh_UCB_diff_mod', 'decision_thresh_decision_noise_mod' ...
                 'outcome_informativeness', ...
-                'reward_sensitivity', 'DE_RE_horizon','decision_thresh_baseline'})
+                'reward_sensitivity', 'DE_RE_horizon'})
             pE.(field) = log(DCM.params.(field));               % in log-space (to keep positive)
             pC{i,i}    = prior_variance;  
         elseif ismember(field, {'h5_baseline_info_bonus', 'h5_slope_info_bonus', 'h1_info_bonus', 'baseline_info_bonus', 'baseline_noise'...
@@ -83,7 +83,7 @@ for i = 1:length(DCM.field)
             pE.(field) =  -log((0.3 - 0.1) ./ (DCM.params.(field) - 0.1) - 1);             
             pC{i,i}    = prior_variance;      
         elseif any(strcmp(field,{'decision_thresh_baseline'})) % bound greater than .1 and less than 100
-            pE.(field) =  -log((100 - .1) ./ (DCM.params.(field) - .1) - 1);             
+            pE.(field) =  -log((1000 - .5) ./ (DCM.params.(field) - .5) - 1);             
             pC{i,i}    = prior_variance;      
         elseif any(strcmp(field,{'sigma_d', 'sigma_r'})) % bound between 0 and 40
             pE.(field) =  -log((40) ./ (DCM.params.(field)) - 1);     
@@ -141,14 +141,14 @@ function L = spm_mdp_L(P,M,U,Y)
                 'starting_bias_action_prob_mod', 'starting_bias_reward_diff_mod', 'starting_bias_UCB_diff_mod',...
                 'decision_thresh_action_prob_mod', 'decision_thresh_reward_diff_mod', 'decision_thresh_UCB_diff_mod', 'decision_thresh_decision_noise_mod'...
                 'outcome_informativeness', ...
-                'reward_sensitivity', 'DE_RE_horizon','decision_thresh_baseline'})
+                'reward_sensitivity', 'DE_RE_horizon'})
             params.(field{i}) = exp(P.(field{i}));
         elseif ismember(field{i},{'h5_baseline_info_bonus', 'h5_slope_info_bonus', 'h1_info_bonus', 'baseline_info_bonus', 'baseline_noise'...
                 'side_bias', 'side_bias_h1', 'side_bias_h5', 'info_bonus', 'random_exp',...
                 'drift_baseline', 'drift'})
             params.(field{i}) = P.(field{i});
         elseif ismember(field{i},{'decision_thresh_baseline'})
-            params.(field{i}) = .1 + (100 - .1) ./ (1 + exp(-P.(field{i})));     
+            params.(field{i}) = .5 + (1000 - .5) ./ (1 + exp(-P.(field{i})));     
         elseif ismember(field{i},{'sigma_d','sigma_r'})
             params.(field{i}) = (40) ./ (1 + exp(-P.(field{i})));     
         else
