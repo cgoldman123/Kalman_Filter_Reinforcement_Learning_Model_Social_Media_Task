@@ -85,13 +85,13 @@ elif model_class=="KF_SIGMA_DDM":
 
 elif model_class=="KF_SIGMA":
     models = [
-        {'field': 'sigma_d,baseline_noise,side_bias,sigma_r,info_bonus,baseline_info_bonus,random_exp'},
-        {'field': 'sigma_d,baseline_noise,side_bias,sigma_r,info_bonus,random_exp'},
-        {'field': 'sigma_d,side_bias,sigma_r,info_bonus,baseline_info_bonus,random_exp'},
-        {'field': 'sigma_d,side_bias,sigma_r,info_bonus,random_exp'},
-        {'field': 'baseline_noise,side_bias,sigma_r,info_bonus,baseline_info_bonus,random_exp'},
-        {'field': 'sigma_d,baseline_noise,side_bias,info_bonus,baseline_info_bonus,random_exp'},
-        {'field': 'baseline_noise,side_bias,info_bonus,baseline_info_bonus,random_exp'},
+        {'field': 'sigma_d,baseline_noise,side_bias,sigma_r,directed_exp,baseline_info_bonus,random_exp'}, # Tied winner dislike
+        {'field': 'sigma_d,baseline_noise,side_bias,sigma_r,directed_exp,random_exp'}, # winner for like, tied winner dislike
+        {'field': 'sigma_d,side_bias,sigma_r,directed_exp,baseline_info_bonus,random_exp'},
+        {'field': 'sigma_d,side_bias,sigma_r,directed_exp,random_exp'},
+        {'field': 'baseline_noise,side_bias,sigma_r,directed_exp,baseline_info_bonus,random_exp'},
+        {'field': 'sigma_d,baseline_noise,side_bias,directed_exp,baseline_info_bonus,random_exp'},
+        {'field': 'baseline_noise,side_bias,directed_exp,baseline_info_bonus,random_exp'},
     ]
 
 

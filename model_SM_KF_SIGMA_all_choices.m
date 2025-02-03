@@ -13,7 +13,7 @@ function model_output = model_SM_KF_SIGMA_all_choices(params, actions_and_rts, r
     initial_mu = params.initial_mu;
     reward_sensitivity = params.reward_sensitivity;   
     baseline_info_bonus = params.baseline_info_bonus;
-    info_bonus = params.info_bonus;
+    directed_exp = params.directed_exp;
     random_exp = params.random_exp;
     baseline_noise = params.baseline_noise;
     
@@ -52,23 +52,25 @@ function model_output = model_SM_KF_SIGMA_all_choices(params, actions_and_rts, r
         for t=1:num_choices  % loop over forced-choice trials
             if t >= 5
                 if mdp.C1(g)==1 % horizon is 1
-                    T = 1;
-                    Y = 1;
+                    T = 0;
+                    Y = 0;
                 else % horizon is 5
-                    T = info_bonus;
+                    T = directed_exp;
                     Y = random_exp;                    
                 end
                 
                 reward_diff = mu1(t) - mu2(t);
-                info_diff = (sigma1(t) - sigma2(t))*baseline_info_bonus + T;
+                info_diff = (sigma1(t) - sigma2(t))*baseline_info_bonus + (sigma1(t) - sigma2(t))*T;
 
                 % total uncertainty is variance of both arms
                 total_uncertainty = (sigma1(t)^2 + sigma2(t)^2)^.5;
-                decision_noise = total_uncertainty*baseline_noise + Y;
+                decision_noise = total_uncertainty*baseline_noise + total_uncertainty*Y;
 
-       
+                % exponentiate to keep decision noise positive
+                exp_decision_noise = exp(decision_noise);
+
                 % probability of choosing bandit 1
-                p = 1 / (1 + exp(-(reward_diff+info_diff+side_bias)/(decision_noise)));
+                p = 1 / (1 + exp(-(reward_diff+info_diff+side_bias)/(exp_decision_noise)));
                 
             
                 % simulate behavior

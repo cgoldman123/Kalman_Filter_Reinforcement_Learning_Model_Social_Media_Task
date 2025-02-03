@@ -23,12 +23,12 @@ if ispc
         id = varargin{1};
         room = varargin{2};
     else
-        id = '5590a34cfdf99b729d4f69dc'; % 666878a27888fdd27f529c64 60caf58c38ce3e0f5a51f62b 668d6d380fb72b01a09dee54 659ab1b4640b25ce093058a2 5590a34cfdf99b729d4f69dc 53b98f20fdf99b472f4700e4
-        room = 'Like';
+        id = '60caf58c38ce3e0f5a51f62b'; % 666878a27888fdd27f529c64 60caf58c38ce3e0f5a51f62b 668d6d380fb72b01a09dee54 659ab1b4640b25ce093058a2 5590a34cfdf99b729d4f69dc 53b98f20fdf99b472f4700e4
+        room = 'Dislike';
     end
 
     
-    MDP.field = {'sigma_d','baseline_noise','side_bias','sigma_r','info_bonus','baseline_info_bonus','random_exp'};
+    MDP.field = {'sigma_d','baseline_noise','side_bias','sigma_r','directed_exp','baseline_info_bonus','random_exp'};
     if ismember(model, {'KF_UCB_DDM', 'KF_SIGMA_DDM'})
         % possible mappings are action_prob, reward_diff, UCB,
         % side_bias, decsision_noise
@@ -97,17 +97,11 @@ MDP.params.side_bias = 0;
 MDP.params.reward_sensitivity = 1;
 MDP.params.initial_mu = 50;
 
-if any(strcmp('baseline_info_bonus', MDP.field))
-    MDP.params.baseline_info_bonus = 1; 
-else
-    MDP.params.baseline_info_bonus = 0; 
-end
 
-if any(strcmp('baseline_noise', MDP.field))
-    MDP.params.baseline_noise = 1; 
-else
-    MDP.params.baseline_noise = 0; 
-end
+
+MDP.params.baseline_info_bonus = 0; 
+MDP.params.baseline_noise = 0; 
+
 
 
 % make directed exploration and random exploration same param or keep
@@ -115,16 +109,9 @@ end
 if any(strcmp('DE_RE_horizon', MDP.field))
     MDP.params.DE_RE_horizon = 2.5; % prior on this value
 else
-    if any(strcmp('info_bonus', MDP.field))
-        MDP.params.info_bonus = 1; 
-    else
-        MDP.params.info_bonus = 0; 
-    end
-    if any(strcmp('random_exp', MDP.field))
-        MDP.params.random_exp = 1;
-    else
-        MDP.params.random_exp = 0;
-    end
+    MDP.params.directed_exp = 0; 
+    MDP.params.random_exp = 0;
+    
 end
 
 
@@ -228,9 +215,10 @@ if SIM
     simulate_social_media(MDP.params, gen_mean_difference, horizon, truncate_h5);
 end
 if FIT
-    fits_table = get_fits(root, experiment, room, results_dir,MDP, id);
+    output_table = get_fits(root, experiment, room, results_dir,MDP, id);
 end
 end
+
 
 % Effect of DE - people more likely to pick high info in H5 vs H1
 % Effect of RE - people behave more randomly in H5 vs H1. Easier to see when set info_bonus to 0 and gen_mean>4. 

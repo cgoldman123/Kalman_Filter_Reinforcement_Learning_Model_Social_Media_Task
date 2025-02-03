@@ -1,4 +1,4 @@
-function ff = fit_social_genmeans(file,subject, ses, room_type, input_dir, study)
+function ff = social_model_free(root,file, room_type, study)
     %The only difference between the two versions of the schedules is the
     %order of blocks. Since we fit Dislike and Like rooms separately and
     %the same block within each room type always goes first (within a
@@ -7,34 +7,37 @@ function ff = fit_social_genmeans(file,subject, ses, room_type, input_dir, study
      % determine if cb=1 or cb=2
     if strcmp(study,'local')
         if contains(file, '_R1-')
-            schedule = readtable('../schedules/sm_distributed_schedule1.csv');
+            schedule = readtable([root 'rsmith/wellbeing/tasks/SocialMedia/schedules/sm_distributed_schedule_CB1.csv']);
             cb = 1;
         else
-            schedule = readtable('../schedules/sm_distributed_schedule1_CB.csv');
+            schedule = readtable([root 'rsmith/wellbeing/tasks/SocialMedia/schedules/sm_distributed_schedule_CB2.csv']);
             cb = 2;
         end
     elseif strcmp(study,'prolific')
         if contains(file, '_CB_')
-            schedule = readtable('../schedules/sm_distributed_schedule1_CB.csv');
+            schedule = readtable([root 'rsmith/wellbeing/tasks/SocialMedia/schedules/sm_distributed_schedule_CB2.csv']);
             cb = 2;
         else
-            schedule = readtable('../schedules/sm_distributed_schedule1.csv');
+           schedule = readtable([root 'rsmith/wellbeing/tasks/SocialMedia/schedules/sm_distributed_schedule_CB1.csv']);
             cb = 1;
         end
      end
-    
-    
-    
+
+
+
     orgfunc = str2func(['Social_' study '_organize']);
-    subj_data = orgfunc(file{:}, schedule, room_type);
-    
+    subj_data = orgfunc(file, schedule, room_type);
+
     % for debugging: disp(subj_data);disp(file{:});disp(ses); disp(room_type);
-    data = parse_table(subj_data, file{:}, ses, 80, room_type);
+    ses = 999; % filler because session is no longer relevant
+    data = parse_table(subj_data, file, ses, 80, room_type);
         
-    ff = fit_horizon(data, ses, room_type);
+    % ff = fit_horizon(data, ses, room_type);
     ff.room_type = room_type;
     ff.counterbalance            = cb;
     % ---------------------------------------------------------------
+
+    data;
     
     h5 = data([data.horizon] == 5);
     h1 = data([data.horizon] == 1);
@@ -162,7 +165,7 @@ function ff = fit_social_genmeans(file,subject, ses, room_type, input_dir, study
 %     end
 %     ff.last_acc_true_mean_h122   = mean([h1_22.last_true_correct]);
     
-    ff = struct2table(ff, AsArray=true);
+%    ff = struct2table(ff, AsArray=true);
 %  writetable(ff, [
 %        results_dir '/' subject '_ses' num2str(ses) '_fit.csv'
 %      ])

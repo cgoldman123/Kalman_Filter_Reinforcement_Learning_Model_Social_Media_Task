@@ -103,7 +103,7 @@ function [fits, model_output] = fit_extended_model(formatted_file, result_dir, M
             fits.(field{i}) = exp(DCM.Ep.(field{i}));
         elseif ismember(field{i},{'h5_baseline_info_bonus', 'h5_slope_info_bonus', 'h1_info_bonus', 'baseline_info_bonus', 'baseline_noise', ...
                 'side_bias', 'side_bias_h1', 'side_bias_h5', 'info_bonus', 'random_exp',...
-                'drift_baseline', 'drift'})
+                'drift_baseline', 'drift','directed_exp'})
             fits.(field{i}) = DCM.Ep.(field{i});
         elseif any(strcmp(field{i},{'nondecision_time'}))
             fits.(field{i}) = 0.1 + (0.3 - 0.1) ./ (1 + exp(-DCM.Ep.(field{i})));  
@@ -168,7 +168,7 @@ function [fits, model_output] = fit_extended_model(formatted_file, result_dir, M
             fits.(['simfit_' field{i}]) = exp(simfit_DCM.Ep.(field{i}));
         elseif ismember(field{i},{'h5_baseline_info_bonus', 'h5_slope_info_bonus', 'h1_info_bonus', 'baseline_info_bonus', 'baseline_noise',...
                 'side_bias', 'side_bias_h1', 'side_bias_h5', 'info_bonus', 'random_exp',...
-                'drift_baseline', 'drift'})
+                'drift_baseline', 'drift', 'directed_exp'})
             fits.(['simfit_' field{i}]) = simfit_DCM.Ep.(field{i});
         elseif any(strcmp(field{i},{'nondecision_time'}))
             fits.(['simfit_' field{i}]) = 0.1 + (0.3 - 0.1) ./ (1 + exp(-simfit_DCM.Ep.(field{i})));     

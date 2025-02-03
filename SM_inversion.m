@@ -76,7 +76,7 @@ for i = 1:length(DCM.field)
             pC{i,i}    = prior_variance;  
         elseif ismember(field, {'h5_baseline_info_bonus', 'h5_slope_info_bonus', 'h1_info_bonus', 'baseline_info_bonus', 'baseline_noise'...
                 'side_bias', 'side_bias_h1', 'side_bias_h5', 'info_bonus', 'random_exp', ...
-                'drift_baseline', 'drift'})
+                'drift_baseline', 'drift', 'directed_exp'})
             pE.(field) = DCM.params.(field); 
             pC{i,i}    = prior_variance;
         elseif any(strcmp(field,{'nondecision_time'})) % bound between .1 and .3
@@ -145,7 +145,7 @@ function L = spm_mdp_L(P,M,U,Y)
             params.(field{i}) = exp(P.(field{i}));
         elseif ismember(field{i},{'h5_baseline_info_bonus', 'h5_slope_info_bonus', 'h1_info_bonus', 'baseline_info_bonus', 'baseline_noise'...
                 'side_bias', 'side_bias_h1', 'side_bias_h5', 'info_bonus', 'random_exp',...
-                'drift_baseline', 'drift'})
+                'drift_baseline', 'drift', 'directed_exp'})
             params.(field{i}) = P.(field{i});
         elseif ismember(field{i},{'decision_thresh_baseline'})
             params.(field{i}) = .5 + (1000 - .5) ./ (1 + exp(-P.(field{i})));     

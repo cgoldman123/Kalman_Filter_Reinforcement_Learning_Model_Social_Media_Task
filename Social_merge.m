@@ -24,7 +24,7 @@ function [all_data, subj_mapping, flag_ids] = Social_merge(ids, files, room_type
     flag_ids = {};
     good_index = [];
     
-    subj_mapping = cell(numel(ids), 2); 
+    subj_mapping = cell(numel(ids), 4); 
     
     for i = 1:numel(ids)
         id   = ids{i};
@@ -76,6 +76,7 @@ function [all_data, subj_mapping, flag_ids] = Social_merge(ids, files, room_type
             % practice effects
             if((size(all_data{i}, 1) == 40) && (sum(all_data{i}.gameLength) == 280) && (has_started_a_game <= 1))
                 good_index = [good_index i];
+                good_file = filename;
                 success=1;
             end
             
@@ -89,9 +90,10 @@ function [all_data, subj_mapping, flag_ids] = Social_merge(ids, files, room_type
     
     % only take the rows of all_data that are good
     all_data = all_data(good_index);
-    subj_mapping = subj_mapping(good_index, :);
     all_data = vertcat(all_data{:});    
-    
+    subj_mapping = subj_mapping(good_index, :);
+    subj_mapping{1,4} = good_file;
+
     % add in schedule
     is_dislike_type = strcmp(room_type,'Dislike');
     schedule_room_type = schedule(schedule.dislike_room == is_dislike_type, :);
