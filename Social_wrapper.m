@@ -23,8 +23,8 @@ if ispc
         id = varargin{1};
         room = varargin{2};
     else
-        id = '60caf58c38ce3e0f5a51f62b'; % 666878a27888fdd27f529c64 60caf58c38ce3e0f5a51f62b 668d6d380fb72b01a09dee54 659ab1b4640b25ce093058a2 5590a34cfdf99b729d4f69dc 53b98f20fdf99b472f4700e4
-        room = 'Dislike';
+        id = '5dcf4136cf8e7e086ea019e4'; % 666878a27888fdd27f529c64 60caf58c38ce3e0f5a51f62b 668d6d380fb72b01a09dee54 659ab1b4640b25ce093058a2 5590a34cfdf99b729d4f69dc 53b98f20fdf99b472f4700e4
+        room = 'Like';
     end
 
     
@@ -100,7 +100,7 @@ MDP.params.initial_mu = 50;
 
 
 MDP.params.baseline_info_bonus = 0; 
-MDP.params.baseline_noise = 0; 
+MDP.params.baseline_noise = 1/12; 
 
 
 
@@ -110,15 +110,14 @@ if any(strcmp('DE_RE_horizon', MDP.field))
     MDP.params.DE_RE_horizon = 2.5; % prior on this value
 else
     MDP.params.directed_exp = 0; 
-    MDP.params.random_exp = 0;
-    
+    MDP.params.random_exp = 1;
 end
 
 
 % parameters specific to one of the models
 if ismember(model, {'KF_UCB', 'KF_UCB_DDM', 'KF_SIGMA_DDM', 'KF_SIGMA'})
     if any(strcmp('sigma_d', MDP.field))
-        MDP.params.sigma_d = .25;
+        MDP.params.sigma_d = 8;
     else
         MDP.params.sigma_d = 0;
     end

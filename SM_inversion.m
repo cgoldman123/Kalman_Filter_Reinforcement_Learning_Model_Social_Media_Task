@@ -49,7 +49,7 @@ ALL = false;
 
 % prior expectations and covariance
 %--------------------------------------------------------------------------
-prior_variance = 1/4;
+prior_variance = 1;
 
 global params_old;
 params_old = [];
@@ -74,9 +74,9 @@ for i = 1:length(DCM.field)
                 'reward_sensitivity', 'DE_RE_horizon'})
             pE.(field) = log(DCM.params.(field));               % in log-space (to keep positive)
             pC{i,i}    = prior_variance;  
-        elseif ismember(field, {'h5_baseline_info_bonus', 'h5_slope_info_bonus', 'h1_info_bonus', 'baseline_info_bonus', 'baseline_noise'...
-                'side_bias', 'side_bias_h1', 'side_bias_h5', 'info_bonus', 'random_exp', ...
-                'drift_baseline', 'drift', 'directed_exp'})
+        elseif ismember(field, {'h5_baseline_info_bonus', 'h5_slope_info_bonus', 'h1_info_bonus', ...
+                'side_bias', 'side_bias_h1', 'side_bias_h5', 'info_bonus', ...
+                'drift_baseline', 'drift'})
             pE.(field) = DCM.params.(field); 
             pC{i,i}    = prior_variance;
         elseif any(strcmp(field,{'nondecision_time'})) % bound between .1 and .3
@@ -85,10 +85,25 @@ for i = 1:length(DCM.field)
         elseif any(strcmp(field,{'decision_thresh_baseline'})) % bound greater than .1 and less than 100
             pE.(field) =  -log((1000 - .5) ./ (DCM.params.(field) - .5) - 1);             
             pC{i,i}    = prior_variance;      
-        elseif any(strcmp(field,{'sigma_d', 'sigma_r'})) % bound between 0 and 40
+        elseif any(strcmp(field,{'sigma_d'})) % bound between 0 and 40
             pE.(field) =  -log((40) ./ (DCM.params.(field)) - 1);     
-            pC{i,i}    = prior_variance;                
-        else
+            pC{i,i}    = 1;                
+        elseif any(strcmp(field,{'sigma_r'})) % bound between 0 and 40
+            pE.(field) =  -log((40) ./ (DCM.params.(field)) - 1);     
+            pC{i,i}    = 1;                
+        elseif any(strcmp(field,{'baseline_info_bonus'})) % bound between 0 and 40
+            pE.(field) = DCM.params.(field); 
+            pC{i,i}    = 16;                
+        elseif any(strcmp(field,{'directed_exp'})) % bound between 0 and 40
+            pE.(field) = DCM.params.(field); 
+            pC{i,i}    = 16;                
+        elseif any(strcmp(field,{'baseline_noise'})) % bound between 0 and 40
+            pE.(field) = log(DCM.params.(field));               % in log-space (to keep positive)
+            pC{i,i}    = 16;                
+        elseif any(strcmp(field,{'random_exp'})) % bound between 0 and 40
+            pE.(field) = log(DCM.params.(field));               % in log-space (to keep positive)
+            pC{i,i}    = 4;                 
+        else   
             disp(field);
             error("Param not properly transformed");
         end
@@ -140,11 +155,11 @@ function L = spm_mdp_L(P,M,U,Y)
                 'drift_action_prob_mod', 'drift_reward_diff_mod', 'drift_UCB_diff_mod',...
                 'starting_bias_action_prob_mod', 'starting_bias_reward_diff_mod', 'starting_bias_UCB_diff_mod',...
                 'decision_thresh_action_prob_mod', 'decision_thresh_reward_diff_mod', 'decision_thresh_UCB_diff_mod', 'decision_thresh_decision_noise_mod'...
-                'outcome_informativeness', ...
+                'outcome_informativeness', 'random_exp', 'baseline_noise', ...
                 'reward_sensitivity', 'DE_RE_horizon'})
             params.(field{i}) = exp(P.(field{i}));
-        elseif ismember(field{i},{'h5_baseline_info_bonus', 'h5_slope_info_bonus', 'h1_info_bonus', 'baseline_info_bonus', 'baseline_noise'...
-                'side_bias', 'side_bias_h1', 'side_bias_h5', 'info_bonus', 'random_exp',...
+        elseif ismember(field{i},{'h5_baseline_info_bonus', 'h5_slope_info_bonus', 'h1_info_bonus', 'baseline_info_bonus',...
+                'side_bias', 'side_bias_h1', 'side_bias_h5', 'info_bonus',...
                 'drift_baseline', 'drift', 'directed_exp'})
             params.(field{i}) = P.(field{i});
         elseif ismember(field{i},{'decision_thresh_baseline'})
