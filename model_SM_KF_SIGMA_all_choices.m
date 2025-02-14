@@ -61,21 +61,30 @@ function model_output = model_SM_KF_SIGMA_all_choices(params, actions_and_rts, r
                 
                 reward_diff = mu1(t) - mu2(t);
                 z = .5; % hyperparam controlling steepness of curve
-%                 info_diff = (sigma1(t) - sigma2(t))*baseline_info_bonus + (sigma1(t) - sigma2(t))*T*(exp(-z*(t-5))-exp(-4*z))/(1-exp(-4*z));
-
-%                info_diff = (sigma1(t) - sigma2(t))*baseline_info_bonus + (sigma1(t) - sigma2(t))*T*((9 - t)/4);
+                % % Exponential descent
+                % info_diff = (sigma1(t) - sigma2(t))*baseline_info_bonus + (sigma1(t) - sigma2(t))*T*(exp(-z*(t-5))-exp(-4*z))/(1-exp(-4*z));
+                % % Linear descent
+                % info_diff = (sigma1(t) - sigma2(t))*baseline_info_bonus + (sigma1(t) - sigma2(t))*T*((9 - t)/4);
 
                 
-                 info_bonus_bandit1 = sigma1(t)*baseline_info_bonus + sigma1(t)*T*(exp(-z*(t-5))-exp(-4*z))/(1-exp(-4*z));
-                 info_bonus_bandit2 = sigma2(t)*baseline_info_bonus + sigma2(t)*T*(exp(-z*(t-5))-exp(-4*z))/(1-exp(-4*z));
+                 % % Exponential descent
+                 % info_bonus_bandit1 = sigma1(t)*baseline_info_bonus + sigma1(t)*T*(exp(-z*(t-5))-exp(-4*z))/(1-exp(-4*z));
+                 % info_bonus_bandit2 = sigma2(t)*baseline_info_bonus + sigma2(t)*T*(exp(-z*(t-5))-exp(-4*z))/(1-exp(-4*z));
+
+                 % Linear descent
+                 info_bonus_bandit1 = sigma1(t)*baseline_info_bonus + sigma1(t)*T*((9 - t)/4);
+                 info_bonus_bandit2 = sigma2(t)*baseline_info_bonus + sigma2(t)*T*((9 - t)/4);
+
                  info_diff = info_bonus_bandit1 - info_bonus_bandit2;
                 
                 % total uncertainty is variance of both arms
                 total_uncertainty = (sigma1(t)^2 + sigma2(t)^2)^.5;
                 
+                 % % Exponential descent
+                 % RE = Y + ((1 - Y) * (1 - exp(-z * (t - 5))) / (1 - exp(-4 * z)));
 
-                 RE = Y + ((1 - Y) * (1 - exp(-z * (t - 5))) / (1 - exp(-4 * z)));
-%                RE = Y * ((9 - t)/4);
+                 % Linear descent
+                 RE = Y * ((9 - t)/4);
                 
                 decision_noise = total_uncertainty*baseline_noise*RE;
 
