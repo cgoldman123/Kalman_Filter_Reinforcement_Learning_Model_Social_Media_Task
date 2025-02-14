@@ -129,6 +129,15 @@ function [fits, model_output] = fit_extended_model(formatted_file, result_dir, M
     
     model_output = MDP.model(fits,actions_and_rts, rewards,mdp, 0);    
     fits.average_action_prob = mean(model_output.action_probs(~isnan(model_output.action_probs)), 'all');
+    
+    fits.average_action_prob_H1_1 = mean(model_output.action_probs(1:2:end, 5));
+    fits.average_action_prob_H5_1 = mean(model_output.action_probs(2:2:end, 5));
+    fits.average_action_prob_H5_2 = mean(model_output.action_probs(2:2:end, 6));
+    fits.average_action_prob_H5_3 = mean(model_output.action_probs(2:2:end, 7));
+    fits.average_action_prob_H5_4 = mean(model_output.action_probs(2:2:end, 8));
+    fits.average_action_prob_H5_5 = mean(model_output.action_probs(2:2:end, 9));
+
+    
     fits.model_acc = sum(model_output.action_probs(~isnan(model_output.action_probs)) > 0.5) / numel(model_output.action_probs(~isnan(model_output.action_probs)));
     fits.F = DCM.F;
 

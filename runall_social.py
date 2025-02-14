@@ -97,8 +97,8 @@ elif model_class=="KF_SIGMA":
         {'field': 'sigma_d,baseline_noise,side_bias,sigma_r,directed_exp,baseline_info_bonus,random_exp'}, 
         {'field': 'sigma_d,baseline_noise,side_bias,sigma_r,directed_exp,baseline_info_bonus'}, 
         {'field': 'sigma_d,baseline_noise,side_bias,sigma_r,baseline_info_bonus,random_exp'}, 
-        {'field': 'sigma_d,baseline_noise,side_bias,sigma_r,baseline_info_bonus'}, # winner for like and dislike
-        {'field': 'sigma_d,baseline_noise,side_bias,sigma_r,directed_exp,random_exp'}, 
+        {'field': 'sigma_d,baseline_noise,side_bias,sigma_r,baseline_info_bonus'}, 
+        {'field': 'sigma_d,baseline_noise,side_bias,sigma_r,directed_exp,random_exp'}, # winner for like and dislike
 
         {'field': 'baseline_noise,side_bias,sigma_r,directed_exp,baseline_info_bonus,random_exp'},
         {'field': 'sigma_d,baseline_noise,side_bias,directed_exp,baseline_info_bonus,random_exp'},
@@ -144,6 +144,6 @@ for room in room_type:
             # i = i+1
             # if i ==2:
             #     break
-        break
+        
 
 # python3 /media/labs/rsmith/lab-members/cgoldman/Wellbeing/social_media/VB_scripts/runall_social.py /media/labs/rsmith/lab-members/cgoldman/Wellbeing/social_media/output/SM_fits_KF_SIGMA_model "prolific"

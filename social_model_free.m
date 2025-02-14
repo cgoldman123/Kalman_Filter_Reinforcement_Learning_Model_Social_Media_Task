@@ -57,7 +57,6 @@ function ff = social_model_free(root,file, room_type, study)
     ff.h5_freec3_acc = sum(h5_meancor(:, 7))  / numel(h5);
     ff.h5_freec4_acc = sum(h5_meancor(:, 8))  / numel(h5);
     ff.h5_freec5_acc = sum(h5_meancor(:, 9))  / numel(h5);
-    %ff.h6_freec6_acc = sum(h6_meancor(:, 10)) / numel(h6);
     
     ff.h1_freec1_acc = sum(h1_meancor(:, 5)) / numel(h1);
     % end Figure1C ------------------------------
@@ -67,27 +66,184 @@ function ff = social_model_free(root,file, room_type, study)
     % end Figure1D ------------------------------
     
     % for Figure2A ------------------------------
-    ff.h5_more_info_24_less = pminfo(h5_13, -24);
-    ff.h5_more_info_12_less = pminfo(h5_13, -12);
-    ff.h5_more_info_08_less = pminfo(h5_13, -8);
-    ff.h5_more_info_04_less = pminfo(h5_13, -4);
-    ff.h5_more_info_02_less = pminfo(h5_13, -2);
-    ff.h5_more_info_24_more = pminfo(h5_13, 24);
-    ff.h5_more_info_12_more = pminfo(h5_13, 12);
-    ff.h5_more_info_08_more = pminfo(h5_13, 8);
-    ff.h5_more_info_04_more = pminfo(h5_13, 4);
-    ff.h5_more_info_02_more = pminfo(h5_13, 2);
+    % In H5 games, get the probability of choosing the high info side when
+    % it's generative mean is more/less than the low info side
+    % For first free choice
+
+    % this code is commented out because now redundant
+    % ff.h5_more_info_24_less = pminfo(h5_13, -24);
+    % ff.h5_more_info_12_less = pminfo(h5_13, -12);
+    % ff.h5_more_info_08_less = pminfo(h5_13, -8);
+    % ff.h5_more_info_04_less = pminfo(h5_13, -4);
+    % ff.h5_more_info_02_less = pminfo(h5_13, -2);
+    % ff.h5_more_info_24_more = pminfo(h5_13, 24);
+    % ff.h5_more_info_12_more = pminfo(h5_13, 12);
+    % ff.h5_more_info_08_more = pminfo(h5_13, 8);
+    % ff.h5_more_info_04_more = pminfo(h5_13, 4);
+    % ff.h5_more_info_02_more = pminfo(h5_13, 2);
+
+
     
-    ff.h1_more_info_24_less = pminfo(h1_13, -24);
-    ff.h1_more_info_12_less = pminfo(h1_13, -12);
-    ff.h1_more_info_08_less = pminfo(h1_13, -8);
-    ff.h1_more_info_04_less = pminfo(h1_13, -4);
-    ff.h1_more_info_02_less = pminfo(h1_13, -2);
-    ff.h1_more_info_24_more = pminfo(h1_13, 24);
-    ff.h1_more_info_12_more = pminfo(h1_13, 12);
-    ff.h1_more_info_08_more = pminfo(h1_13, 8);
-    ff.h1_more_info_04_more = pminfo(h1_13, 4);
-    ff.h1_more_info_02_more = pminfo(h1_13, 2);
+    ff.h1_more_info_24_less_prob = pminfo(h1_13, -24);
+    ff.h1_more_info_12_less_prob = pminfo(h1_13, -12);
+    ff.h1_more_info_08_less_prob = pminfo(h1_13, -8);
+    ff.h1_more_info_04_less_prob = pminfo(h1_13, -4);
+    ff.h1_more_info_02_less_prob = pminfo(h1_13, -2);
+    ff.h1_more_info_24_more_prob = pminfo(h1_13, 24);
+    ff.h1_more_info_12_more_prob = pminfo(h1_13, 12);
+    ff.h1_more_info_08_more_prob = pminfo(h1_13, 8);
+    ff.h1_more_info_04_more_prob = pminfo(h1_13, 4);
+    ff.h1_more_info_02_more_prob = pminfo(h1_13, 2);
+
+    % because there will be exactly two games with each of the above
+    % generative mean differences in H1, we can compute the average by
+    % averaging these probabilities
+
+    h1_all_high_info_probs = [ff.h1_more_info_24_less_prob, ff.h1_more_info_12_less_prob, ff.h1_more_info_08_less_prob,...
+        ff.h1_more_info_04_less_prob, ff.h1_more_info_02_less_prob, ...
+          ff.h1_more_info_24_more_prob, ff.h1_more_info_12_more_prob, ff.h1_more_info_08_more_prob,...
+          ff.h1_more_info_04_more_prob, ff.h1_more_info_02_more_prob];
+    ff.h1_more_info_prob = mean(h1_all_high_info_probs);
+
+    % In H5 games, get the probability of choosing the high info side when
+    % it's generative mean is more/less than the low info side
+    % For all free choices
+
+    result_struct = struct();
+    for game_num = 1:length(h5)
+        game = h5(game_num,:);
+        choices = game.key;
+        for choice_num = 5:9
+            % determine if choice was high or low info based on number of
+            % observations previously seen for that side
+            num_1_choices = sum(choices(1:choice_num-1) == 1);
+            num_2_choices = sum(choices(1:choice_num-1) == 2);
+            if choices(choice_num) == 1
+                made_high_info_choice = num_1_choices < num_2_choices;
+                made_low_info_choice = num_1_choices > num_2_choices;
+            else
+                made_high_info_choice = num_1_choices > num_2_choices;
+                made_low_info_choice = num_1_choices < num_2_choices;
+            end
+            % don't count trials with equal information previously shown for each
+            % option
+            if made_high_info_choice | made_low_info_choice
+                % find generative mean difference between high info and low
+                % info option
+                if num_1_choices > num_2_choices
+                    % Here, choice 2 is high info
+                    gen_mean_diff = game.mean(2) - game.mean(1);
+                else
+                    % Here, choice 1 is high info
+                    gen_mean_diff = game.mean(1) - game.mean(2);
+                end
+
+                % convert gen mean difference to a char array
+                if gen_mean_diff < 0
+                    gen_mean_char = sprintf('%d_less', abs(gen_mean_diff));
+                else
+                    gen_mean_char = sprintf('%d_more', gen_mean_diff);
+                end
+                % add 0 or 1 to the number of times they have chosen the
+                % high info side with a given generative mean
+                count_field_name = ['h5_more_info_' gen_mean_char '_choice_' char(string(choice_num - 4)) '_count'];
+                total_field_name = ['h5_more_info_' gen_mean_char '_choice_' char(string(choice_num - 4)) '_total'];
+
+                % Initialize fields if they don't exist
+                if ~isfield(result_struct, count_field_name)
+                    result_struct.(count_field_name) = 0;
+                    result_struct.(total_field_name) = 0;
+                end
+
+                result_struct.(count_field_name) = result_struct.(count_field_name) + made_high_info_choice;
+                result_struct.(total_field_name) = result_struct.(total_field_name) + 1;
+
+            end
+        end
+    end
+
+
+    num_high_info_choice_1 = 0;
+    num_high_info_choice_2 = 0;
+    num_high_info_choice_3 = 0;
+    num_high_info_choice_4 = 0;
+    num_high_info_choice_5 = 0;
+    total_high_or_low_info_choice_1 = 0;
+    total_high_or_low_info_choice_2 = 0;
+    total_high_or_low_info_choice_3 = 0;
+    total_high_or_low_info_choice_4 = 0;
+    total_high_or_low_info_choice_5 = 0;
+
+    % take average to get probability of choosing high info side
+    fields = fieldnames(result_struct); % Get all field names
+    for i = 1:numel(fields)
+        field_name = fields{i}; % Get current field name
+        if contains(field_name, 'count') % only process field names that contain count
+            new_field_name = strrep(field_name, '_count', ''); % Remove "count"
+            ff.([new_field_name '_prob']) = result_struct.(field_name)/result_struct.([new_field_name '_total']);
+        end
+
+
+        % collapse across generative mean differences
+        if contains(field_name, 'choice_1_count')
+            num_high_info_choice_1 = result_struct.(field_name);
+        elseif contains(field_name, 'choice_2_count')
+            num_high_info_choice_2 = result_struct.(field_name);
+        elseif contains(field_name, 'choice_3_count')
+            num_high_info_choice_3 = result_struct.(field_name);
+        elseif contains(field_name, 'choice_4_count')
+            num_high_info_choice_4 = result_struct.(field_name);
+        elseif contains(field_name, 'choice_5_count')
+            num_high_info_choice_5 = result_struct.(field_name);
+        elseif contains(field_name, 'choice_1_total')
+            total_high_or_low_info_choice_1 = result_struct.(field_name);
+        elseif contains(field_name, 'choice_2_total')
+            total_high_or_low_info_choice_2 = result_struct.(field_name);
+        elseif contains(field_name, 'choice_3_total')
+            total_high_or_low_info_choice_3 = result_struct.(field_name);
+        elseif contains(field_name, 'choice_4_total')
+            total_high_or_low_info_choice_4 = result_struct.(field_name);
+        elseif contains(field_name, 'choice_5_total')
+            total_high_or_low_info_choice_5 = result_struct.(field_name);
+        end
+    end
+
+    % get probability of high info choice for each choice number
+    ff.h5_high_info_choice_1_prob = num_high_info_choice_1/total_high_or_low_info_choice_1;
+    ff.h5_high_info_choice_2_prob = num_high_info_choice_2/total_high_or_low_info_choice_2;
+    ff.h5_high_info_choice_3_prob = num_high_info_choice_3/total_high_or_low_info_choice_3;
+    ff.h5_high_info_choice_4_prob = num_high_info_choice_4/total_high_or_low_info_choice_4;
+    ff.h5_high_info_choice_5_prob = num_high_info_choice_5/total_high_or_low_info_choice_5;
+
+
+
+     
+    % get generative mean difference (left - right) for left and right
+    % choices, respectively, to determine if value sensitive
+    gen_mean_diff_for_right_choices = []; % should be negative
+    gen_mean_diff_for_left_choices = []; % should be positive
+    for game_num = 1:length(data)
+        game = data(game_num,:);
+        choices = game.key;
+        for (choice_num = 5:length(choices))
+            choice = choices(choice_num);
+            if choice == 1
+                gen_mean_diff_for_left_choices = [gen_mean_diff_for_left_choices game.mean(1) - game.mean(2)];
+            else
+                gen_mean_diff_for_right_choices = [gen_mean_diff_for_right_choices game.mean(1) - game.mean(2)];
+            end
+        end
+    end
+
+    % t test
+    % significance means that person was value-sensitive in the appropriate
+    % direction i.e., left-right for left choices was greater than
+    % left-right for right choices
+    [h, p, ci, stats] = ttest2(gen_mean_diff_for_left_choices, gen_mean_diff_for_right_choices,'Tail', 'right');
+    ff.p_value_of_t_test_for_value_sensitivity = p;
+
+
+
     
 %     ff.h5_right_30_less = pright(h6_22, -30);
 %     ff.h5_right_20_less = pright(h6_22, -20);
@@ -184,6 +340,26 @@ function p = pminfo(hor, amt)
         p = NaN;
     end
 end
+
+function p = prob_high_info_for_all_trials_within_game(hor, amt, choice_number)
+    
+    % get relevant games
+    relev = hor([hor.info_diff] == amt);
+    if numel(relev) > 0
+     %   minfo = [relev.more_info]';
+    %     disp([relev.more_info]);
+    % determine which choice is high info
+        keys = vertcat(relev.key);
+
+        p = sum(keys(:, 5) == minfo) / numel(relev);
+    else
+        p = NaN;
+    end
+end
+
+
+
+
 
 function p = pright(hor, amt)
     relev = hor([hor.info_diff] == amt);
