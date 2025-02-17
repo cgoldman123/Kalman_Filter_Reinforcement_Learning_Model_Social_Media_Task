@@ -5,6 +5,8 @@ clearvars -except varargin
 SIM = 0; % Simulate the model
 FIT = 1; % Fit the model
 MDP.get_rts_and_dont_fit_model = 0; % Get the rts and dont fit the model
+MDP.do_model_free = 1; % do model-free analyses
+MDP.fit_model = 0; % fit the model
 
 rng(23);
 

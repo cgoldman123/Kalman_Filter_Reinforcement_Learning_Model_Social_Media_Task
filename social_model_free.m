@@ -186,34 +186,52 @@ function ff = social_model_free(root,file, room_type, study)
 
         % collapse across generative mean differences
         if contains(field_name, 'choice_1_count')
-            num_high_info_choice_1 = result_struct.(field_name);
+            num_high_info_choice_1 = num_high_info_choice_1 + result_struct.(field_name);
         elseif contains(field_name, 'choice_2_count')
-            num_high_info_choice_2 = result_struct.(field_name);
+            num_high_info_choice_2 = num_high_info_choice_2 + result_struct.(field_name);
         elseif contains(field_name, 'choice_3_count')
-            num_high_info_choice_3 = result_struct.(field_name);
+            num_high_info_choice_3 = num_high_info_choice_3 + result_struct.(field_name);
         elseif contains(field_name, 'choice_4_count')
-            num_high_info_choice_4 = result_struct.(field_name);
+            num_high_info_choice_4 = num_high_info_choice_4 + result_struct.(field_name);
         elseif contains(field_name, 'choice_5_count')
-            num_high_info_choice_5 = result_struct.(field_name);
+            num_high_info_choice_5 = num_high_info_choice_5 + result_struct.(field_name);
         elseif contains(field_name, 'choice_1_total')
-            total_high_or_low_info_choice_1 = result_struct.(field_name);
+            total_high_or_low_info_choice_1 = total_high_or_low_info_choice_1 + result_struct.(field_name);
         elseif contains(field_name, 'choice_2_total')
-            total_high_or_low_info_choice_2 = result_struct.(field_name);
+            total_high_or_low_info_choice_2 = total_high_or_low_info_choice_2 + result_struct.(field_name);
         elseif contains(field_name, 'choice_3_total')
-            total_high_or_low_info_choice_3 = result_struct.(field_name);
+            total_high_or_low_info_choice_3 = total_high_or_low_info_choice_3 + result_struct.(field_name);
         elseif contains(field_name, 'choice_4_total')
-            total_high_or_low_info_choice_4 = result_struct.(field_name);
+            total_high_or_low_info_choice_4 = total_high_or_low_info_choice_4 + result_struct.(field_name);
         elseif contains(field_name, 'choice_5_total')
-            total_high_or_low_info_choice_5 = result_struct.(field_name);
+            total_high_or_low_info_choice_5 = total_high_or_low_info_choice_5 + result_struct.(field_name);
         end
     end
 
+    % Add NaN for cols that don't exist
+    gen_mean_diffs = {'24','12','8','4','2'};
+    choice_nums = {'1','2','3','4','5'};
+    for mean_diff=gen_mean_diffs
+        for choice_num=choice_nums
+            field = ['h5_more_info_' mean_diff{:} '_more_choice_' choice_num{:} '_prob'];
+            if ~isfield(ff,field)
+                ff.(field) = NaN;
+            end
+            field = ['h5_more_info_' mean_diff{:} '_less_choice_' choice_num{:} '_prob'];
+            if ~isfield(ff,field)
+                ff.(field) = NaN;
+            end            
+        end
+    end
+
+
+
     % get probability of high info choice for each choice number
-    ff.h5_high_info_choice_1_prob = num_high_info_choice_1/total_high_or_low_info_choice_1;
-    ff.h5_high_info_choice_2_prob = num_high_info_choice_2/total_high_or_low_info_choice_2;
-    ff.h5_high_info_choice_3_prob = num_high_info_choice_3/total_high_or_low_info_choice_3;
-    ff.h5_high_info_choice_4_prob = num_high_info_choice_4/total_high_or_low_info_choice_4;
-    ff.h5_high_info_choice_5_prob = num_high_info_choice_5/total_high_or_low_info_choice_5;
+    ff.h5_more_info_choice_1_prob = num_high_info_choice_1/total_high_or_low_info_choice_1;
+    ff.h5_more_info_choice_2_prob = num_high_info_choice_2/total_high_or_low_info_choice_2;
+    ff.h5_more_info_choice_3_prob = num_high_info_choice_3/total_high_or_low_info_choice_3;
+    ff.h5_more_info_choice_4_prob = num_high_info_choice_4/total_high_or_low_info_choice_4;
+    ff.h5_more_info_choice_5_prob = num_high_info_choice_5/total_high_or_low_info_choice_5;
 
 
 
