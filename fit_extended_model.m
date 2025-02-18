@@ -128,6 +128,7 @@ function [fits, model_output] = fit_extended_model(formatted_file, result_dir, M
     
     
     model_output = MDP.model(fits,actions_and_rts, rewards,mdp, 0);    
+    model_output.DCM = DCM;
     fits.average_action_prob = mean(model_output.action_probs(~isnan(model_output.action_probs)), 'all');
     
     fits.average_action_prob_H1_1 = mean(model_output.action_probs(1:2:end, 5));
@@ -154,6 +155,8 @@ function [fits, model_output] = fit_extended_model(formatted_file, result_dir, M
     datastruct.rewards = simmed_model_output.rewards;
     if ismember(func2str(MDP.model), {'model_SM_KF_DDM_all_choices', 'model_SM_KF_SIGMA_DDM_all_choices'})
         datastruct.RTs = simmed_model_output.rts;
+    else
+        datastruct.RTs = nan(40,9);
     end
 
 
@@ -162,6 +165,7 @@ function [fits, model_output] = fit_extended_model(formatted_file, result_dir, M
     fprintf( 'Running VB to fit simulated behavior! \n' );
 
     simfit_DCM = SM_inversion(MDP);
+    model_output.simfit_DCM = simfit_DCM;
 
     for i = 1:length(field)
         if ismember(field{i},{'learning_rate', 'learning_rate_pos', 'learning_rate_neg', 'noise_learning_rate', 'alpha_start', 'alpha_inf', 'associability_weight', ...

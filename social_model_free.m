@@ -1,4 +1,4 @@
-function ff = social_model_free(root,file, room_type, study)
+function ff = social_model_free(root,file, room_type, study,simulated_data)
     %The only difference between the two versions of the schedules is the
     %order of blocks. Since we fit Dislike and Like rooms separately and
     %the same block within each room type always goes first (within a
@@ -32,12 +32,52 @@ function ff = social_model_free(root,file, room_type, study)
     ses = 999; % filler because session is no longer relevant
     data = parse_table(subj_data, file, ses, 80, room_type);
         
+
+    % If passing in simulated data, replace participants' actual behavior
+    % with simulated behavior in "data"
+    if ~isempty(fieldnames(simulated_data))
+        for game = 1:40
+            data(game).key = simulated_data.actions(game, ~isnan(simulated_data.actions(game, :)));
+            data(game).reward = simulated_data.rewards(game, ~isnan(simulated_data.rewards(game, :)));
+            data(game).accuracy = data(game).correcttot/data(game).nfree;
+            data(game).correct = data(game).key == ((data(game).rewards(1,:) < data(game).rewards(2,:)) + 1);
+            data(game).correcttot = sum(data(game).correct(5:end));
+            data(game).mean_correct = data(game).key == ((data(game).mean(1) < data(game).mean(2)) + 1);
+
+            data(game).left_observed = mean(data(game).reward(data(game).key==1));
+            data(game).right_observed = mean(data(game).reward(data(game).key==2));
+
+            left_observed_mean_before_choice5 = mean(data(game).reward(data(game).key(1:4)==1));
+            right_observed_mean_before_choice5 = mean(data(game).reward(data(game).key(1:4)==2));
+
+            data(game).choice5_generative_correct = data(game).key(5) == data(game).max_side;
+            data(game).choice5_true_correct = data(game).choice5_generative_correct;
+            data(game).choice5_observed_correct = data(game).key(5) == ((left_observed_mean_before_choice5 <right_observed_mean_before_choice5) + 1);
+            
+           left_observed_mean_before_last_choice = mean(data(game).reward(data(game).key(1:end-1)==1));
+           right_observed_mean_before_last_choice = mean(data(game).reward(data(game).key(1:end-1)==2));
+
+            data(game).last_generative_correct = data(game).key(end) == data(game).max_side;
+            data(game).last_true_correct = data(game).last_generative_correct;
+            data(game).last_observed_correct = data(game).key(end) == ((left_observed_mean_before_last_choice < right_observed_mean_before_last_choice) + 1);
+            
+            
+            data(game).got_total = sum(data(game).reward(data(game).key==2)) + sum(data(game).reward(data(game).key==1));
+            for rt_index=1:length(data(game).RT)
+                data(game).RT(rt_index) = simulated_data.RTs(game,rt_index);
+            end
+            data(game).RT_choice5 = data(game).RT(5);
+            data(game).RT_choiceLast = data(game).RT(end);
+            data(game).true_correct_frac = sum(data(game).mean_correct(5:end))/length(data(game).mean_correct(5:end));
+        end
+    end
+
     % ff = fit_horizon(data, ses, room_type);
     ff.room_type = room_type;
     ff.counterbalance            = cb;
     % ---------------------------------------------------------------
 
-    data;
+
     
     h5 = data([data.horizon] == 5);
     h1 = data([data.horizon] == 1);
@@ -388,3 +428,18 @@ function p = pright(hor, amt)
         p = NaN;
     end
 end
+
+% 
+% fields = fieldnames(data(1));
+% for i = 1:40
+%     for field_indx = 1:length(fields)
+%         field = fields{field_indx};
+%         for k = 1:numel(data(i).(field))
+%             old_value = data(i).(field);
+%             new_value = new_mf_data(i).(field);
+%             if old_value(k) ~= new_value(k)
+%                 fprintf("bad");
+%             end
+%         end
+%     end
+% end

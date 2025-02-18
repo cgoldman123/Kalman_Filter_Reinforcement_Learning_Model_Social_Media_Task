@@ -1,9 +1,7 @@
 function model_output = model_SM_KF_SIGMA_all_choices(params, actions_and_rts, rewards, mdp, sim)
     dbstop if error;
     % note that mu2 == right bandit ==  c=2 == free choice = 1
-    G = mdp.G; % num of games
-    T = 9; % num of choices
-    
+    G = mdp.G; % num of games    
     
     % initialize params
     sigma_d = params.sigma_d;
@@ -28,7 +26,11 @@ function model_output = model_SM_KF_SIGMA_all_choices(params, actions_and_rts, r
     pred_errors_alpha = nan(G,9);
     exp_vals = nan(G,10);
     alpha = nan(G,10);
-    
+    sigma1 = [initial_sigma * ones(G,1), zeros(G,8)];
+    sigma2 = [initial_sigma * ones(G,1), zeros(G,8)];
+    total_uncertainty = nan(G,9);
+    relative_uncertainty_of_choice = nan(G,9);
+    change_in_uncertainty_for_after_choice = nan(G,9);
 
 
     
@@ -40,11 +42,6 @@ function model_output = model_SM_KF_SIGMA_all_choices(params, actions_and_rts, r
         % learning rates 
         alpha1 = nan(1,9); 
         alpha2 = nan(1,9); 
-
-        sigma1 = nan(1,9); 
-        sigma1(1) = initial_sigma;
-        sigma2 = nan(1,9); 
-        sigma2(1) = initial_sigma;
         
         num_choices = sum(~isnan(rewards(g,:))); 
 
@@ -61,32 +58,29 @@ function model_output = model_SM_KF_SIGMA_all_choices(params, actions_and_rts, r
                 
                 reward_diff = mu1(t) - mu2(t);
                 z = .5; % hyperparam controlling steepness of curve
-                % % Exponential descent
-                % info_diff = (sigma1(t) - sigma2(t))*baseline_info_bonus + (sigma1(t) - sigma2(t))*T*(exp(-z*(t-5))-exp(-4*z))/(1-exp(-4*z));
-                % % Linear descent
-                % info_diff = (sigma1(t) - sigma2(t))*baseline_info_bonus + (sigma1(t) - sigma2(t))*T*((9 - t)/4);
-
                 
                  % % Exponential descent
-                 % info_bonus_bandit1 = sigma1(t)*baseline_info_bonus + sigma1(t)*T*(exp(-z*(t-5))-exp(-4*z))/(1-exp(-4*z));
-                 % info_bonus_bandit2 = sigma2(t)*baseline_info_bonus + sigma2(t)*T*(exp(-z*(t-5))-exp(-4*z))/(1-exp(-4*z));
+                 info_bonus_bandit1 = sigma1(g,t)*baseline_info_bonus + sigma1(g,t)*T*(exp(-z*(t-5))-exp(-4*z))/(1-exp(-4*z));
+                 info_bonus_bandit2 = sigma2(g,t)*baseline_info_bonus + sigma2(g,t)*T*(exp(-z*(t-5))-exp(-4*z))/(1-exp(-4*z));
 
                  % Linear descent
-                 info_bonus_bandit1 = sigma1(t)*baseline_info_bonus + sigma1(t)*T*((9 - t)/4);
-                 info_bonus_bandit2 = sigma2(t)*baseline_info_bonus + sigma2(t)*T*((9 - t)/4);
+                 % info_bonus_bandit1 = sigma1(g,t)*baseline_info_bonus + sigma1(g,t)*T*((9 - t)/4);
+                 % info_bonus_bandit2 = sigma2(g,t)*baseline_info_bonus + sigma2(g,t)*T*((9 - t)/4);
 
                  info_diff = info_bonus_bandit1 - info_bonus_bandit2;
                 
+
+
                 % total uncertainty is variance of both arms
-                total_uncertainty = (sigma1(t)^2 + sigma2(t)^2)^.5;
+                total_uncertainty(g,t) = (sigma1(g,t)^2 + sigma2(g,t)^2)^.5;
                 
                  % % Exponential descent
-                 % RE = Y + ((1 - Y) * (1 - exp(-z * (t - 5))) / (1 - exp(-4 * z)));
+                 RE = Y + ((1 - Y) * (1 - exp(-z * (t - 5))) / (1 - exp(-4 * z)));
 
                  % Linear descent
-                 RE = Y * ((9 - t)/4);
+                 % RE = Y * ((9 - t)/4);
                 
-                decision_noise = total_uncertainty*baseline_noise*RE;
+                decision_noise = total_uncertainty(g,t)*baseline_noise*RE;
 
 
                 % probability of choosing bandit 1
@@ -113,13 +107,17 @@ function model_output = model_SM_KF_SIGMA_all_choices(params, actions_and_rts, r
             
             % left bandit choice so mu1 updates
             if (actions(g,t) == 1) 
+                % save relative uncertainty of choice
+                relative_uncertainty_of_choice(g,t) = sigma1(g,t) - sigma2(g,t);
+
                 % update sigma and LR
-                temp = 1/(sigma1(t)^2 + sigma_d^2) + 1/(sigma_r^2);
-                sigma1(t+1) = (1/temp)^.5;
-                alpha1(t) = (sigma1(t+1)/(sigma_r))^2; 
+                temp = 1/(sigma1(g,t)^2 + sigma_d^2) + 1/(sigma_r^2);
+                sigma1(g,t+1) = (1/temp)^.5;
+                change_in_uncertainty_for_after_choice(g,t) = sigma1(g,t+1) - sigma1(g,t);
+                alpha1(t) = (sigma1(g,t+1)/(sigma_r))^2; 
                 
-                temp = sigma2(t)^2 + sigma_d^2;
-                sigma2(t+1) = temp^.5; 
+                temp = sigma2(g,t)^2 + sigma_d^2;
+                sigma2(g,t+1) = temp^.5; 
         
                 exp_vals(g,t) = mu1(t);
                 pred_errors(g,t) = (reward_sensitivity*rewards(g,t)) - exp_vals(g,t);
@@ -128,13 +126,16 @@ function model_output = model_SM_KF_SIGMA_all_choices(params, actions_and_rts, r
                 mu1(t+1) = mu1(t) + pred_errors_alpha(g,t);
                 mu2(t+1) = mu2(t); 
             else % right bandit choice so mu2 updates
+                % save relative uncertainty of choice
+                relative_uncertainty_of_choice(g,t) = sigma2(g,t) - sigma1(g,t);
                 % update LR
-                temp = 1/(sigma2(t)^2 + sigma_d^2) + 1/(sigma_r^2);
-                sigma2(t+1) = (1/temp)^.5;
-                alpha2(t) = (sigma2(t+1)/(sigma_r))^2; 
+                temp = 1/(sigma2(g,t)^2 + sigma_d^2) + 1/(sigma_r^2);
+                sigma2(g,t+1) = (1/temp)^.5;
+                change_in_uncertainty_for_after_choice(g,t) = sigma2(g,t+1) - sigma2(g,t);
+                alpha2(t) = (sigma2(g,t+1)/(sigma_r))^2; 
                  
-                temp = sigma1(t)^2 + sigma_d^2;
-                sigma1(t+1) = temp^.5; 
+                temp = sigma1(g,t)^2 + sigma_d^2;
+                sigma1(g,t+1) = temp^.5; 
                 
                 exp_vals(g,t) = mu2(t);
                 pred_errors(g,t) = (reward_sensitivity*rewards(g,t)) - exp_vals(g,t);
@@ -157,7 +158,13 @@ function model_output = model_SM_KF_SIGMA_all_choices(params, actions_and_rts, r
     model_output.pred_errors = pred_errors;
     model_output.pred_errors_alpha = pred_errors_alpha;
     model_output.alpha = alpha;
+    model_output.sigma1 = sigma1;
+    model_output.sigma2 = sigma2;
     model_output.actions = actions;
     model_output.rewards = rewards;
+    model_output.relative_uncertainty_of_choice = relative_uncertainty_of_choice;
+    model_output.total_uncertainty = total_uncertainty;
+    model_output.change_in_uncertainty_for_after_choice = change_in_uncertainty_for_after_choice;
+
 
 end

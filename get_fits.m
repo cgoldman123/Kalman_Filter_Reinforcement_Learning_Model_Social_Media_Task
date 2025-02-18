@@ -46,7 +46,8 @@ if MDP.fit_model
             subject = subj_mapping{i, 1};  
             model_output(i).results.subject = subject{:};
             model_output(i).results.room_type = room_type;
-            model_output(i).results.cb = subj_mapping{i, 3};  
+            model_output(i).results.cb = subj_mapping{i, 3}; 
+            model_output.id = subject{:}; model_output.room_type = room_type; model_output.cb = subj_mapping{i, 3};
         end
         id = subj_mapping{1, 1};
         if MDP.get_rts_and_dont_fit_model
@@ -93,8 +94,8 @@ if MDP.fit_model
                 fits_table.(['prior_' vars{i}]) = MDP.params.(vars{i});
                 fits_table.(['posterior_' vars{i}]) = fits.(vars{i});
             elseif contains(vars{i}, 'simfit') || strcmp(vars{i}, 'model_acc') || strcmp(vars{i}, 'average_action_prob') ||  strcmp(vars{i}, 'F') || ...
-                    strcmp(vars{i},'average_action_prob_H1_1') || strcmp(vars{i},'average_action_prob_H1_2') || strcmp(vars{i},'average_action_prob_H1_3') || ...
-                    strcmp(vars{i},'average_action_prob_H1_4') || strcmp(vars{i},'average_action_prob_H1_5')
+                    strcmp(vars{i},'average_action_prob_H5_1') || strcmp(vars{i},'average_action_prob_H5_2') || strcmp(vars{i},'average_action_prob_H5_3') || ...
+                    strcmp(vars{i},'average_action_prob_H5_4') || strcmp(vars{i},'average_action_prob_H5_5') || strcmp(vars{i},'average_action_prob_H1_1') 
                 fits_table.(vars{i}) = fits.(vars{i});
             else
                 fits_table.(['fixed_' vars{i}]) = fits.(vars{i});
@@ -110,8 +111,17 @@ end
 if MDP.do_model_free
     try
         good_behavioral_file = subj_mapping{1,4};
-        model_free = social_model_free(root,good_behavioral_file,room_type,study);
-    
+        model_free = social_model_free(root,good_behavioral_file,room_type,study,struct());
+    catch E
+        fprintf("Model free didn't work!");
+        disp(E);
+    end
+end
+
+if MDP.do_simulated_model_free
+    try
+        good_behavioral_file = subj_mapping{1,4};
+        simulated_model_free = social_model_free(root,good_behavioral_file,room_type,study,model_output.simfit_DCM.datastruct);
     catch E
         fprintf("Model free didn't work!");
         disp(E);
@@ -132,6 +142,19 @@ if exist('fits_table','var')
             % If the field is not in fits_table, add it to output
             if ~ismember(field_name, fits_fields)
                 output.(field_name) = model_free.(field_name);
+            end
+        end
+    end
+    if exist('simulated_model_free','var')
+        % Get field names of both structs
+        fits_fields = fieldnames(fits_table);
+        simulated_model_free_fields = fieldnames(simulated_model_free);
+        % Loop through each field in model_free
+        for i = 1:length(simulated_model_free_fields)
+            field_name = simulated_model_free_fields{i};
+            % If the field is not in fits_table, add it to output
+            if ~ismember(field_name, fits_fields)
+                output.(['simulated_' field_name]) = simulated_model_free.(field_name);
             end
         end
     end
