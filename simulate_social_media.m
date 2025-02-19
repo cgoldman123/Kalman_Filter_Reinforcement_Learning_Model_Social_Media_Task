@@ -1,4 +1,4 @@
-function simulate_social_media(params, gen_mean_difference, horizon, truncate_h5)
+function simulate_social_media(model, params, gen_mean_difference, horizon, truncate_h5)
     % Load the MDP file to get bandit schedule
     load('./social_media_mdp.mat');
 
@@ -6,7 +6,7 @@ function simulate_social_media(params, gen_mean_difference, horizon, truncate_h5
     if truncate_h5
         horizon = 5;
         % run model unnecessarily to locate games of interest within H5
-        model_output = model_SM_KF_all_choices(params, mdp.actions, mdp.rewards, mdp, 1);
+        model_output = model(params, mdp.actions, mdp.rewards, mdp, 1);
         games_of_interest = locate_games_of_interest(mdp, model_output, gen_mean_difference, horizon);
         % run the model again treating every game like H1
         mdp.C1 = ones(1,40);
@@ -15,7 +15,8 @@ function simulate_social_media(params, gen_mean_difference, horizon, truncate_h5
         model_output = model_SM_KF_all_choices(params, mdp.actions, mdp.rewards, mdp, 1);
 
     else
-        model_output = model_SM_KF_all_choices(params, mdp.actions, mdp.rewards, mdp, 1);
+        actions_and_rts.actions = mdp.actions;
+        model_output = model(params, actions_and_rts, mdp.rewards, mdp, 1);
         games_of_interest = locate_games_of_interest(mdp, model_output, gen_mean_difference, horizon);
     end
 

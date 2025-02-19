@@ -2,8 +2,8 @@ function [fits_table] = Social_wrapper(varargin)
 
 %% Clear workspace
 clearvars -except varargin
-SIM = 0; % Simulate the model
-FIT = 1; % Fit the model
+SIM = 1; % Simulate the model
+FIT = 0; % Fit the model
 MDP.get_rts_and_dont_fit_model = 0; % Get the rts and dont fit the model
 MDP.do_model_free = 1; % do model-free analyses
 MDP.fit_model = 1; % fit the model
@@ -214,7 +214,7 @@ if SIM
     horizon = 5;
     % if truncate_h5 is true, use the H5 bandit schedule but truncate so that all games are H1
     truncate_h5 = 0;
-    simulate_social_media(MDP.params, gen_mean_difference, horizon, truncate_h5);
+    simulate_social_media(MDP.model, MDP.params, gen_mean_difference, horizon, truncate_h5);
 end
 if FIT
     output_table = get_fits(root, experiment, room, results_dir,MDP, id);

@@ -98,11 +98,11 @@ elif model_class=="KF_SIGMA":
         {'field': 'sigma_d,baseline_noise,side_bias,sigma_r,directed_exp,baseline_info_bonus'}, 
         {'field': 'sigma_d,baseline_noise,side_bias,sigma_r,baseline_info_bonus,random_exp'}, 
         {'field': 'sigma_d,baseline_noise,side_bias,sigma_r,baseline_info_bonus'}, 
-        {'field': 'sigma_d,baseline_noise,side_bias,sigma_r,directed_exp,random_exp'}, # winner for like and dislike
+        {'field': 'sigma_d,baseline_noise,side_bias,sigma_r,directed_exp,random_exp'}, # winner for exponential like and dislike, and linear dislike
 
         {'field': 'baseline_noise,side_bias,sigma_r,directed_exp,baseline_info_bonus,random_exp'},
         {'field': 'sigma_d,baseline_noise,side_bias,directed_exp,baseline_info_bonus,random_exp'},
-        {'field': 'baseline_noise,side_bias,directed_exp,baseline_info_bonus,random_exp'},
+        {'field': 'baseline_noise,side_bias,directed_exp,baseline_info_bonus,random_exp'}, # winner for linear like
     ]
 
 
@@ -138,6 +138,7 @@ for room in room_type:
             drift_map = drift_mapping if drift_mapping else "none"
             bias_map = bias_mapping if bias_mapping else "none"
             thresh_map = thresh_mapping if thresh_mapping else "none"
+            #print(f"sbatch -J {jobname} -o {stdout_name} -e {stderr_name} {ssub_path} {subject} {combined_results_dir} {room} {experiment} {field} {model_class} {drift_map} {bias_map} {thresh_map}")
             os.system(f"sbatch -J {jobname} -o {stdout_name} -e {stderr_name} {ssub_path} {subject} {combined_results_dir} {room} {experiment} {field} {model_class} {drift_map} {bias_map} {thresh_map}")
 
             print(f"SUBMITTED JOB [{jobname}]")
@@ -146,4 +147,4 @@ for room in room_type:
             #     break
 
 
-# python3 /media/labs/rsmith/lab-members/cgoldman/Wellbeing/social_media/VB_scripts/runall_social.py /media/labs/rsmith/lab-members/cgoldman/Wellbeing/social_media/output/SM_fits_KF_SIGMA_exponential_model "prolific"
+# python3 /media/labs/rsmith/lab-members/cgoldman/Wellbeing/social_media/VB_scripts/runall_social.py /media/labs/rsmith/lab-members/cgoldman/Wellbeing/social_media/output/SM_fits_KF_SIGMA_model "prolific"

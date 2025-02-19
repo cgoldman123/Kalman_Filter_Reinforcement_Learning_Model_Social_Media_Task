@@ -98,10 +98,10 @@ function model_output = model_SM_KF_SIGMA_all_choices(params, actions_and_rts, r
                         actions(g,t) = 2;
                         rewards(g,t) = mdp.bandit2_schedule(g,t);
                     end
-                else
-                    action_probs(g,t) = mod(actions(g,t),2)*p + (1-mod(actions(g,t),2))*(1-p);
-                    model_acc(g,t) =  action_probs(g,t) > .5;     
                 end
+                action_probs(g,t) = mod(actions(g,t),2)*p + (1-mod(actions(g,t),2))*(1-p);
+                model_acc(g,t) =  action_probs(g,t) > .5;     
+                
             end
                 
             
@@ -150,10 +150,9 @@ function model_output = model_SM_KF_SIGMA_all_choices(params, actions_and_rts, r
     end
 
     
-    if ~sim
-        model_output.action_probs = action_probs;
-        model_output.model_acc = model_acc;
-    end
+    model_output.action_probs = action_probs;
+    model_output.model_acc = model_acc;
+    
     model_output.exp_vals = exp_vals;
     model_output.pred_errors = pred_errors;
     model_output.pred_errors_alpha = pred_errors_alpha;
