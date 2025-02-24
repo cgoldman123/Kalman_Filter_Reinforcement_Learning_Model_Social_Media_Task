@@ -94,10 +94,10 @@ for i = 1:length(DCM.field)
         elseif any(strcmp(field,{'baseline_info_bonus'})) % bound between 0 and 40
             pE.(field) = DCM.params.(field); 
             pC{i,i}    = 16;                
-        elseif any(strcmp(field,{'directed_exp'})) % bound between 0 and 40
+        elseif any(strcmp(field,{'directed_exp'})) 
             pE.(field) = DCM.params.(field); 
             pC{i,i}    = 16;                
-        elseif any(strcmp(field,{'baseline_noise'})) % bound between 0 and 40
+        elseif any(strcmp(field,{'baseline_noise'})) 
             pE.(field) = log(DCM.params.(field));               % in log-space (to keep positive)
             pC{i,i}    = 16;                
         elseif any(strcmp(field,{'random_exp'})) % bound between 0 and 40

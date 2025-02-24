@@ -120,7 +120,7 @@ end
 % parameters specific to one of the models
 if ismember(model, {'KF_UCB', 'KF_UCB_DDM', 'KF_SIGMA_DDM', 'KF_SIGMA'})
     if any(strcmp('sigma_d', MDP.field))
-        MDP.params.sigma_d = 8;
+        MDP.params.sigma_d = 6;
     else
         MDP.params.sigma_d = 0;
     end
@@ -209,7 +209,7 @@ disp(MDP.params)
 
 if SIM
     % choose generative mean difference of 2, 4, 8, 12, 24
-    gen_mean_difference = 8; %
+    gen_mean_difference = 4; %
     % choose horizon of 1 or 5
     horizon = 5;
     % if truncate_h5 is true, use the H5 bandit schedule but truncate so that all games are H1
