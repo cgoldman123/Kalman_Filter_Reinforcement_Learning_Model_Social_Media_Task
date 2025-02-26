@@ -3,7 +3,7 @@ from datetime import datetime
 
 result_stem = sys.argv[1]
 experiment = sys.argv[2]
-model_class = "KF_SIGMA" # indicate if 'KF_UCB', 'RL', or 'KF_UCB_DDM' model
+model_class = "KF_SIGMA_DDM" # indicate if 'KF_UCB', 'RL', or 'KF_UCB_DDM' model
 
 current_datetime = datetime.now().strftime("%m-%d-%Y_%H-%M-%S")
 result_stem = f"{result_stem}_{current_datetime}/"
@@ -80,7 +80,8 @@ elif model_class=="KF_UCB_DDM":
 
 elif model_class=="KF_SIGMA_DDM":
     models = [
-        {'field': 'sigma_d,baseline_noise,side_bias,sigma_r,info_bonus,baseline_info_bonus,drift_reward_diff_mod,decision_thresh_baseline,random_exp', 'drift_mapping': 'reward_diff,decision_noise','bias_mapping': 'info_diff,side_bias', 'thresh_mapping': ''},
+        {'field': 'sigma_d,baseline_noise,side_bias,sigma_r,directed_exp,baseline_info_bonus,drift_reward_diff_mod,decision_thresh_baseline,random_exp', 'drift_mapping': 'reward_diff,decision_noise','bias_mapping': 'info_diff,side_bias', 'thresh_mapping': ''},
+        {'field': 'sigma_d,baseline_noise,side_bias,sigma_r,directed_exp,baseline_info_bonus,drift_reward_diff_mod,random_exp', 'drift_mapping': 'reward_diff','bias_mapping': 'info_diff,side_bias', 'thresh_mapping': 'decision_noise'},
     ]
 
 elif model_class=="KF_SIGMA":
@@ -114,7 +115,6 @@ for room in room_type:
     results = result_stem + room + "/"
 
     for index, model in enumerate(models, start=1):
-        # i = 0
         combined_results_dir = os.path.join(results, f"model{index}/")
         field = model['field']
         # return empty string if not found
@@ -142,9 +142,7 @@ for room in room_type:
             os.system(f"sbatch -J {jobname} -o {stdout_name} -e {stderr_name} {ssub_path} {subject} {combined_results_dir} {room} {experiment} {field} {model_class} {drift_map} {bias_map} {thresh_map}")
 
             print(f"SUBMITTED JOB [{jobname}]")
-            # i = i+1
-            # if i ==2:
-            #     break
+
 
 
 # python3 /media/labs/rsmith/lab-members/cgoldman/Wellbeing/social_media/VB_scripts/runall_social.py /media/labs/rsmith/lab-members/cgoldman/Wellbeing/social_media/output/SM_fits_KF_SIGMA_model "prolific"

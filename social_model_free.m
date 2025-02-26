@@ -32,6 +32,12 @@ function ff = social_model_free(root,file, room_type, study,simulated_data)
     ses = 999; % filler because session is no longer relevant
     data = parse_table(subj_data, file, ses, 80, room_type);
         
+    % Calculate the difference between left and right options
+    mean_diff_values = arrayfun(@(x) x.mean(1) - x.mean(2), data);
+    for i = 1:numel(data)
+        data(i).mean_diff = mean_diff_values(i);
+    end
+
 
     % If passing in simulated data, replace participants' actual behavior
     % with simulated behavior in "data"
@@ -99,13 +105,37 @@ function ff = social_model_free(root,file, room_type, study,simulated_data)
     ff.h5_freec5_acc = sum(h5_meancor(:, 9))  / numel(h5);
     
     ff.h1_freec1_acc = sum(h1_meancor(:, 5)) / numel(h1);
-    % end Figure1C ------------------------------
+   
+
+    % Get the probability of choosing the left side for each generative
+    % mean difference (left - right)
+    mean_diffs = {'-24', '-12', '-08', '-04', '-02', '02', '04', '08', '12', '24'};
+    for mean_diff = mean_diffs
+        mean_diff_double = str2double(mean_diff);
+        mean_diff_char = mean_diff{:};
+        if mean_diff_double > 0
+            more_or_less = 'more';
+        else
+            more_or_less = 'less';
+        end
+
+        % Do this for H1
+        filtered_dat = h1_13([h1_13.mean_diff] == mean_diff_double);  
+        ff.(['h1_left_' mean_diff_char(end-1:end) '_' more_or_less '_prob']) = ((filtered_dat(1).key(end) == 1) + (filtered_dat(2).key(end) == 1))/2;
     
-    % for Figure1D ------------------------------
-    % ???
-    % end Figure1D ------------------------------
+        % Do this for H5
+        filtered_dat = h5_13([h5_13.mean_diff] == mean_diff_double);  
+        ff.(['h5_left_' mean_diff_char(end-1:end) '_' more_or_less '_choice_1_prob']) = ((filtered_dat(1).key(5) == 1) + (filtered_dat(2).key(5) == 1))/2;
+        ff.(['h5_left_' mean_diff_char(end-1:end) '_' more_or_less '_choice_2_prob']) = ((filtered_dat(1).key(6) == 1) + (filtered_dat(2).key(6) == 1))/2;
+        ff.(['h5_left_' mean_diff_char(end-1:end) '_' more_or_less '_choice_3_prob']) = ((filtered_dat(1).key(7) == 1) + (filtered_dat(2).key(7) == 1))/2;
+        ff.(['h5_left_' mean_diff_char(end-1:end) '_' more_or_less '_choice_4_prob']) = ((filtered_dat(1).key(8) == 1) + (filtered_dat(2).key(8) == 1))/2;
+        ff.(['h5_left_' mean_diff_char(end-1:end) '_' more_or_less '_choice_5_prob']) = ((filtered_dat(1).key(9) == 1) + (filtered_dat(2).key(9) == 1))/2;
     
-    % for Figure2A ------------------------------
+    end
+
+
+
+
     % In H5 games, get the probability of choosing the high info side when
     % it's generative mean is more/less than the low info side
     % For first free choice
@@ -184,6 +214,10 @@ function ff = social_model_free(root,file, room_type, study,simulated_data)
                 else
                     gen_mean_char = sprintf('%d_more', gen_mean_diff);
                 end
+                % add leading 0 if necessary
+                if length(gen_mean_char)==6; gen_mean_char = ['0' gen_mean_char];end;
+
+
                 % add 0 or 1 to the number of times they have chosen the
                 % high info side with a given generative mean
                 count_field_name = ['h5_more_info_' gen_mean_char '_choice_' char(string(choice_num - 4)) '_count'];
@@ -249,7 +283,7 @@ function ff = social_model_free(root,file, room_type, study,simulated_data)
     end
 
     % Add NaN for cols that don't exist
-    gen_mean_diffs = {'24','12','8','4','2'};
+    gen_mean_diffs = {'24','12','08','04','02'};
     choice_nums = {'1','2','3','4','5'};
     for mean_diff=gen_mean_diffs
         for choice_num=choice_nums
@@ -399,26 +433,10 @@ function p = pminfo(hor, amt)
     end
 end
 
-function p = prob_high_info_for_all_trials_within_game(hor, amt, choice_number)
-    
-    % get relevant games
-    relev = hor([hor.info_diff] == amt);
-    if numel(relev) > 0
-     %   minfo = [relev.more_info]';
-    %     disp([relev.more_info]);
-    % determine which choice is high info
-        keys = vertcat(relev.key);
-
-        p = sum(keys(:, 5) == minfo) / numel(relev);
-    else
-        p = NaN;
-    end
-end
 
 
-
-
-
+% I think this function is wrong because info_diff is the mean difference
+% for high - low info options. I want the mean diff for left - right
 function p = pright(hor, amt)
     relev = hor([hor.info_diff] == amt);
     if numel(relev) > 0    

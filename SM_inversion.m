@@ -82,7 +82,7 @@ for i = 1:length(DCM.field)
         elseif any(strcmp(field,{'nondecision_time'})) % bound between .1 and .3
             pE.(field) =  -log((0.3 - 0.1) ./ (DCM.params.(field) - 0.1) - 1);             
             pC{i,i}    = prior_variance;      
-        elseif any(strcmp(field,{'decision_thresh_baseline'})) % bound greater than .1 and less than 100
+        elseif any(strcmp(field,{'decision_thresh_baseline'})) % bound greater than .5 and less than 1000
             pE.(field) =  -log((1000 - .5) ./ (DCM.params.(field) - .5) - 1);             
             pC{i,i}    = prior_variance;      
         elseif any(strcmp(field,{'sigma_d'})) % bound between 0 and 40

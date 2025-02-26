@@ -2,12 +2,12 @@ function [fits_table] = Social_wrapper(varargin)
 
 %% Clear workspace
 clearvars -except varargin
-SIM = 1; % Simulate the model
-FIT = 0; % Fit the model
+SIM = 0; % Simulate the model
+FIT = 1; % Fit the model
 MDP.get_rts_and_dont_fit_model = 0; % Get the rts and dont fit the model
 MDP.do_model_free = 1; % do model-free analyses
-MDP.fit_model = 1; % fit the model
-MDP.do_simulated_model_free = 1;
+MDP.fit_model = 0; % fit the model
+MDP.do_simulated_model_free = 0;
 
 rng(23);
 
@@ -18,7 +18,7 @@ rng(23);
 
 dbstop if error
 if ispc
-    model = "KF_SIGMA"; % indicate if 'KF_UCB', 'RL', 'KF_UCB_DDM', 'KF_SIGMA_DDM', 'KF_SIGMA'
+    model = "KF_SIGMA_DDM"; % indicate if 'KF_UCB', 'RL', 'KF_UCB_DDM', 'KF_SIGMA_DDM', 'KF_SIGMA'
     root = 'L:/';
     experiment = 'prolific'; % indicate local or prolific
     results_dir = sprintf([root 'rsmith/lab-members/cgoldman/Wellbeing/social_media/output/test/']);
@@ -26,19 +26,19 @@ if ispc
         id = varargin{1};
         room = varargin{2};
     else
-        id = '666878a27888fdd27f529c64'; % 666878a27888fdd27f529c64 60caf58c38ce3e0f5a51f62b 668d6d380fb72b01a09dee54 659ab1b4640b25ce093058a2 5590a34cfdf99b729d4f69dc 53b98f20fdf99b472f4700e4
+        id = '562c2ff0733ea000111630df'; % 666878a27888fdd27f529c64 60caf58c38ce3e0f5a51f62b 668d6d380fb72b01a09dee54 659ab1b4640b25ce093058a2 5590a34cfdf99b729d4f69dc 53b98f20fdf99b472f4700e4
         room = 'Like';
     end
 
     
-    MDP.field = {'sigma_d','baseline_noise','side_bias','sigma_r','directed_exp','baseline_info_bonus','random_exp'};
+    MDP.field = {'sigma_d','baseline_noise','side_bias','sigma_r','directed_exp','baseline_info_bonus','random_exp','drift_reward_diff_mod','decision_thresh_baseline'};
     if ismember(model, {'KF_UCB_DDM', 'KF_SIGMA_DDM'})
         % possible mappings are action_prob, reward_diff, UCB,
         % side_bias, decsision_noise
-        MDP.settings.drift_mapping = {'reward_diff,decision_noise'};
+        MDP.settings.drift_mapping = {'reward_diff','decision_noise'};
         MDP.settings.bias_mapping = {'info_diff,side_bias'};
-        MDP.settings.thresh_mapping = {};
-        MDP.settings.max_rt = 7;
+        MDP.settings.thresh_mapping = {''};
+        MDP.settings.max_rt = 4.17;
     else
         MDP.settings = '';
     end
@@ -70,7 +70,7 @@ elseif isunix
         fprintf('Drift mappings: %s\n', strjoin(MDP.settings.drift_mapping));
         fprintf('Bias mappings: %s\n', strjoin(MDP.settings.bias_mapping));
         fprintf('Threshold mappings: %s\n', strjoin(MDP.settings.thresh_mapping));
-        MDP.settings.max_rt = 7;
+        MDP.settings.max_rt = 4.17;
     else
         MDP.settings = '';
     end

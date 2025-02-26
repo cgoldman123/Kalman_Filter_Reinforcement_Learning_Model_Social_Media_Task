@@ -30,7 +30,7 @@ function model_output = model_SM_KF_SIGMA_all_choices(params, actions_and_rts, r
     sigma2 = [initial_sigma * ones(G,1), zeros(G,8)];
     total_uncertainty = nan(G,9);
     relative_uncertainty_of_choice = nan(G,9);
-    change_in_uncertainty_for_after_choice = nan(G,9);
+    change_in_uncertainty_after_choice = nan(G,9);
 
 
     
@@ -113,7 +113,7 @@ function model_output = model_SM_KF_SIGMA_all_choices(params, actions_and_rts, r
                 % update sigma and LR
                 temp = 1/(sigma1(g,t)^2 + sigma_d^2) + 1/(sigma_r^2);
                 sigma1(g,t+1) = (1/temp)^.5;
-                change_in_uncertainty_for_after_choice(g,t) = sigma1(g,t+1) - sigma1(g,t);
+                change_in_uncertainty_after_choice(g,t) = sigma1(g,t+1) - sigma1(g,t);
                 alpha1(t) = (sigma1(g,t+1)/(sigma_r))^2; 
                 
                 temp = sigma2(g,t)^2 + sigma_d^2;
@@ -131,7 +131,7 @@ function model_output = model_SM_KF_SIGMA_all_choices(params, actions_and_rts, r
                 % update LR
                 temp = 1/(sigma2(g,t)^2 + sigma_d^2) + 1/(sigma_r^2);
                 sigma2(g,t+1) = (1/temp)^.5;
-                change_in_uncertainty_for_after_choice(g,t) = sigma2(g,t+1) - sigma2(g,t);
+                change_in_uncertainty_after_choice(g,t) = sigma2(g,t+1) - sigma2(g,t);
                 alpha2(t) = (sigma2(g,t+1)/(sigma_r))^2; 
                  
                 temp = sigma1(g,t)^2 + sigma_d^2;
@@ -163,7 +163,7 @@ function model_output = model_SM_KF_SIGMA_all_choices(params, actions_and_rts, r
     model_output.rewards = rewards;
     model_output.relative_uncertainty_of_choice = relative_uncertainty_of_choice;
     model_output.total_uncertainty = total_uncertainty;
-    model_output.change_in_uncertainty_for_after_choice = change_in_uncertainty_for_after_choice;
+    model_output.change_in_uncertainty_after_choice = change_in_uncertainty_after_choice;
 
 
 end
