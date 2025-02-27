@@ -1,22 +1,32 @@
-function simulate_social_media(model, params, gen_mean_difference, horizon, truncate_h5)
-    % Load the MDP file to get bandit schedule
-    load('./social_media_mdp.mat');
+function plot_simulated_behavior(MDP, gen_mean_difference, horizon, truncate_h5)
+    % File to plot social media simulated data
+    % Load the mdp variable to get bandit schedule
 
+    load('./social_media_mdp.mat'); 
+    mdp_fieldnames = fieldnames(mdp);
+    for (i=1:length(mdp_fieldnames))
+        MDP.(mdp_fieldnames{i}) = mdp.(mdp_fieldnames{i});
+    end
+    params = MDP.params;
+    model = MDP.model;
     % Locate games of interest based on gen_mean_difference and horizon
     if truncate_h5
         horizon = 5;
         % run model unnecessarily to locate games of interest within H5
-        model_output = model(params, mdp.actions, mdp.rewards, mdp, 1);
+        actions_and_rts.actions = mdp.actions;
+        actions_and_rts.RTs = nan(40,9);
+        model_output = model(params, actions_and_rts, mdp.rewards, MDP, 1);
         games_of_interest = locate_games_of_interest(mdp, model_output, gen_mean_difference, horizon);
         % run the model again treating every game like H1
         mdp.C1 = ones(1,40);
-        mdp.actions(:, 6:9) = NaN;
+        actions_and_rts.actions(:, 6:9) = NaN;
         mdp.rewards(:, 6:9) = NaN;
-        model_output = model_SM_KF_all_choices(params, mdp.actions, mdp.rewards, mdp, 1);
+        model_output = model(params, actions_and_rts, mdp.rewards, MDP, 1);
 
     else
         actions_and_rts.actions = mdp.actions;
-        model_output = model(params, actions_and_rts, mdp.rewards, mdp, 1);
+        actions_and_rts.RTs = nan(40,9);
+        model_output = model(params, actions_and_rts, mdp.rewards, MDP, 1);
         games_of_interest = locate_games_of_interest(mdp, model_output, gen_mean_difference, horizon);
     end
 

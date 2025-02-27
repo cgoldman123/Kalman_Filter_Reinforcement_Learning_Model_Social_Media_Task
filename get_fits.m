@@ -123,7 +123,7 @@ if MDP.do_simulated_model_free
         good_behavioral_file = subj_mapping{1,4};
         simulated_model_free = social_model_free(root,good_behavioral_file,room_type,study,model_output.simfit_DCM.datastruct);
     catch E
-        fprintf("Model free didn't work!");
+        fprintf("Simulate model free didn't work!");
         disp(E);
     end
 end
@@ -173,7 +173,7 @@ end
 
 
 outpath_fits = sprintf([results_dir '%s_fits_%s_%s.csv'], output.id{:}, room_type, timestamp);
-writetable(struct2table(output), outpath_fits);
+writetable(struct2table(output,'AsArray',true), outpath_fits);
 varargout{1} = output;
 
 end

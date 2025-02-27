@@ -49,7 +49,7 @@ ALL = false;
 
 % prior expectations and covariance
 %--------------------------------------------------------------------------
-prior_variance = 1;
+prior_variance = 1/4;
 
 global params_old;
 params_old = [];
@@ -87,22 +87,22 @@ for i = 1:length(DCM.field)
             pC{i,i}    = prior_variance;      
         elseif any(strcmp(field,{'sigma_d'})) % bound between 0 and 40
             pE.(field) =  -log((40) ./ (DCM.params.(field)) - 1);     
-            pC{i,i}    = 1;                
+            pC{i,i}    = 1/4;                
         elseif any(strcmp(field,{'sigma_r'})) % bound between 0 and 40
             pE.(field) =  -log((40) ./ (DCM.params.(field)) - 1);     
-            pC{i,i}    = 1;                
+            pC{i,i}    = 1/4;                
         elseif any(strcmp(field,{'baseline_info_bonus'})) % bound between 0 and 40
             pE.(field) = DCM.params.(field); 
-            pC{i,i}    = 16;                
+            pC{i,i}    = 1/4;                
         elseif any(strcmp(field,{'directed_exp'})) 
             pE.(field) = DCM.params.(field); 
-            pC{i,i}    = 16;                
+            pC{i,i}    = 1/4;                
         elseif any(strcmp(field,{'baseline_noise'})) 
             pE.(field) = log(DCM.params.(field));               % in log-space (to keep positive)
-            pC{i,i}    = 16;                
+            pC{i,i}    = 1/4;                
         elseif any(strcmp(field,{'random_exp'})) % bound between 0 and 40
             pE.(field) = log(DCM.params.(field));               % in log-space (to keep positive)
-            pC{i,i}    = 4;                 
+            pC{i,i}    = 1/4;                 
         else   
             disp(field);
             error("Param not properly transformed");
@@ -227,6 +227,6 @@ function L = spm_mdp_L(P,M,U,Y)
 
 
 
-% fprintf('LL: %f \n',L)
+fprintf('LL: %f \n',L)
 
 

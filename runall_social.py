@@ -80,8 +80,8 @@ elif model_class=="KF_UCB_DDM":
 
 elif model_class=="KF_SIGMA_DDM":
     models = [
-        {'field': 'sigma_d,baseline_noise,side_bias,sigma_r,directed_exp,baseline_info_bonus,drift_reward_diff_mod,decision_thresh_baseline,random_exp', 'drift_mapping': 'reward_diff,decision_noise','bias_mapping': 'info_diff,side_bias', 'thresh_mapping': ''},
-        {'field': 'sigma_d,baseline_noise,side_bias,sigma_r,directed_exp,baseline_info_bonus,drift_reward_diff_mod,random_exp', 'drift_mapping': 'reward_diff','bias_mapping': 'info_diff,side_bias', 'thresh_mapping': 'decision_noise'},
+        {'field': 'sigma_d,baseline_noise,side_bias,sigma_r,directed_exp,drift_reward_diff_mod,decision_thresh_baseline,random_exp', 'drift_mapping': 'reward_diff,decision_noise','bias_mapping': 'info_diff,side_bias', 'thresh_mapping': ''},
+        {'field': 'sigma_d,baseline_noise,side_bias,sigma_r,directed_exp,drift_reward_diff_mod,random_exp', 'drift_mapping': 'reward_diff','bias_mapping': 'info_diff,side_bias', 'thresh_mapping': 'decision_noise'},
     ]
 
 elif model_class=="KF_SIGMA":
@@ -142,7 +142,7 @@ for room in room_type:
             os.system(f"sbatch -J {jobname} -o {stdout_name} -e {stderr_name} {ssub_path} {subject} {combined_results_dir} {room} {experiment} {field} {model_class} {drift_map} {bias_map} {thresh_map}")
 
             print(f"SUBMITTED JOB [{jobname}]")
+        
 
 
-
-# python3 /media/labs/rsmith/lab-members/cgoldman/Wellbeing/social_media/VB_scripts/runall_social.py /media/labs/rsmith/lab-members/cgoldman/Wellbeing/social_media/output/SM_fits_KF_SIGMA_model "prolific"
+# python3 /media/labs/rsmith/lab-members/cgoldman/Wellbeing/social_media/VB_scripts/runall_social.py /media/labs/rsmith/lab-members/cgoldman/Wellbeing/social_media/output/SM_fits_KF_SIGMA_DDM_model "prolific"
