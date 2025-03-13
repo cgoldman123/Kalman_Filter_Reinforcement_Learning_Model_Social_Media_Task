@@ -25,7 +25,7 @@ function [fits_table] = Social_wrapper(varargin)
     
     dbstop if error
     if ispc
-        model = "KF_SIGMA_DDM"; % indicate if 'KF_UCB', 'RL', 'KF_UCB_DDM', 'KF_SIGMA_DDM', 'KF_SIGMA'
+        model = "KF_SIGMA"; % indicate if 'KF_UCB', 'RL', 'KF_UCB_DDM', 'KF_SIGMA_DDM', 'KF_SIGMA'
         root = 'L:/';
         experiment = 'prolific'; % indicate local or prolific
         results_dir = sprintf([root 'rsmith/lab-members/cgoldman/Wellbeing/social_media/output/test/']);
@@ -33,12 +33,12 @@ function [fits_table] = Social_wrapper(varargin)
             id = varargin{1};
             room = varargin{2};
         else
-            id = '5dad4c34b3446a0015e3de93'; % 666878a27888fdd27f529c64 60caf58c38ce3e0f5a51f62b 668d6d380fb72b01a09dee54 659ab1b4640b25ce093058a2 5590a34cfdf99b729d4f69dc 53b98f20fdf99b472f4700e4
+            id = '60f8cc430a3d06de34a78773'; % 666878a27888fdd27f529c64 60caf58c38ce3e0f5a51f62b 668d6d380fb72b01a09dee54 659ab1b4640b25ce093058a2 5590a34cfdf99b729d4f69dc 53b98f20fdf99b472f4700e4
             room = 'Like';
         end
     
         
-        MDP.field = {'sigma_d','baseline_noise','side_bias','sigma_r','directed_exp','random_exp','drift_reward_diff_mod','decision_thresh_baseline'};
+        MDP.field = {'sigma_d','baseline_noise','side_bias','sigma_r','directed_exp','random_exp','baseline_info_bonus'};
         if ismember(model, {'KF_UCB_DDM', 'KF_SIGMA_DDM'})
             % possible mappings are action_prob, reward_diff, UCB,
             % side_bias, decsision_noise
