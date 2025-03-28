@@ -38,10 +38,9 @@ function [fits_table] = Social_wrapper(varargin)
         end
     
         MDP.field = {'baseline_noise','side_bias','directed_exp','baseline_info_bonus','random_exp','sigma_d', 'sigma_r'};
-        evolution_candidates = {'sigma_d', 'sigma_r'};
-
-        MDP.evolution_params = MDP.field(ismember(MDP.field, evolution_candidates));
-        MDP.observation_params = MDP.field(~ismember(MDP.field, evolution_candidates));
+        % evolution_candidates = {'sigma_d', 'sigma_r'};
+        % MDP.evolution_params = MDP.field(ismember(MDP.field, evolution_candidates));
+        MDP.observation_params = MDP.field; % When there is no latent state learning, all params are observation params
         
         if ismember(model, {'KF_UCB_DDM', 'KF_SIGMA_DDM'})
             % possible mappings are action_prob, reward_diff, UCB,

@@ -145,4 +145,4 @@ for room in room_type:
         
 
 
-# python3 /media/labs/rsmith/lab-members/cgoldman/Wellbeing/social_media/scripts/VBA_scripts/runall_social.py /media/labs/rsmith/lab-members/cgoldman/Wellbeing/social_media/output/SM_fits_VBA_KF_SIGMA_model "prolific"
+# python3 /media/labs/rsmith/lab-members/cgoldman/Wellbeing/social_media/scripts/VBA_scripts/runall_social.py /media/labs/rsmith/lab-members/cgoldman/Wellbeing/social_media/output/SM_fits_VBA_KF_SIGMA_model_no_latent_learning "prolific"

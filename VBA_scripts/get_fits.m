@@ -41,7 +41,8 @@ if MDP.fit_model
     
         %% Perform model fit
         % Reads in the above 'outpath_beh' file to fit
-        [fits, model_output] = fit_extended_model(outpath_beh, results_dir, MDP);
+        %[fits, model_output] = fit_extended_model(outpath_beh, results_dir, MDP);
+        [fits, model_output] = fit_extended_model_no_latent_state_learning(outpath_beh, results_dir, MDP);
         for i = 1:numel(model_output)
             subject = subj_mapping{i, 1};  
             model_output(i).results.subject = subject{:};
