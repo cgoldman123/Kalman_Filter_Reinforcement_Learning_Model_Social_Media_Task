@@ -1,5 +1,17 @@
 function  [fx] = f_KF_SIGMA4 (x, P, u, in)
 % Kalman filter learning rule for the Horizon Task
+    % Input variable u
+    % row 1: actions
+    % row 2: rewards
+    % row 3: timestep within a game (1 to 9)
+    % row 4: horizon (1 or 5)
+
+    % State variable x
+    % row 1: left bandit mean
+    % row 2: right bandit mean
+    % row 3: left bandit sigma
+    % row 4: right bandit sigma
+
 % initialize output variable
 fx = nan(length(x),1);
 

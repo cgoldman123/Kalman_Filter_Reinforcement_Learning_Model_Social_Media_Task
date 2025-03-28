@@ -37,7 +37,7 @@ function [fits_table] = Social_wrapper(varargin)
             room = 'Like';
         end
     
-        MDP.field = {'baseline_noise','side_bias','directed_exp','baseline_info_bonus','random_exp'};
+        MDP.field = {'baseline_noise','side_bias','directed_exp','baseline_info_bonus','random_exp','sigma_d', 'sigma_r'};
         evolution_candidates = {'sigma_d', 'sigma_r'};
 
         MDP.evolution_params = MDP.field(ismember(MDP.field, evolution_candidates));

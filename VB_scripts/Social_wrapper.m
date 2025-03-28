@@ -38,7 +38,7 @@ function [fits_table] = Social_wrapper(varargin)
         end
     
         
-        MDP.field = {'sigma_d','baseline_noise','side_bias','sigma_r','directed_exp','random_exp','baseline_info_bonus'};
+        MDP.field = {'sigma_d','sigma_r','baseline_noise','side_bias','directed_exp','baseline_info_bonus','random_exp'};
         if ismember(model, {'KF_UCB_DDM', 'KF_SIGMA_DDM'})
             % possible mappings are action_prob, reward_diff, UCB,
             % side_bias, decsision_noise
