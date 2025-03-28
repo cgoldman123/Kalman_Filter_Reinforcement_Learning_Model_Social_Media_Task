@@ -133,20 +133,26 @@ function [fit_info, model_output] = fit_extended_model(formatted_file, result_di
 
     [posterior, out] = VBA_NLStateSpaceModel(y, u, f_fname, g_fname, dim, options);
 
-    phi_means_struct = cell2struct(num2cell(posterior.muPhi), MDP.observation_params);
-    posterior_means_phi = transform_params_SM("untransform", phi_means_struct,MDP.observation_params); 
-
-    theta_means_struct = cell2struct(num2cell(posterior.muTheta), MDP.evolution_params);
-    posterior_means_theta = transform_params_SM("untransform", theta_means_struct,MDP.evolution_params); 
 
     fit_info = MDP.params;
-    phi_fields = fieldnames(posterior_means_phi);
-    for i = 1:length(phi_fields)
-        fit_info.(phi_fields{i}) = posterior_means_phi.(phi_fields{i});
+
+    if ~isempty(MDP.observation_params)
+        phi_means_struct = cell2struct(num2cell(posterior.muPhi), MDP.observation_params);
+        posterior_means_phi = transform_params_SM("untransform", phi_means_struct,MDP.observation_params); 
+        phi_fields = fieldnames(posterior_means_phi);
+        for i = 1:length(phi_fields)
+            fit_info.(phi_fields{i}) = posterior_means_phi.(phi_fields{i});
+        end
     end
-    theta_fields = fieldnames(posterior_means_theta);
-    for i = 1:length(theta_fields)
-        fit_info.(theta_fields{i}) = posterior_means_theta.(theta_fields{i});
+
+      
+    if ~isempty(MDP.evolution_params)
+        theta_means_struct = cell2struct(num2cell(posterior.muTheta), MDP.evolution_params);
+        posterior_means_theta = transform_params_SM("untransform", theta_means_struct,MDP.evolution_params); 
+        theta_fields = fieldnames(posterior_means_theta);
+        for i = 1:length(theta_fields)
+            fit_info.(theta_fields{i}) = posterior_means_theta.(theta_fields{i});
+        end
     end
     
     actions_and_rts.actions = in.actions;
@@ -155,6 +161,7 @@ function [fit_info, model_output] = fit_extended_model(formatted_file, result_di
     
     model_output = MDP.model(fit_info,actions_and_rts, rewards,in, 0);    
     model_output.out = out;
+
     fit_info.average_action_prob = mean(model_output.action_probs(~isnan(model_output.action_probs)), 'all');
     
     fit_info.average_action_prob_H1_1 = mean(model_output.action_probs(1:2:end, 5), 'omitnan');
@@ -200,19 +207,22 @@ function [fit_info, model_output] = fit_extended_model(formatted_file, result_di
     [simfit_posterior, simfit_out] = VBA_NLStateSpaceModel(y, u, f_fname, g_fname, dim, options);
     model_output.simfit_out = simfit_out;
 
-    phi_means_struct = cell2struct(num2cell(simfit_posterior.muPhi), MDP.observation_params);
-    posterior_means_phi = transform_params_SM("untransform", phi_means_struct,MDP.observation_params); 
-
-    theta_means_struct = cell2struct(num2cell(simfit_posterior.muTheta), MDP.evolution_params);
-    posterior_means_theta = transform_params_SM("untransform", theta_means_struct,MDP.evolution_params); 
-
-    phi_fields = fieldnames(posterior_means_phi);
-    for i = 1:length(phi_fields)
-        fit_info.(['simfit_' phi_fields{i}]) = posterior_means_phi.(phi_fields{i});
+    if ~isempty(MDP.observation_params)
+        phi_means_struct = cell2struct(num2cell(simfit_posterior.muPhi), MDP.observation_params);
+        posterior_means_phi = transform_params_SM("untransform", phi_means_struct,MDP.observation_params); 
+        phi_fields = fieldnames(posterior_means_phi);
+        for i = 1:length(phi_fields)
+            fit_info.(['simfit_' phi_fields{i}]) = posterior_means_phi.(phi_fields{i});
+        end
     end
-    theta_fields = fieldnames(posterior_means_theta);
-    for i = 1:length(theta_fields)
-        fit_info.(['simfit_' theta_fields{i}]) = posterior_means_theta.(theta_fields{i});
+
+    if ~isempty(MDP.evolution_params)
+        theta_means_struct = cell2struct(num2cell(simfit_posterior.muTheta), MDP.evolution_params);
+        posterior_means_theta = transform_params_SM("untransform", theta_means_struct,MDP.evolution_params); 
+        theta_fields = fieldnames(posterior_means_theta);
+        for i = 1:length(theta_fields)
+            fit_info.(['simfit_' theta_fields{i}]) = posterior_means_theta.(theta_fields{i});
+        end
     end
     
  end

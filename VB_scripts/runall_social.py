@@ -8,7 +8,7 @@ model_class = "KF_SIGMA_DDM" # indicate if 'KF_UCB', 'RL', or 'KF_UCB_DDM' model
 current_datetime = datetime.now().strftime("%m-%d-%Y_%H-%M-%S")
 result_stem = f"{result_stem}_{current_datetime}/"
 
-ssub_path = '/media/labs/rsmith/lab-members/cgoldman/Wellbeing/social_media/VB_scripts/run_social.ssub'
+ssub_path = '/media/labs/rsmith/lab-members/cgoldman/Wellbeing/social_media/scripts/VB_scripts/run_social.ssub'
 
 subject_list_path = '/media/labs/rsmith/lab-members/cgoldman/Wellbeing/social_media/social_media_prolific_IDs.csv'
 subjects = []
@@ -145,4 +145,4 @@ for room in room_type:
         
 
 
-# python3 /media/labs/rsmith/lab-members/cgoldman/Wellbeing/social_media/VB_scripts/runall_social.py /media/labs/rsmith/lab-members/cgoldman/Wellbeing/social_media/output/SM_fits_KF_SIGMA_DDM_model "prolific"
+# python3 /media/labs/rsmith/lab-members/cgoldman/Wellbeing/social_media/scripts/VB_scripts/runall_social.py /media/labs/rsmith/lab-members/cgoldman/Wellbeing/social_media/output/SM_fits_KF_SIGMA_DDM_model "prolific"

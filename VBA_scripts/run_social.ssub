@@ -5,7 +5,7 @@
 #SBATCH --mem=12000
 #SBATCH --nodes=1
 #SBATCH --begin=now
-#SBATCH --chdir=/media/labs/rsmith/lab-members/cgoldman/Wellbeing/social_media/VBA_scripts/
+#SBATCH --chdir=/media/labs/rsmith/lab-members/cgoldman/Wellbeing/social_media/scripts/VBA_scripts/
 #SBATCH --time=0:30:00
 
 #
@@ -41,5 +41,5 @@ export THRESH_MAPPING
 
 module load matlab/2022a
 
-run_file='/media/labs/rsmith/lab-members/cgoldman/Wellbeing/social_media/VBA_scripts/Social_wrapper.m'
+run_file='/media/labs/rsmith/lab-members/cgoldman/Wellbeing/social_media/scripts/VBA_scripts/Social_wrapper.m'
 matlab -nodisplay -nosplash < ${run_file}

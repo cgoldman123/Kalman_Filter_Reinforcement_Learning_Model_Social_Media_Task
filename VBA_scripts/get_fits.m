@@ -105,7 +105,7 @@ if MDP.fit_model
     
     catch ME
         fprintf("Model didn't fit!\n");
-        fprintf(2, "ERROR: %s\n", ME.message); % Red text for visibility
+        fprintf("ERROR: %s\n", ME.message); % Red text for visibility
         fprintf("Occurred in function: %s\n", ME.stack(1).name);
         fprintf("File: %s\n", ME.stack(1).file);
         fprintf("Line: %d\n", ME.stack(1).line);
@@ -130,7 +130,7 @@ if MDP.do_simulated_model_free
         simulated_model_free = social_model_free(root,good_behavioral_file,room_type,study,model_output.simfit_DCM.datastruct);
     catch ME
         fprintf("Simulate model free didn't work!");
-        fprintf(2, "ERROR: %s\n", ME.message); % Red text for visibility
+        fprintf("ERROR: %s\n", ME.message); % Red text for visibility
         fprintf("Occurred in function: %s\n", ME.stack(1).name);
         fprintf("File: %s\n", ME.stack(1).file);
         fprintf("Line: %d\n", ME.stack(1).line);    end

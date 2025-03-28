@@ -37,10 +37,12 @@ function [fits_table] = Social_wrapper(varargin)
             room = 'Like';
         end
     
+        MDP.field = {'baseline_noise','side_bias','directed_exp','baseline_info_bonus','random_exp'};
+        evolution_candidates = {'sigma_d', 'sigma_r'};
+
+        MDP.evolution_params = MDP.field(ismember(MDP.field, evolution_candidates));
+        MDP.observation_params = MDP.field(~ismember(MDP.field, evolution_candidates));
         
-        MDP.evolution_params = {'sigma_d','sigma_r'};
-        MDP.observation_params = {'baseline_noise','side_bias','baseline_info_bonus','directed_exp','random_exp'};
-        MDP.field = [MDP.evolution_params, MDP.observation_params];
         if ismember(model, {'KF_UCB_DDM', 'KF_SIGMA_DDM'})
             % possible mappings are action_prob, reward_diff, UCB,
             % side_bias, decsision_noise
@@ -59,7 +61,7 @@ function [fits_table] = Social_wrapper(varargin)
         room = getenv('ROOM') %Like and/or Dislike
         experiment = getenv('EXPERIMENT')
         id = getenv('ID')
-        MDP.field = strsplit(getenv('FIELD'), ',');
+        MDP.field = strsplit(getenv('FIELD'), ',')
         evolution_candidates = {'sigma_d', 'sigma_r'};
         
         MDP.evolution_params = MDP.field(ismember(MDP.field, evolution_candidates));

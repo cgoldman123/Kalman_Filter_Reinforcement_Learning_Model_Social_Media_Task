@@ -8,7 +8,7 @@ model_class = "KF_SIGMA" # indicate if 'KF_UCB', 'RL', or 'KF_UCB_DDM' model
 current_datetime = datetime.now().strftime("%m-%d-%Y_%H-%M-%S")
 result_stem = f"{result_stem}_{current_datetime}/"
 
-ssub_path = '/media/labs/rsmith/lab-members/cgoldman/Wellbeing/social_media/VBA_scripts/run_social.ssub'
+ssub_path = '/media/labs/rsmith/lab-members/cgoldman/Wellbeing/social_media/scripts/VBA_scripts/run_social.ssub'
 
 subject_list_path = '/media/labs/rsmith/lab-members/cgoldman/Wellbeing/social_media/social_media_prolific_IDs.csv'
 subjects = []
@@ -97,7 +97,7 @@ elif model_class=="KF_SIGMA":
 
         {'field': 'sigma_d,baseline_noise,side_bias,sigma_r,directed_exp,baseline_info_bonus,random_exp'}, 
         {'field': 'sigma_d,baseline_noise,side_bias,sigma_r,directed_exp,baseline_info_bonus'}, 
-        {'field': 'sigma_d,baseline_noise,side_bias,sigma_r,baseline_info_bonus,random_exp'}, 
+        {'field': 'sigma_d,baseline_noise,side_bias,sigma_r,baseline_info_bonus,random_exp'}, # Winner for VBA like and dislike (exponential)
         {'field': 'sigma_d,baseline_noise,side_bias,sigma_r,baseline_info_bonus'}, 
         {'field': 'sigma_d,baseline_noise,side_bias,sigma_r,directed_exp,random_exp'}, # winner for exponential like and dislike, and linear dislike
 
@@ -129,7 +129,7 @@ for room in room_type:
         if not os.path.exists(f"{combined_results_dir}/logs"):
             os.makedirs(f"{combined_results_dir}/logs")
             print(f"Created results-logs directory {combined_results_dir}/logs")
-        for subject in subjects[1:4]:
+        for subject in subjects:
             
             stdout_name = f"{combined_results_dir}/logs/SM-{model_class}-model_{index}-{room}_room-{subject}-%J.stdout"
             stderr_name = f"{combined_results_dir}/logs/SM-{model_class}-model_{index}-{room}_room-{subject}-%J.stderr"
@@ -145,4 +145,4 @@ for room in room_type:
         
 
 
-# python3 /media/labs/rsmith/lab-members/cgoldman/Wellbeing/social_media/VBA_scripts/runall_social.py /media/labs/rsmith/lab-members/cgoldman/Wellbeing/social_media/output/SM_fits_VBA_KF_SIGMA_model "prolific"
+# python3 /media/labs/rsmith/lab-members/cgoldman/Wellbeing/social_media/scripts/VBA_scripts/runall_social.py /media/labs/rsmith/lab-members/cgoldman/Wellbeing/social_media/output/SM_fits_VBA_KF_SIGMA_model "prolific"

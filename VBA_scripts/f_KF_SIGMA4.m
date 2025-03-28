@@ -9,7 +9,19 @@ for i = 1:numel(in.MDP.evolution_params)
     params.(field_name) = P(i); % Assign the value from P
 end
 % Transform parameters back to native space
-retrans_params = transform_params_SM("untransform", params,in.MDP.evolution_params);
+if exist("params", "var")
+    retrans_params = transform_params_SM("untransform", params,in.MDP.evolution_params);
+else
+    retrans_params = [];
+end
+% If retrans_params does not contain a parameter that is needed (i.e.,
+% a parameter not fit), add it
+for f = fieldnames(in.MDP.params)'
+    if ~isfield(retrans_params, f{1})
+        retrans_params.(f{1}) = in.MDP.params.(f{1});
+    end
+end
+
 sigma_d = retrans_params.sigma_d;
 sigma_r = retrans_params.sigma_r;
 sigma1 = x(3);
