@@ -61,10 +61,10 @@ function [fits_table] = Social_wrapper(varargin)
         experiment = getenv('EXPERIMENT')
         id = getenv('ID')
         MDP.field = strsplit(getenv('FIELD'), ',')
-        evolution_candidates = {'sigma_d', 'sigma_r'};
+        %evolution_candidates = {'sigma_d', 'sigma_r'};
         
-        MDP.evolution_params = MDP.field(ismember(MDP.field, evolution_candidates));
-        MDP.observation_params = MDP.field(~ismember(MDP.field, evolution_candidates));
+        %MDP.evolution_params = MDP.field(ismember(MDP.field, evolution_candidates));
+        MDP.observation_params = MDP.field;
 
         if ismember(model, {'KF_UCB_DDM', 'KF_SIGMA_DDM'})
             % Set up drift mapping

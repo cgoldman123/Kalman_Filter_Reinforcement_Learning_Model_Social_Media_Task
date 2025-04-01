@@ -58,26 +58,31 @@ function [fit_info, model_output] = fit_extended_model_no_latent_state_learning(
     
     % Get only free choices
     free_choices = sub.a(:,5:end);
-    free_choices_row =  [reshape(sub.a.', 1, [])] - 1
+    free_choices_row =  [reshape(free_choices.', 1, [])] - 1;
+    y = free_choices_row(~isnan(free_choices_row)); % remove NaN values
+
 
     % assemble input variable u
     % row 1: actions
     % row 2: rewards
     % row 3: timestep within a game (1 to 9)
     % row 4: horizon (1 or 5)
-    input = [actions; reshape(sub.r.', 1, []); repmat(1:9, 1, 40)]; 
-    input = input(:, ~isnan(input(1,:))); % remove NaN values
-    input = [input; repmat(repelem([1, 5], [5, 9]), 1, 20)];   % create a row to indicate Horizon
-    input = [NaN(4,1), input]; % make the first column NaN values because participants choose a bandit before learning
-    input(:,find(input(3,:) == 1)-1) = NaN; % remove the result of the last free choice for each game because it's meaningless
-    u = input(:,1:end-1);
+    % input = [actions; reshape(sub.r.', 1, []); repmat(1:9, 1, 40)]; 
+    % input = input(:, ~isnan(input(1,:))); % remove NaN values
+    % input = [input; repmat(repelem([1, 5], [5, 9]), 1, 20)];   % create a row to indicate Horizon
+    % input = [NaN(4,1), input]; % make the first column NaN values because participants choose a bandit before learning
+    % input(:,find(input(3,:) == 1)-1) = NaN; % remove the result of the last free choice for each game because it's meaningless
+    % u = input(:,1:end-1);
+    
+    % Input is free choice number
+    u = 1:length(y);
 
 
     % Note that Y must be a sparse double that has as many rows (p) as the number of columns returned
     % by g_fname (p), a function that outputs the probability distribution for
     % that trial.
 
-    f_fname = @f_KF_SIGMA4;
+    % f_fname = @f_KF_SIGMA4;
     g_fname = @g_KF_SIGMA4_logistic_no_latent_state_learning;
 
     
@@ -106,7 +111,6 @@ function [fit_info, model_output] = fit_extended_model_no_latent_state_learning(
     options.priors.SigmaPhi = diag(spm_vec(prior_sigmas_observation_params)');
 
 
-    options.inF = in;
     options.inG = in;
     options.sources.type = 1; % Use source 1 for fitting binary data
 
@@ -178,7 +182,6 @@ function [fit_info, model_output] = fit_extended_model_no_latent_state_learning(
     
     fit_info.model_acc = sum(model_output.action_probs(~isnan(model_output.action_probs)) > 0.5) / numel(model_output.action_probs(~isnan(model_output.action_probs)));
     fit_info.F = out.F;
-    %fit_info.F = DCM.F;
 
     if ismember(func2str(MDP.model), {'model_SM_KF_DDM_all_choices', 'model_SM_KF_SIGMA_DDM_all_choices'})
         fit_info.num_invalid_rts = model_output.num_invalid_rts;
@@ -188,28 +191,26 @@ function [fit_info, model_output] = fit_extended_model_no_latent_state_learning(
                 
     % simulate behavior with fitted params
     simmed_model_output = MDP.model(fit_info,actions_and_rts, rewards,in, 1);    
+    options.inG.actions = simmed_model_output.actions;
+    options.inG.rewards = simmed_model_output.rewards;
+    options.inG.RTs = nan(40,9);
+
 
     % assemble actions variable y
     % 0 indicates the left bandit was chosen, 1 indicates the right
-    actions =  [reshape(simmed_model_output.actions.', 1, [])] - 1; % reshape the actions variable to a row vector and shift by 1
-    y = actions(~isnan(actions)); % remove NaN values
+    free_choices = simmed_model_output.actions(:,5:end);
+    free_choices_row =  [reshape(free_choices.', 1, [])] - 1;
+    y = free_choices_row(~isnan(free_choices_row)); % remove NaN values
 
     % assemble input variable u
-    % row 1: actions
-    % row 2: rewards
-    % row 3: timestep within a game (1 to 9)
-    % row 4: horizon (1 or 5)
-    input = [actions; reshape(simmed_model_output.rewards.', 1, []); repmat(1:9, 1, 40)]; 
-    input = input(:, ~isnan(input(1,:))); % remove NaN values
-    input = [input; repmat(repelem([1, 5], [5, 9]), 1, 20)];   % create a row to indicate Horizon
-    input = [NaN(4,1), input]; % make the first column NaN values because participants choose a bandit before learning
-    input(:,find(input(3,:) == 1)-1) = NaN; % remove the result of the last free choice for each game because it's meaningless
-    u = input(:,1:end-1);
+    u = 1:length(y);
 
     fprintf( 'Running VB to fit simulated behavior! \n' );
 
-    [simfit_posterior, simfit_out] = VBA_NLStateSpaceModel(y, u, f_fname, g_fname, dim, options);
+    [simfit_posterior, simfit_out] = VBA_NLStateSpaceModel(y, u, [], g_fname, dim, options);
+
     model_output.simfit_out = simfit_out;
+    model_output.simfit_out.
 
     if ~isempty(MDP.observation_params)
         phi_means_struct = cell2struct(num2cell(simfit_posterior.muPhi), MDP.observation_params);

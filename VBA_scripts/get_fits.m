@@ -122,19 +122,21 @@ if MDP.do_model_free
         fprintf("ERROR: %s\n", ME.message); 
         fprintf("Occurred in function: %s\n", ME.stack(1).name);
         fprintf("File: %s\n", ME.stack(1).file);
-        fprintf("Line: %d\n", ME.stack(1).line);    end
+        fprintf("Line: %d\n", ME.stack(1).line);    
+    end
 end
 
 if MDP.do_simulated_model_free
     try
         good_behavioral_file = subj_mapping{1,4};
-        simulated_model_free = social_model_free(root,good_behavioral_file,room_type,study,model_output.simfit_DCM.datastruct);
+        simulated_model_free = social_model_free(root,good_behavioral_file,room_type,study,model_output.simfit_out.simfit_datastruct);
     catch ME
         fprintf("Simulate model free didn't work!");
         fprintf("ERROR: %s\n", ME.message); % Red text for visibility
         fprintf("Occurred in function: %s\n", ME.stack(1).name);
         fprintf("File: %s\n", ME.stack(1).file);
-        fprintf("Line: %d\n", ME.stack(1).line);    end
+        fprintf("Line: %d\n", ME.stack(1).line);    
+    end
 end
 
 % if fits and/or model-free analyses are present, add them to the output

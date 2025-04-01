@@ -182,7 +182,6 @@ function [fit_info, model_output] = fit_extended_model_no_latent_state_learning(
     
     fit_info.model_acc = sum(model_output.action_probs(~isnan(model_output.action_probs)) > 0.5) / numel(model_output.action_probs(~isnan(model_output.action_probs)));
     fit_info.F = out.F;
-    %fit_info.F = DCM.F;
 
     if ismember(func2str(MDP.model), {'model_SM_KF_DDM_all_choices', 'model_SM_KF_SIGMA_DDM_all_choices'})
         fit_info.num_invalid_rts = model_output.num_invalid_rts;
@@ -192,6 +191,10 @@ function [fit_info, model_output] = fit_extended_model_no_latent_state_learning(
                 
     % simulate behavior with fitted params
     simmed_model_output = MDP.model(fit_info,actions_and_rts, rewards,in, 1);    
+    options.inG.actions = simmed_model_output.actions;
+    options.inG.rewards = simmed_model_output.rewards;
+    options.inG.RTs = nan(40,9);
+
 
     % assemble actions variable y
     % 0 indicates the left bandit was chosen, 1 indicates the right
@@ -207,6 +210,7 @@ function [fit_info, model_output] = fit_extended_model_no_latent_state_learning(
     [simfit_posterior, simfit_out] = VBA_NLStateSpaceModel(y, u, [], g_fname, dim, options);
 
     model_output.simfit_out = simfit_out;
+    model_output.simfit_out.simfit_datastruct = options.inG;
 
     if ~isempty(MDP.observation_params)
         phi_means_struct = cell2struct(num2cell(simfit_posterior.muPhi), MDP.observation_params);
