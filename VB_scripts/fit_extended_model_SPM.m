@@ -1,4 +1,4 @@
-function [fits, model_output] = fit_extended_model(formatted_file, result_dir, MDP)
+function [fits, model_output] = fit_extended_model_SPM(formatted_file, result_dir, MDP)
     if ispc
         root = 'L:/';
     else

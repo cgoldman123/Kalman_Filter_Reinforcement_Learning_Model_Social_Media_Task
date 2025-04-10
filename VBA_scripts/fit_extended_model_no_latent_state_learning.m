@@ -205,7 +205,7 @@ function [fit_info, model_output] = fit_extended_model_no_latent_state_learning(
     % assemble input variable u
     u = 1:length(y);
 
-    fprintf( 'Running VB to fit simulated behavior! \n' );
+    fprintf( 'Running VBA to fit simulated behavior! \n' );
 
     [simfit_posterior, simfit_out] = VBA_NLStateSpaceModel(y, u, [], g_fname, dim, options);
 

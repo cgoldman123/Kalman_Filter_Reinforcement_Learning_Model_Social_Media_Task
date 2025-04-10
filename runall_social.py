@@ -3,10 +3,11 @@ from datetime import datetime
 
 result_stem = sys.argv[1]
 experiment = sys.argv[2]
-model_class = "KF_SIGMA" # indicate if 'KF_UCB', 'RL', or 'KF_UCB_DDM' model
+fitting_procedure = sys.argv[3] # indicate if fitting with "SPM", "VBA", or "PYDDM"
+model_class = "KF_SIGMA" # indicate if "KF_UCB", "RL", or "KF_UCB_DDM" model
 
 current_datetime = datetime.now().strftime("%m-%d-%Y_%H-%M-%S")
-result_stem = f"{result_stem}_{current_datetime}/"
+result_stem = f"{result_stem}_{fitting_procedure}_{current_datetime}/"
 
 ssub_path = '/media/labs/rsmith/lab-members/cgoldman/Wellbeing/social_media/scripts/VBA_scripts/run_social.ssub'
 
@@ -139,10 +140,12 @@ for room in room_type:
             bias_map = bias_mapping if bias_mapping else "none"
             thresh_map = thresh_mapping if thresh_mapping else "none"
             #print(f"sbatch -J {jobname} -o {stdout_name} -e {stderr_name} {ssub_path} {subject} {combined_results_dir} {room} {experiment} {field} {model_class} {drift_map} {bias_map} {thresh_map}")
-            os.system(f"sbatch -J {jobname} -o {stdout_name} -e {stderr_name} {ssub_path} {subject} {combined_results_dir} {room} {experiment} {field} {model_class} {drift_map} {bias_map} {thresh_map}")
+            os.system(f"sbatch -J {jobname} -o {stdout_name} -e {stderr_name} {ssub_path} {subject} {combined_results_dir} {room} {experiment} {field} {model_class} {drift_map} {bias_map} {thresh_map} {fitting_procedure}")
 
             print(f"SUBMITTED JOB [{jobname}]")
         
 
-
-# python3 /media/labs/rsmith/lab-members/cgoldman/Wellbeing/social_media/scripts/VBA_scripts/runall_social.py /media/labs/rsmith/lab-members/cgoldman/Wellbeing/social_media/output/SM_fits_VBA_KF_SIGMA_model_no_latent_learning "prolific"
+# Note that the fitting procedure is automatically appended to result directory
+# Remember to adjust model being fit at the top of the script
+# Call this script with:
+# python3 /media/labs/rsmith/lab-members/cgoldman/Wellbeing/social_media/scripts/VBA_scripts/runall_social.py /media/labs/rsmith/lab-members/cgoldman/Wellbeing/social_media/output/SM_fits_KF_SIGMA_model "prolific" "VBA"

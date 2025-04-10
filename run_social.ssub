@@ -5,7 +5,7 @@
 #SBATCH --mem=12000
 #SBATCH --nodes=1
 #SBATCH --begin=now
-#SBATCH --chdir=/media/labs/rsmith/lab-members/cgoldman/Wellbeing/social_media/scripts/VB_scripts/
+#SBATCH --chdir=/media/labs/rsmith/lab-members/cgoldman/Wellbeing/social_media/scripts/
 #SBATCH --time=0:30:00
 
 #
@@ -39,7 +39,10 @@ export BIAS_MAPPING
 THRESH_MAPPING=$9
 export THRESH_MAPPING
 
+FITTING_PROCEDURE=$10
+export FITTING_PROCEDURE
+
 module load matlab/2022a
 
-run_file='/media/labs/rsmith/lab-members/cgoldman/Wellbeing/social_media/scripts/VB_scripts/Social_wrapper.m'
+run_file='/media/labs/rsmith/lab-members/cgoldman/Wellbeing/social_media/scripts/Social_wrapper.m'
 matlab -nodisplay -nosplash < ${run_file}

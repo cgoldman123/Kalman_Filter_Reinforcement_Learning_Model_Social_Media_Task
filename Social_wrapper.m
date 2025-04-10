@@ -14,7 +14,7 @@ function [fits_table] = Social_wrapper(varargin)
     elseif SIM
         MDP.plot_simulated_data = 0; %Toggle on to plot data simulated by model
         MDP.do_simulated_model_free = 1; % Toggle on to do model-free analyses on data simulated from prior parameters initialized in this main file.
-        id_label = '562c2ff0733ea000111630df_Iteration_5';
+        id_label = '562c2ff0733ea000111630df_Iteration_5'; % Use this to give a name to the simulated data
     end
     rng(23);
     
@@ -25,6 +25,7 @@ function [fits_table] = Social_wrapper(varargin)
     
     dbstop if error
     if ispc
+        fitting_procedure = "VBA"; % Specify fitting procedure as "SPM", "VBA", or "PYDDM"
         model = "KF_SIGMA"; % indicate if 'KF_UCB', 'RL', 'KF_UCB_DDM', 'KF_SIGMA_DDM', 'KF_SIGMA'
         root = 'L:/';
         experiment = 'prolific'; % indicate local or prolific
@@ -37,8 +38,10 @@ function [fits_table] = Social_wrapper(varargin)
             room = 'Like';
         end
     
-        
-        MDP.field = {'sigma_d','sigma_r','baseline_noise','side_bias','directed_exp','baseline_info_bonus','random_exp'};
+        MDP.field = {'baseline_noise','side_bias','directed_exp','baseline_info_bonus','random_exp','sigma_d', 'sigma_r'};
+        if strcmp(fitting_procedure, "VBA")
+            MDP.observation_params = MDP.field; % When there is no latent state learning, all params are observation params
+        end
         if ismember(model, {'KF_UCB_DDM', 'KF_SIGMA_DDM'})
             % possible mappings are action_prob, reward_diff, UCB,
             % side_bias, decsision_noise
@@ -51,13 +54,18 @@ function [fits_table] = Social_wrapper(varargin)
         end
         
     elseif isunix
+        fitting_procedure = getenv('FITTING_PROCEDURE')
         model = getenv('MODEL')
         root = '/media/labs/'
         results_dir = getenv('RESULTS')   % run = 1,2,3
         room = getenv('ROOM') %Like and/or Dislike
         experiment = getenv('EXPERIMENT')
         id = getenv('ID')
-        MDP.field = strsplit(getenv('FIELD'), ',');
+        MDP.field = strsplit(getenv('FIELD'), ',')
+        if strcmp(fitting_procedure, "VBA")
+            MDP.observation_params = MDP.field;
+        end
+
         if ismember(model, {'KF_UCB_DDM', 'KF_SIGMA_DDM'})
             % Set up drift mapping
             MDP.settings.drift_mapping = strsplit(getenv('DRIFT_MAPPING'), ',');
@@ -85,10 +93,22 @@ function [fits_table] = Social_wrapper(varargin)
     
     end
     
+    % Add libraries. Some of these are for the VBA example code and may not
+    % be needed.
+    addpath([root '/rsmith/lab-members/cgoldman/Wellbeing/social_media/scripts/VB_scripts/'])
+    addpath([root '/rsmith/lab-members/cgoldman/Wellbeing/social_media/scripts/VBA_scripts/'])
     addpath([root '/rsmith/all-studies/util/spm12/']);
     addpath([root '/rsmith/all-studies/util/spm12/toolbox/DEM/']);
-    
-    
+    addpath([root '/rsmith/all-studies/util/VBA-toolbox-master/']);
+    addpath([root '/rsmith/all-studies/util/VBA-toolbox-master/modules/theory_of_mind/']);
+    addpath([root '/rsmith/all-studies/util/VBA-toolbox-master/utils/']);
+    addpath([root '/rsmith/all-studies/util/VBA-toolbox-master/demos/_models/']);
+    addpath([root '/rsmith/all-studies/util/VBA-toolbox-master/core/']);
+    addpath([root '/rsmith/all-studies/util/VBA-toolbox-master/core/diagnostics/']);
+    addpath([root '/rsmith/all-studies/util/VBA-toolbox-master/core/display/']);
+    addpath([root '/rsmith/all-studies/util/VBA-toolbox-master/modules/GLM/']);
+
+
     model_functions = containers.Map(...
         {'KF_UCB', 'RL', 'KF_UCB_DDM', 'KF_SIGMA_DDM', 'KF_SIGMA'}, ...
         {@model_SM_KF_all_choices, @model_SM_RL_all_choices, @model_SM_KF_DDM_all_choices, @model_SM_KF_SIGMA_DDM_all_choices, @model_SM_KF_SIGMA_all_choices} ...
@@ -230,7 +250,7 @@ function [fits_table] = Social_wrapper(varargin)
         end
     end
     if FIT
-        output_table = get_fits(root, experiment, room, results_dir,MDP, id);
+        output_table = get_fits(root, fitting_procedure, experiment, room, results_dir,MDP, id);
     end
 end
 

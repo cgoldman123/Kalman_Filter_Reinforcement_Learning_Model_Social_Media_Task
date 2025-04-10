@@ -1,9 +1,5 @@
-function varargout = get_fits(root,study,room_type, results_dir, MDP, id)
+function varargout = get_fits(root, fitting_procedure, study,room_type, results_dir, MDP, id)
 timestamp = datestr(datetime('now'), 'mm_dd_yy_THH-MM-SS');
-
-% Import matjags library and model-specific fitting function
-addpath([root 'rsmith/all-studies/core/matjags']);
-addpath([root 'rsmith/all-studies/models/extended-horizon']);
 
 %% Clean up files and concatenate for fitting
 files = {};
@@ -41,8 +37,11 @@ if MDP.fit_model
     
         %% Perform model fit
         % Reads in the above 'outpath_beh' file to fit
-        %[fits, model_output] = fit_extended_model(outpath_beh, results_dir, MDP);
-        [fits, model_output] = fit_extended_model_no_latent_state_learning(outpath_beh, results_dir, MDP);
+        if strcmp(fitting_procedure, "VBA")
+            [fits, model_output] = fit_extended_model_no_latent_state_learning(outpath_beh, results_dir, MDP);
+        elseif strcmp(fitting_procedure, "SPM")
+            [fits, model_output] = fit_extended_model_SPM(outpath_beh, results_dir, MDP);
+        end
         for i = 1:numel(model_output)
             subject = subj_mapping{i, 1};  
             model_output(i).results.subject = subject{:};
@@ -61,7 +60,7 @@ if MDP.fit_model
         fits_table.model = func2str(MDP.model);
         fits_table.has_practice_effects = (ismember(fits_table.id, flag));
         fits_table.room_type = room_type;
-        fits_table.fitting_procedure = 'VBA';
+        fits_table.fitting_procedure = fitting_procedure;
         % Add mapping fields if they exist in MDP.settings
         if isfield(MDP.settings, 'drift_mapping')
             if isempty(MDP.settings.drift_mapping)
@@ -129,7 +128,11 @@ end
 if MDP.do_simulated_model_free
     try
         good_behavioral_file = subj_mapping{1,4};
-        simulated_model_free = social_model_free(root,good_behavioral_file,room_type,study,model_output.simfit_out.simfit_datastruct);
+        if strcmp(fitting_procedure, "VBA")
+            simulated_model_free = social_model_free(root,good_behavioral_file,room_type,study,model_output.simfit_out.simfit_datastruct);
+        elseif strcmp(fitting_procedure, "SPM")
+            simulated_model_free = social_model_free(root,good_behavioral_file,room_type,study,model_output.simfit_DCM.datastruct);
+        end
     catch ME
         fprintf("Simulate model free didn't work!");
         fprintf("ERROR: %s\n", ME.message); % Red text for visibility

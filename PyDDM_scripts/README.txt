@@ -1,0 +1,1 @@
+Requires activating conda virtual environment "pyddm" (C:\Users\CGoldman\AppData\Local\anaconda3\envs\pyddm)
