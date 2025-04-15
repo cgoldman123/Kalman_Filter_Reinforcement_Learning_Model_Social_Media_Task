@@ -47,7 +47,9 @@ if MDP.fit_model
             model_output(i).results.subject = subject{:};
             model_output(i).results.room_type = room_type;
             model_output(i).results.cb = subj_mapping{i, 3}; 
-            model_output.id = subject{:}; model_output.room_type = room_type; model_output.cb = subj_mapping{i, 3};
+            model_output.id = subject{:}; 
+            model_output.room_type = room_type; 
+            model_output.cb = subj_mapping{i, 3};
         end
         id = subj_mapping{1, 1};
         if MDP.get_rts_and_dont_fit_model
