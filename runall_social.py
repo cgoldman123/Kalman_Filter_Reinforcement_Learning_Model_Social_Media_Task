@@ -4,12 +4,12 @@ from datetime import datetime
 result_stem = sys.argv[1]
 experiment = sys.argv[2]
 fitting_procedure = sys.argv[3] # indicate if fitting with "SPM", "VBA", or "PYDDM"
-model_class = "KF_SIGMA" # indicate if "KF_UCB", "RL", or "KF_UCB_DDM" model
+model_class = "PYDDM" # indicate if "KF_UCB", "RL", "KF_UCB_DDM", or "PYDDM" model
 
 current_datetime = datetime.now().strftime("%m-%d-%Y_%H-%M-%S")
 result_stem = f"{result_stem}_{fitting_procedure}_{current_datetime}/"
 
-ssub_path = '/media/labs/rsmith/lab-members/cgoldman/Wellbeing/social_media/scripts/VBA_scripts/run_social.ssub'
+ssub_path = '/media/labs/rsmith/lab-members/cgoldman/Wellbeing/social_media/scripts/run_social.ssub'
 
 subject_list_path = '/media/labs/rsmith/lab-members/cgoldman/Wellbeing/social_media/social_media_prolific_IDs.csv'
 subjects = []
@@ -107,6 +107,11 @@ elif model_class=="KF_SIGMA":
         {'field': 'baseline_noise,side_bias,directed_exp,baseline_info_bonus,random_exp'}, # winner for linear like
     ]
 
+elif model_class=="PYDDM":
+    models = [
+        {'field': 'field_set_in_fitting_file'}, # The field and diffusion mapping information is set in the fitting file 
+    ]
+
 
 room_type = ["Like", "Dislike"]
 
@@ -130,7 +135,7 @@ for room in room_type:
         if not os.path.exists(f"{combined_results_dir}/logs"):
             os.makedirs(f"{combined_results_dir}/logs")
             print(f"Created results-logs directory {combined_results_dir}/logs")
-        for subject in subjects:
+        for subject in [subjects[3]]:
             
             stdout_name = f"{combined_results_dir}/logs/SM-{model_class}-model_{index}-{room}_room-{subject}-%J.stdout"
             stderr_name = f"{combined_results_dir}/logs/SM-{model_class}-model_{index}-{room}_room-{subject}-%J.stderr"
@@ -148,4 +153,4 @@ for room in room_type:
 # Note that the fitting procedure is automatically appended to result directory
 # Remember to adjust model being fit at the top of the script
 # Call this script with:
-# python3 /media/labs/rsmith/lab-members/cgoldman/Wellbeing/social_media/scripts/VBA_scripts/runall_social.py /media/labs/rsmith/lab-members/cgoldman/Wellbeing/social_media/output/SM_fits_KF_SIGMA_model "prolific" "VBA"
+# python3 /media/labs/rsmith/lab-members/cgoldman/Wellbeing/social_media/scripts/runall_social.py /media/labs/rsmith/lab-members/cgoldman/Wellbeing/social_media/output/SM_fits_PYDDM_test "prolific" "PYDDM"

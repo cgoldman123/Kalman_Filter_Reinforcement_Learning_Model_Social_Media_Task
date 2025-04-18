@@ -41,6 +41,31 @@ if MDP.fit_model
             [fits, model_output] = fit_extended_model_no_latent_state_learning(outpath_beh, results_dir, MDP);
         elseif strcmp(fitting_procedure, "SPM")
             [fits, model_output] = fit_extended_model_SPM(outpath_beh, results_dir, MDP);
+        elseif strcmp(fitting_procedure, "PYDDM")
+            % call python scripts from inside matlab. Note that this
+            % environment must have the pyddm package installed
+            if ispc
+                % Use the python path from the conda virtual environment
+                python_path = 'C:\Users\CGoldman\AppData\Local\anaconda3\envs\pyddm\python.exe';
+            else
+                % Use the python path from the conda virtual environment.
+                % In the .ssub file, I load this conda environment.
+                python_path = '/mnt/dell_storage/homefolders/librad.laureateinstitute.org/cgoldman/miniconda3/envs/pyddm/bin/python';
+            end
+            script_path = [root 'rsmith/lab-members/cgoldman/Wellbeing/social_media/scripts/PyDDM_scripts/fit_pyddm_social_media.py'];
+            % Build the command safely (quotes to handle spaces)
+            cmd = sprintf('"%s" "%s" "%s" "%s" "%s" "%s" "%s"', ...
+                python_path, script_path, outpath_beh, results_dir, id, room_type, timestamp);
+            
+            % Run and display output
+            [status, cmdout] = system(cmd);
+            disp(cmdout)
+
+            % Load the resulting matlab object.
+            pyddm_results = load([results_dir id '_' room_type '_model_results_pyddm.mat']);
+            fits = pyddm_results.fit_result;
+            model_output = pyddm_results.model_output;
+
         end
         for i = 1:numel(model_output)
             subject = subj_mapping{i, 1};  
@@ -59,51 +84,57 @@ if MDP.fit_model
         
         save(sprintf([results_dir 'model_output_%s_%s_%s.mat'], id{:}, room_type, timestamp),'model_output');
         fits_table.id = id;
-        fits_table.model = func2str(MDP.model);
         fits_table.has_practice_effects = (ismember(fits_table.id, flag));
         fits_table.room_type = room_type;
         fits_table.fitting_procedure = fitting_procedure;
-        % Add mapping fields if they exist in MDP.settings
-        if isfield(MDP.settings, 'drift_mapping')
-            if isempty(MDP.settings.drift_mapping)
-                fits_table.drift_mapping = ' ';
-            else
-                fits_table.drift_mapping = strjoin(MDP.settings.drift_mapping);
+        % Add the parameter estimates and mapping fields for non-PYDDM fits
+        if ~strcmp(fitting_procedure, "PYDDM")
+            fits_table.model = func2str(MDP.model);
+            if isfield(MDP.settings, 'drift_mapping')
+                if isempty(MDP.settings.drift_mapping)
+                    fits_table.drift_mapping = ' ';
+                else
+                    fits_table.drift_mapping = strjoin(MDP.settings.drift_mapping);
+                end
             end
-        end
-        
-        if isfield(MDP.settings, 'bias_mapping')
-            if isempty(MDP.settings.bias_mapping)
-                fits_table.bias_mapping = ' ';
-            else
-                fits_table.bias_mapping = strjoin(MDP.settings.bias_mapping);
+            
+            if isfield(MDP.settings, 'bias_mapping')
+                if isempty(MDP.settings.bias_mapping)
+                    fits_table.bias_mapping = ' ';
+                else
+                    fits_table.bias_mapping = strjoin(MDP.settings.bias_mapping);
+                end
             end
-        end
-        
-        if isfield(MDP.settings, 'thresh_mapping')
-            if isempty(MDP.settings.thresh_mapping)
-                fits_table.thresh_mapping = ' ';
-            else
-                fits_table.thresh_mapping = strjoin(MDP.settings.thresh_mapping);
+            
+            if isfield(MDP.settings, 'thresh_mapping')
+                if isempty(MDP.settings.thresh_mapping)
+                    fits_table.thresh_mapping = ' ';
+                else
+                    fits_table.thresh_mapping = strjoin(MDP.settings.thresh_mapping);
+                end
             end
-        end
-        
-        
-        
-        
-        vars = fieldnames(fits);
-        for i = 1:length(vars)
-            if any(strcmp(vars{i}, MDP.field))
-                fits_table.(['prior_' vars{i}]) = MDP.params.(vars{i});
-                fits_table.(['posterior_' vars{i}]) = fits.(vars{i});
-            elseif contains(vars{i}, 'simfit') || strcmp(vars{i}, 'model_acc') || strcmp(vars{i}, 'average_action_prob') ||  strcmp(vars{i}, 'F') || ...
-                    strcmp(vars{i},'average_action_prob_H5_1') || strcmp(vars{i},'average_action_prob_H5_2') || strcmp(vars{i},'average_action_prob_H5_3') || ...
-                    strcmp(vars{i},'average_action_prob_H5_4') || strcmp(vars{i},'average_action_prob_H5_5') || strcmp(vars{i},'average_action_prob_H1_1') 
+
+            vars = fieldnames(fits);
+            for i = 1:length(vars)
+                if any(strcmp(vars{i}, MDP.field))
+                    fits_table.(['prior_' vars{i}]) = MDP.params.(vars{i});
+                    fits_table.(['posterior_' vars{i}]) = fits.(vars{i});
+                elseif contains(vars{i}, 'simfit') || strcmp(vars{i}, 'model_acc') || strcmp(vars{i}, 'average_action_prob') ||  strcmp(vars{i}, 'F') || ...
+                        strcmp(vars{i},'average_action_prob_H5_1') || strcmp(vars{i},'average_action_prob_H5_2') || strcmp(vars{i},'average_action_prob_H5_3') || ...
+                        strcmp(vars{i},'average_action_prob_H5_4') || strcmp(vars{i},'average_action_prob_H5_5') || strcmp(vars{i},'average_action_prob_H1_1') 
+                    fits_table.(vars{i}) = fits.(vars{i});
+                else
+                    fits_table.(['fixed_' vars{i}]) = fits.(vars{i});
+                end
+            end
+        else
+            vars = fieldnames(fits);
+            for i = 1:length(vars)
                 fits_table.(vars{i}) = fits.(vars{i});
-            else
-                fits_table.(['fixed_' vars{i}]) = fits.(vars{i});
             end
         end
+        
+       
     
     catch ME
         fprintf("Model didn't fit!\n");
@@ -134,6 +165,8 @@ if MDP.do_simulated_model_free
             simulated_model_free = social_model_free(root,good_behavioral_file,room_type,study,model_output.simfit_out.simfit_datastruct);
         elseif strcmp(fitting_procedure, "SPM")
             simulated_model_free = social_model_free(root,good_behavioral_file,room_type,study,model_output.simfit_DCM.datastruct);
+        elseif strcmp(fitting_procedure, "PYDDM")
+            simulated_model_free = social_model_free(root,good_behavioral_file,room_type,study,model_output.simfit_datastruct);
         end
     catch ME
         fprintf("Simulate model free didn't work!");

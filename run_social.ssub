@@ -6,11 +6,14 @@
 #SBATCH --nodes=1
 #SBATCH --begin=now
 #SBATCH --chdir=/media/labs/rsmith/lab-members/cgoldman/Wellbeing/social_media/scripts/
-#SBATCH --time=0:30:00
+#SBATCH --time=1:00:00
 
 #
 #################################################
 
+# Activate a conda virtual environment containing the pyddm package. This is only necessary if using pyddm, but shouldn't interfere with other scripts
+source /home/librad.laureateinstitute.org/cgoldman/miniconda3/etc/profile.d/conda.sh
+conda activate pyddm 
 
 ID=$1
 export ID
@@ -39,7 +42,7 @@ export BIAS_MAPPING
 THRESH_MAPPING=$9
 export THRESH_MAPPING
 
-FITTING_PROCEDURE=$10
+FITTING_PROCEDURE=${10}
 export FITTING_PROCEDURE
 
 module load matlab/2022a
