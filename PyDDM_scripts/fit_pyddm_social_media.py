@@ -4,7 +4,7 @@ import pandas as pd
 import numpy as np
 from KF_DDM_model import KF_DDM_model
 from scipy.io import savemat
-import sys
+import sys, random
 
 ## Todo
 # plot pyddm.plot.model_gui(model_to_fit, conditions={"deltaq": [-1, -.8, -.6, -.4, -.2, 0, .2, .4, .6, .8, 1]})
@@ -28,6 +28,12 @@ log_path = f"{results_dir}{id}_{room_type}_{timestamp}_model_log.txt"
 sys.stdout = open(log_path, "w", buffering=1)  # line-buffered so that it updates the file in real-time
 sys.stderr = sys.stdout  # Also capture errors
 print("Welcome to the pyddm model fitting script!")
+
+# Set the random seed for reproducibility
+seed = 23
+np.random.seed(seed)
+random.seed(seed)
+print(f"Random seed set to {seed}")
 
 ########### Load in Social Media data and format as Sample object ###########
 with open(outpath_beh, "r") as f:
@@ -96,11 +102,11 @@ class KF_DDM_Loss(pyddm.LossFunction):
 
 
 ## SIMULATE DATA WITHOUT FITTING
-# model_to_sim = pyddm.gddm(drift=lambda drift_reward_diff_mod,drift_decision_noise_mod,drift_value,sigma_d,sigma_r,baseline_noise,side_bias,directed_exp,baseline_info_bonus,random_exp : drift_value,
+# model_to_sim = pyddm.gddm(drift=lambda drift_rwrd_diff_mod,drift_dcsn_noise_mod,drift_value,sigma_d,sigma_r,baseline_noise,side_bias,directed_exp,baseline_info_bonus,random_exp : drift_value,
 #                           starting_position=lambda starting_position_value: starting_position_value, 
 #                           noise=1.0, bound="B", nondecision=0, T_dur=1000,
 #                           conditions=["game_number", "gameLength", "trial", "r", "drift_value","starting_position_value"],
-#                           parameters={"drift_reward_diff_mod": .5, "drift_decision_noise_mod": .1,"B": 1, "sigma_d": 8, "sigma_r": 8, "baseline_noise": 2, "side_bias": 1, "directed_exp": 2, "baseline_info_bonus": 2, "random_exp": 2}, choice_names=("right","left"))
+#                           parameters={"drift_rwrd_diff_mod": .5, "drift_dcsn_noise_mod": .1,"B": 1, "sigma_d": 8, "sigma_r": 8, "baseline_noise": 2, "side_bias": 1, "directed_exp": 2, "baseline_info_bonus": 2, "random_exp": 2}, choice_names=("right","left"))
 
 # simulated_model = KF_DDM_model(social_media_sample,model_to_sim,fit_or_sim="sim")
 
@@ -108,11 +114,11 @@ class KF_DDM_Loss(pyddm.LossFunction):
 ## FIT MODEL TO ACTUAL DATA
 # This is kind of hacky, but we pass in the learning parameters as arguments to drift even though they aren't used for it. This is just so the loss function has access to them
 print("Setting up the model to fit behavioral data")
-model_to_fit = pyddm.gddm(drift=lambda drift_reward_diff_mod,drift_decision_noise_mod,drift_value,sigma_d,sigma_r,baseline_noise,side_bias,directed_exp,baseline_info_bonus,random_exp : drift_value,
+model_to_fit = pyddm.gddm(drift=lambda drift_rwrd_diff_mod,drift_dcsn_noise_mod,drift_value,sigma_d,sigma_r,baseline_noise,side_bias,directed_exp,baseline_info_bonus,random_exp : drift_value,
                           starting_position=lambda starting_position_value: starting_position_value, 
                           noise=1.0, bound="B", nondecision=0, T_dur=4.17,
                           conditions=["game_number", "gameLength", "trial", "r", "drift_value","starting_position_value"],
-                          parameters={"drift_reward_diff_mod": (0,1), "drift_decision_noise_mod": (0,1),"B": (1, 5), "sigma_d": (0,20), "sigma_r": (0,20), "baseline_noise": (0,5), "side_bias": (-2,2), "directed_exp": (-5,5), "baseline_info_bonus": (-5,5), "random_exp": (0,5)}, choice_names=("right","left"))
+                          parameters={"drift_rwrd_diff_mod": (0,1), "drift_dcsn_noise_mod": (0,1),"B": (1, 5), "sigma_d": (0,20), "sigma_r": (0,20), "baseline_noise": (0,5), "side_bias": (-2,2), "directed_exp": (-5,5), "baseline_info_bonus": (-5,5), "random_exp": (0,5)}, choice_names=("right","left"))
 
 print("Fitting behavioral data")
 model_to_fit.fit(sample=social_media_sample, lossfunction=KF_DDM_Loss)
@@ -127,9 +133,9 @@ fit_result = {}
 for subdict in params.values():
     for name, val in subdict.items():
         if isinstance(val, Fitted):
-            fit_result[f"posterior_{name}"] = float(val)
-            fit_result[f"minval_{name}"] = val.minval
-            fit_result[f"maxval_{name}"] = val.maxval
+            fit_result[f"post_{name}"] = float(val)
+            fit_result[f"min_{name}"] = val.minval
+            fit_result[f"max_{name}"] = val.maxval
         else:
             fit_result[f"fixed_{name}"] = val
 
@@ -170,11 +176,11 @@ model_fit_to_data = model_to_fit
 # Examine recoverability on fit parameters
 # This is kind of hacky, but we pass in the learning parameters as arguments to drift even though they aren't used for it. This is just so the loss function has access to them
 print("Setting up the model to simulate behavioral data")
-model_to_sim = pyddm.gddm(drift=lambda drift_reward_diff_mod,drift_decision_noise_mod,drift_value,sigma_d,sigma_r,baseline_noise,side_bias,directed_exp,baseline_info_bonus,random_exp : drift_value,
+model_to_sim = pyddm.gddm(drift=lambda drift_rwrd_diff_mod,drift_dcsn_noise_mod,drift_value,sigma_d,sigma_r,baseline_noise,side_bias,directed_exp,baseline_info_bonus,random_exp : drift_value,
                           starting_position=lambda starting_position_value: starting_position_value, 
                           noise=1.0, bound="B", nondecision=0, T_dur=4.17,
                           conditions=["game_number", "gameLength", "trial", "r", "drift_value","starting_position_value"],
-                          parameters={"drift_reward_diff_mod": fit_result["posterior_drift_reward_diff_mod"], "drift_decision_noise_mod": fit_result["posterior_drift_decision_noise_mod"], "B": fit_result["posterior_B"], "sigma_d": fit_result["posterior_sigma_d"], "sigma_r": fit_result["posterior_sigma_r"], "baseline_noise": fit_result["posterior_baseline_noise"], "side_bias": fit_result["posterior_side_bias"], "directed_exp": fit_result["posterior_directed_exp"], "baseline_info_bonus": fit_result["posterior_baseline_info_bonus"], "random_exp": fit_result["posterior_random_exp"]}, choice_names=("right","left"))
+                          parameters={"drift_rwrd_diff_mod": fit_result["post_drift_rwrd_diff_mod"], "drift_dcsn_noise_mod": fit_result["post_drift_dcsn_noise_mod"], "B": fit_result["post_B"], "sigma_d": fit_result["post_sigma_d"], "sigma_r": fit_result["post_sigma_r"], "baseline_noise": fit_result["post_baseline_noise"], "side_bias": fit_result["post_side_bias"], "directed_exp": fit_result["post_directed_exp"], "baseline_info_bonus": fit_result["post_baseline_info_bonus"], "random_exp": fit_result["post_random_exp"]}, choice_names=("right","left"))
 print("Simulating behavioral data")
 simulated_behavior = KF_DDM_model(social_media_sample,model_to_sim,fit_or_sim="sim")
 
@@ -185,21 +191,21 @@ print("Fitting simulated behavioral data")
 model_to_fit.fit(sample=simulated_sample, lossfunction=KF_DDM_Loss)
 params = model_to_fit.parameters()
 model_fit_to_simulated_data = model_to_fit
-# Extract the parameter estimates for the model fit to the simulated data
+# Extract the parameter estimates for the model fit to the simulated data (hence prefix sft)
 simfit_result = {}
 for subdict in params.values():
     for name, val in subdict.items():
         if isinstance(val, Fitted):
-            simfit_result[f"simfit_posterior_{name}"] = float(val)
-            simfit_result[f"simfit_minval_{name}"] = val.minval
-            simfit_result[f"simfit_maxval_{name}"] = val.maxval
+            simfit_result[f"sft_post_{name}"] = float(val)
+            simfit_result[f"sft_min_{name}"] = val.minval
+            simfit_result[f"sft_max_{name}"] = val.maxval
         else:
-            simfit_result[f"simfit_fixed_{name}"] = val
+            simfit_result[f"sft_fixed_{name}"] = val
 fit_result.update(simfit_result)
 
-fit_result["simfit_average_action_prob"] = np.nanmean(model_to_fit.action_probs)
-fit_result["simfit_model_acc"] = np.nanmean(model_to_fit.model_acc)
-fit_result["simfit_final_loss"] = pyddm.get_model_loss(model=model_to_fit, sample=social_media_sample, lossfunction=KF_DDM_Loss)
+fit_result["sft_average_action_prob"] = np.nanmean(model_to_fit.action_probs)
+fit_result["sft_model_acc"] = np.nanmean(model_to_fit.model_acc)
+fit_result["sft_final_loss"] = pyddm.get_model_loss(model=model_to_fit, sample=social_media_sample, lossfunction=KF_DDM_Loss)
 
 # Reformat the simulated data to match the original data structure
 simulated_data_raw = simulated_behavior["data"]
@@ -235,16 +241,18 @@ simfit_datastruct = {
     "rewards": simulated_data_df.r.values.reshape(40, 9),
     "RTs": simulated_data_df.RT.values.reshape(40, 9),
 }
+# Replace -1 valus from the RTs with NaNs
+simfit_datastruct.loc[simfit_datastruct["RTs"] == -1, "RTs"] = np.nan
 
 
-model_output["simfit_datastruct"] = simfit_datastruct
+model_output["sft_datastruct"] = simfit_datastruct
 # Rename two of the dictionary fields because too long
 model_output["rel_uncertainty"] = model_output.pop("relative_uncertainty_of_choice")
 model_output["chge_uncertainty_af_choice"] = model_output.pop("change_in_uncertainty_after_choice")
 
 
 # Save results
-savemat(f"{results_dir}{id}_{room_type}_model_results_pyddm.mat", {
+savemat(f"{results_dir}{id}_{room_type}_{timestamp}_model_results_pyddm.mat", {
     "fit_result": fit_result,
     "model_output": model_output
 })

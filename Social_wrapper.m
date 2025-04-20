@@ -35,7 +35,7 @@ function [fits_table] = Social_wrapper(varargin)
             id = varargin{1};
             room = varargin{2};
         else
-            id = '562c2ff0733ea000111630df'; % 666878a27888fdd27f529c64 60caf58c38ce3e0f5a51f62b 668d6d380fb72b01a09dee54 659ab1b4640b25ce093058a2 5590a34cfdf99b729d4f69dc 53b98f20fdf99b472f4700e4
+            id = '562eb896733ea000051638c6'; % 666878a27888fdd27f529c64 60caf58c38ce3e0f5a51f62b 668d6d380fb72b01a09dee54 659ab1b4640b25ce093058a2 5590a34cfdf99b729d4f69dc 53b98f20fdf99b472f4700e4
             room = 'Like';
         end
         % Only set the anonymous function for the model and assign the
@@ -43,7 +43,7 @@ function [fits_table] = Social_wrapper(varargin)
         % fitting with PYDDM, you'll have to set the bounds for each parameter
         % in the fitting file.
         if ~strcmp(fitting_procedure, "PYDDM")
-            model = "KF_SIGMA"; % indicate if 'KF_UCB', 'RL', 'KF_UCB_DDM', 'KF_SIGMA_DDM', 'KF_SIGMA'
+            model = "KF_SIGMA_DDM"; % indicate if 'KF_UCB', 'RL', 'KF_UCB_DDM', 'KF_SIGMA_DDM', 'KF_SIGMA'
             MDP.field = {'baseline_noise','side_bias','directed_exp','baseline_info_bonus','random_exp','sigma_d', 'sigma_r'};
             if strcmp(fitting_procedure, "VBA")
                 MDP.observation_params = MDP.field; % When there is no latent state learning, all params are observation params
@@ -107,7 +107,7 @@ function [fits_table] = Social_wrapper(varargin)
     
     % Add libraries. Some of these are for the VBA example code and may not
     % be needed.
-    addpath([root '/rsmith/lab-members/cgoldman/Wellbeing/social_media/scripts/VB_scripts/'])
+    addpath([root '/rsmith/lab-members/cgoldman/Wellbeing/social_media/scripts/SPM_scripts/'])
     addpath([root '/rsmith/lab-members/cgoldman/Wellbeing/social_media/scripts/VBA_scripts/'])
     addpath([root '/rsmith/all-studies/util/spm12/']);
     addpath([root '/rsmith/all-studies/util/spm12/toolbox/DEM/']);

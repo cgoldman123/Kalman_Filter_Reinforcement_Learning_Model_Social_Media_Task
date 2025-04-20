@@ -16,8 +16,8 @@ def KF_DDM_model(sample,model,fit_or_sim):
     directed_exp = model.get_dependence("drift").directed_exp
     baseline_info_bonus = model.get_dependence("drift").baseline_info_bonus
     random_exp = model.get_dependence("drift").random_exp
-    drift_reward_diff_mod = model.get_dependence("drift").drift_reward_diff_mod
-    drift_decision_noise_mod = model.get_dependence("drift").drift_decision_noise_mod
+    drift_rwrd_diff_mod = model.get_dependence("drift").drift_rwrd_diff_mod
+    drift_dcsn_noise_mod = model.get_dependence("drift").drift_dcsn_noise_mod
 
     # Initialize variables to hold output
     G = 40 # Number of games
@@ -97,9 +97,9 @@ def KF_DDM_model(sample,model,fit_or_sim):
                         # This allows RTs to be faster in H6 than H1 when the reward difference is small (consistent with pattern of RTs we observe in model-free analyses and allowing for random exploration), 
                         # but slower when the reward difference is large (also consistent) due to the decision noise.
                         if reward_diff > 0:
-                            drift_value = (drift_reward_diff_mod * reward_diff) - (drift_decision_noise_mod * decision_noise)
+                            drift_value = (drift_rwrd_diff_mod * reward_diff) - (drift_dcsn_noise_mod * decision_noise)
                         else:
-                            drift_value = (drift_reward_diff_mod * reward_diff) + (drift_decision_noise_mod * decision_noise)
+                            drift_value = (drift_rwrd_diff_mod * reward_diff) + (drift_dcsn_noise_mod * decision_noise)
                         # solve a ddm (i.e., get the probability density function) for current DDM parameters
                         # Higher values of reward_diff and side_bias indicate greater preference for right bandit (band it 1 vs 0)
                         sol = model.solve_analytical(conditions={"drift_value": drift_value,
@@ -129,9 +129,9 @@ def KF_DDM_model(sample,model,fit_or_sim):
                     starting_position_value =  np.tanh((info_diff+side_bias)/50)
                     # Get the drift_value by combining the reward difference and decision noise. The decision noise will push the drift in opposite direction of the reward difference. 
                     if reward_diff > 0:
-                        drift_value = (drift_reward_diff_mod * reward_diff) - (drift_decision_noise_mod * decision_noise)
+                        drift_value = (drift_rwrd_diff_mod * reward_diff) - (drift_dcsn_noise_mod * decision_noise)
                     else:
-                        drift_value = (drift_reward_diff_mod * reward_diff) + (drift_decision_noise_mod * decision_noise)
+                        drift_value = (drift_rwrd_diff_mod * reward_diff) + (drift_dcsn_noise_mod * decision_noise)
                     # solve a ddm (i.e., get the probability density function) for current DDM parameters
                     # Higher values of reward_diff and side_bias indicate greater preference for right bandit (band it 1 vs 0)
                     sol = model.solve_analytical(conditions={"drift_value": drift_value,

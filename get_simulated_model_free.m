@@ -4,9 +4,9 @@ function output_struct = get_simulated_model_free(root, experiment, room_type, c
     % File to do model free analyses on simulated data
     % Load the mdp variable to get bandit schedule
     if cb==1
-        load('./social_media_mdp.mat'); 
+        load('./SPM_scripts/social_media_mdp.mat'); 
     else
-        load('./social_media_mdp_cb.mat'); 
+        load('./SPM_scripts/social_media_mdp_cb.mat'); 
     end
 
 

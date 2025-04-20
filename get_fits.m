@@ -62,7 +62,7 @@ if MDP.fit_model
             disp(cmdout)
 
             % Load the resulting matlab object.
-            pyddm_results = load([results_dir id '_' room_type '_model_results_pyddm.mat']);
+            pyddm_results = load([results_dir id '_' room_type '_' timestamp '_model_results_pyddm.mat']);
             fits = pyddm_results.fit_result;
             model_output = pyddm_results.model_output;
 
@@ -128,6 +128,9 @@ if MDP.fit_model
                 end
             end
         else
+            % PYDDM fits
+            % Note that the prefix sft means the result was from fitting
+            % simulated data.
             vars = fieldnames(fits);
             for i = 1:length(vars)
                 fits_table.(vars{i}) = fits.(vars{i});
@@ -166,7 +169,7 @@ if MDP.do_simulated_model_free
         elseif strcmp(fitting_procedure, "SPM")
             simulated_model_free = social_model_free(root,good_behavioral_file,room_type,study,model_output.simfit_DCM.datastruct);
         elseif strcmp(fitting_procedure, "PYDDM")
-            simulated_model_free = social_model_free(root,good_behavioral_file,room_type,study,model_output.simfit_datastruct);
+            simulated_model_free = social_model_free(root,good_behavioral_file,room_type,study,model_output.sft_datastruct);
         end
     catch ME
         fprintf("Simulate model free didn't work!");
