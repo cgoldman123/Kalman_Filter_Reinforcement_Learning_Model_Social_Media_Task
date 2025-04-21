@@ -118,10 +118,10 @@ model_to_fit = pyddm.gddm(drift=lambda drift_rwrd_diff_mod,drift_dcsn_noise_mod,
                           starting_position=lambda starting_position_value: starting_position_value, 
                           noise=1.0, bound="B", nondecision=0, T_dur=4.17,
                           conditions=["game_number", "gameLength", "trial", "r", "drift_value","starting_position_value"],
-                          parameters={"drift_rwrd_diff_mod": (0,1), "drift_dcsn_noise_mod": (0,.1),"B": (1, 5), "sigma_d": (0,20), "sigma_r": (0,20), "baseline_noise": (0,5), "side_bias": (-2,2), "directed_exp": (-5,5), "baseline_info_bonus": (-5,5), "random_exp": (0,5)}, choice_names=("right","left"))
+                          parameters={"drift_rwrd_diff_mod": (0,1), "drift_dcsn_noise_mod": (0,.1),"B": (1, 5), "sigma_d": (0,10), "sigma_r": (0,10), "baseline_noise": (0,5), "side_bias": (-2,2), "directed_exp": (-5,5), "baseline_info_bonus": (-5,5), "random_exp": (0,5)}, choice_names=("right","left"))
 
 print("Fitting behavioral data")
-model_to_fit.fit(sample=social_media_sample, lossfunction=KF_DDM_Loss)
+model_to_fit.fit(sample=social_media_sample, lossfunction=KF_DDM_Loss,verbose=True)
 
 
 

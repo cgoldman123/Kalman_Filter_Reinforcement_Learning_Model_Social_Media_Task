@@ -2,10 +2,23 @@
 # Define a function that returns the likelihood of data under a model and can simulate data based on parameters
 import pandas as pd
 import numpy as np
-import io
-from contextlib import redirect_stdout, redirect_stderr
+from pyddm.logger import logger
+
+# Add a filter to the logger to check for the Renormalization warning, where the probability of hitting the upper, lower, or undecided boundary is not 1 so it had to be renormalized
+had_renorm = False
+def renorm_filter(record):
+    global had_renorm               # ← declare you’re writing the module flag
+    if "Renormalizing probability density" in record.getMessage():
+        had_renorm = True
+    return True
+
+logger.addFilter(renorm_filter)
+
+
 
 def KF_DDM_model(sample,model,fit_or_sim):
+    global had_renorm 
+
     data = sample.to_pandas_dataframe()
     data = data.sort_values(by=["game_number", "trial"]) # Sort the dataframe by game number and trial number
 
@@ -105,13 +118,23 @@ def KF_DDM_model(sample,model,fit_or_sim):
                         # solve a ddm (i.e., get the probability density function) for current DDM parameters
                         # Higher values of reward_diff and side_bias indicate greater preference for right bandit (band it 1 vs 0)
 
-
+                        had_renorm = False
                         sol = model.solve_analytical(
                             conditions={
                                 "drift_value": drift_value,
                                 "starting_position_value": starting_position_value
                             }
                         )
+                        # Check to see if the renormalization warning was triggered
+                        if had_renorm:
+                            params = model.parameters()
+                            for subdict in params.values():
+                                for name, val in subdict.items():
+                                    print(f"{name} = {float(val)}")
+                            print("drift_value = ", drift_value)
+                            print("starting_position_value = ", starting_position_value)
+                            print()
+
 
                         # Evaluate the pdf of the reaction time for the chosen option. Note that left will be the bottom boundary and right upper
                         p = sol.evaluate(trial['RT'], choice)
