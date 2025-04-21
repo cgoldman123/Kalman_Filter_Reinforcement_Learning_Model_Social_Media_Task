@@ -2,6 +2,8 @@
 # Define a function that returns the likelihood of data under a model and can simulate data based on parameters
 import pandas as pd
 import numpy as np
+import io
+from contextlib import redirect_stdout, redirect_stderr
 
 def KF_DDM_model(sample,model,fit_or_sim):
     data = sample.to_pandas_dataframe()
@@ -102,16 +104,14 @@ def KF_DDM_model(sample,model,fit_or_sim):
                             drift_value = (drift_rwrd_diff_mod * reward_diff) + (drift_dcsn_noise_mod * decision_noise)
                         # solve a ddm (i.e., get the probability density function) for current DDM parameters
                         # Higher values of reward_diff and side_bias indicate greater preference for right bandit (band it 1 vs 0)
-                        sol = model.solve_analytical(conditions={"drift_value": drift_value,
-                                                                 "starting_position_value": starting_position_value})  
-                        # Trying to figure out what is causing the Warning: Renormalizing probability
-                        # pdf_lower = sol.pdf("left")
-                        # pdf_upper = sol.pdf("right")
-                        # pdf_lower[0] = 0.
-                        # pdf_upper[0] = 0.
-                        # pdf_lower *= model.dt
-                        # pdf_upper *= model.dt
-                        # pdfsum = np.sum(pdf_lower) + np.sum(pdf_upper)
+
+
+                        sol = model.solve_analytical(
+                            conditions={
+                                "drift_value": drift_value,
+                                "starting_position_value": starting_position_value
+                            }
+                        )
 
                         # Evaluate the pdf of the reaction time for the chosen option. Note that left will be the bottom boundary and right upper
                         p = sol.evaluate(trial['RT'], choice)

@@ -17,9 +17,9 @@ if len(sys.argv) > 1:
     room_type = sys.argv[4] # Room type (e.g., Like, Dislike)
     timestamp = sys.argv[5] # Timestamp (e.g., 04_16_25_T10-39-55)
 else:
-    outpath_beh = f"L:/rsmith/lab-members/cgoldman/Wellbeing/social_media/output/test/53b98f20fdf99b472f4700e4_beh_Like_04_16_25_T10-39-55.csv" # Behavioral file location
+    outpath_beh = f"L:/rsmith/lab-members/cgoldman/Wellbeing/social_media/output/SM_fits_PYDDM_test_PYDDM_04-20-2025_15-54-59/Like/model1/562eb896733ea000051638c6_beh_Like_04_20_25_T15-55-04.csv" # Behavioral file location
     results_dir = f"L:/rsmith/lab-members/cgoldman/Wellbeing/social_media/output/test/" # Directory to save results
-    id = "53b98f20fdf99b472f4700e4" # Subject ID
+    id = "562eb896733ea000051638c6" # Subject ID
     room_type = "Like" # Room type (e.g., Like, Dislike)
     timestamp = "04_16_25_T10-39-55" # Timestamp (e.g., 04_16_25_T10-39-55)
 
@@ -118,7 +118,7 @@ model_to_fit = pyddm.gddm(drift=lambda drift_rwrd_diff_mod,drift_dcsn_noise_mod,
                           starting_position=lambda starting_position_value: starting_position_value, 
                           noise=1.0, bound="B", nondecision=0, T_dur=4.17,
                           conditions=["game_number", "gameLength", "trial", "r", "drift_value","starting_position_value"],
-                          parameters={"drift_rwrd_diff_mod": (0,1), "drift_dcsn_noise_mod": (0,1),"B": (1, 5), "sigma_d": (0,20), "sigma_r": (0,20), "baseline_noise": (0,5), "side_bias": (-2,2), "directed_exp": (-5,5), "baseline_info_bonus": (-5,5), "random_exp": (0,5)}, choice_names=("right","left"))
+                          parameters={"drift_rwrd_diff_mod": (0,1), "drift_dcsn_noise_mod": (0,.1),"B": (1, 5), "sigma_d": (0,20), "sigma_r": (0,20), "baseline_noise": (0,5), "side_bias": (-2,2), "directed_exp": (-5,5), "baseline_info_bonus": (-5,5), "random_exp": (0,5)}, choice_names=("right","left"))
 
 print("Fitting behavioral data")
 model_to_fit.fit(sample=social_media_sample, lossfunction=KF_DDM_Loss)
@@ -242,7 +242,7 @@ simfit_datastruct = {
     "RTs": simulated_data_df.RT.values.reshape(40, 9),
 }
 # Replace -1 valus from the RTs with NaNs
-simfit_datastruct.loc[simfit_datastruct["RTs"] == -1, "RTs"] = np.nan
+simfit_datastruct["RTs"][simfit_datastruct["RTs"] == -1] = np.nan
 
 
 model_output["sft_datastruct"] = simfit_datastruct
