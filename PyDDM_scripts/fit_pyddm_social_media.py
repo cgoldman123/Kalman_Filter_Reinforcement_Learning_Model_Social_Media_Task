@@ -5,9 +5,9 @@ import numpy as np
 from KF_DDM_model import KF_DDM_model
 from scipy.io import savemat
 import sys, random
+import pyddm.plot
+import matplotlib.pyplot as plt
 
-## Todo
-# plot pyddm.plot.model_gui(model_to_fit, conditions={"deltaq": [-1, -.8, -.6, -.4, -.2, 0, .2, .4, .6, .8, 1]})
 
 # Get arguments from the command line if they are passed in
 if len(sys.argv) > 1:
@@ -17,11 +17,12 @@ if len(sys.argv) > 1:
     room_type = sys.argv[4] # Room type (e.g., Like, Dislike)
     timestamp = sys.argv[5] # Timestamp (e.g., 04_16_25_T10-39-55)
 else:
-    outpath_beh = f"L:/rsmith/lab-members/cgoldman/Wellbeing/social_media/output/SM_fits_PYDDM_test_PYDDM_04-20-2025_15-54-59/Like/model1/562eb896733ea000051638c6_beh_Like_04_20_25_T15-55-04.csv" # Behavioral file location
+    # Note you'll have to change both outpath_beh and id to fit another subject
+    outpath_beh = f"L:/rsmith/lab-members/cgoldman/Wellbeing/social_media/output/SM_fits_PYDDM_test_PYDDM_04-21-2025_15-04-20/Like/model1/568d0641b5a2c2000cb657d0_beh_Like_04_21_25_T15-57-57.csv" # Behavioral file location
+    id = "568d0641b5a2c2000cb657d0" # Subject ID
     results_dir = f"L:/rsmith/lab-members/cgoldman/Wellbeing/social_media/output/test/" # Directory to save results
-    id = "562eb896733ea000051638c6" # Subject ID
     room_type = "Like" # Room type (e.g., Like, Dislike)
-    timestamp = "04_16_25_T10-39-55" # Timestamp (e.g., 04_16_25_T10-39-55)
+    timestamp = "current_timestamp" # Timestamp (e.g., 04_16_25_T10-39-55)
 
 
 log_path = f"{results_dir}{id}_{room_type}_{timestamp}_model_log.txt"
@@ -118,12 +119,15 @@ model_to_fit = pyddm.gddm(drift=lambda drift_rwrd_diff_mod,drift_dcsn_noise_mod,
                           starting_position=lambda starting_position_value: starting_position_value, 
                           noise=1.0, bound="B", nondecision=0, T_dur=4.17,
                           conditions=["game_number", "gameLength", "trial", "r", "drift_value","starting_position_value"],
-                          parameters={"drift_rwrd_diff_mod": (0,1), "drift_dcsn_noise_mod": (0,.1),"B": (1, 5), "sigma_d": (0,10), "sigma_r": (0,10), "baseline_noise": (0,5), "side_bias": (-2,2), "directed_exp": (-5,5), "baseline_info_bonus": (-5,5), "random_exp": (0,5)}, choice_names=("right","left"))
+                          parameters={"drift_rwrd_diff_mod": (0,1),"drift_dcsn_noise_mod":1, "B": (.5, 5), "sigma_d": (0.01,10), "sigma_r": (0.01,10), "baseline_noise": (0,.1), "side_bias": (-5,5), "directed_exp": (-10,10), "baseline_info_bonus": (-10,10), "random_exp": (0,10)}, choice_names=("right","left"))
+
+# Note that to plot using this function, I would have to pass in the conditions that get assigned in the model function (i.e., starting_position_value and drift_value). We would only be able to view the pdf and reaction time for one combination of conditions, which is not ideal.
+# pyddm.plot.plot_fit_diagnostics(model=model_to_fit, sample=social_media_sample)
+# plt.savefig("roitman-fit.png")
+# plt.show()
 
 print("Fitting behavioral data")
 model_to_fit.fit(sample=social_media_sample, lossfunction=KF_DDM_Loss,verbose=True)
-
-
 
 # Save fit parameter estimates
 # model_to_fit.get_fit_result()
@@ -180,7 +184,7 @@ model_to_sim = pyddm.gddm(drift=lambda drift_rwrd_diff_mod,drift_dcsn_noise_mod,
                           starting_position=lambda starting_position_value: starting_position_value, 
                           noise=1.0, bound="B", nondecision=0, T_dur=4.17,
                           conditions=["game_number", "gameLength", "trial", "r", "drift_value","starting_position_value"],
-                          parameters={"drift_rwrd_diff_mod": fit_result["post_drift_rwrd_diff_mod"], "drift_dcsn_noise_mod": fit_result["post_drift_dcsn_noise_mod"], "B": fit_result["post_B"], "sigma_d": fit_result["post_sigma_d"], "sigma_r": fit_result["post_sigma_r"], "baseline_noise": fit_result["post_baseline_noise"], "side_bias": fit_result["post_side_bias"], "directed_exp": fit_result["post_directed_exp"], "baseline_info_bonus": fit_result["post_baseline_info_bonus"], "random_exp": fit_result["post_random_exp"]}, choice_names=("right","left"))
+                          parameters={"drift_rwrd_diff_mod": fit_result["post_drift_rwrd_diff_mod"], "drift_dcsn_noise_mod": 1, "B": fit_result["post_B"], "sigma_d": fit_result["post_sigma_d"], "sigma_r": fit_result["post_sigma_r"], "baseline_noise": fit_result["post_baseline_noise"], "side_bias": fit_result["post_side_bias"], "directed_exp": fit_result["post_directed_exp"], "baseline_info_bonus": fit_result["post_baseline_info_bonus"], "random_exp": fit_result["post_random_exp"]}, choice_names=("right","left"))
 print("Simulating behavioral data")
 simulated_behavior = KF_DDM_model(social_media_sample,model_to_sim,fit_or_sim="sim")
 

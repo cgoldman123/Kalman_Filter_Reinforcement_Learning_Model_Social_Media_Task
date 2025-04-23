@@ -59,167 +59,176 @@ def KF_DDM_model(sample,model,fit_or_sim):
 
     num_invalid_rts = 0
 
-
-
-    for game_num in range(0, len(game_numbers)):
-        game_df = data[data["game_number"] == game_numbers[game_num]] # Subset the dataframe by game number
-        # Initialize empty vectors for each game
-        mu1 = np.full(10, np.nan)
-        mu1[0] = 50 # Irrelevant when initial_sigma is 10000 since it makes the learning rate on the first trial 1
-        mu2 = np.full(10, np.nan)
-        mu2[0] = 50 # Irrelevant when initial_sigma is 10000 since it makes the learning rate on the first trial 1
+    # --- catch errors during model execution ---
+    try:
+        for game_num in range(0, len(game_numbers)):
+            game_df = data[data["game_number"] == game_numbers[game_num]] # Subset the dataframe by game number
+            # Initialize empty vectors for each game
+            mu1 = np.full(10, np.nan)
+            mu1[0] = 50 # Irrelevant when initial_sigma is 10000 since it makes the learning rate on the first trial 1
+            mu2 = np.full(10, np.nan)
+            mu2[0] = 50 # Irrelevant when initial_sigma is 10000 since it makes the learning rate on the first trial 1
+            
+            alpha1 = np.full(10, np.nan)
+            alpha2 = np.full(10, np.nan)
         
-        alpha1 = np.full(10, np.nan)
-        alpha2 = np.full(10, np.nan)
-    
-        for trial_num in range(0,len(game_df)):
-            trial = game_df.iloc[trial_num]
-            # Loop over forced choice trials
-            if trial_num >= 4:
-                if trial['gameLength'] == 5: # horizon is 1
-                    T = 0
-                    Y = 1
-                else: # horizon is 5
-                    T = directed_exp
-                    Y = random_exp
+            for trial_num in range(0,len(game_df)):
+                trial = game_df.iloc[trial_num]
+                # Loop over forced choice trials
+                if trial_num >= 4:
+                    if trial['gameLength'] == 5: # horizon is 1
+                        T = 0
+                        Y = 1
+                    else: # horizon is 5
+                        T = directed_exp
+                        Y = random_exp
+                        
+                    reward_diff = mu2[trial_num] - mu1[trial_num] # reward difference between the two bandits
+
+                    z = .5 # hyperparam controlling steepness of curve
+
+                    # Exponential descent
+                    info_bonus_bandit1 = sigma1[game_num,trial_num]*baseline_info_bonus + sigma1[game_num,trial_num]*T*(np.exp(-z*(trial_num-5))-np.exp(-4*z))/(1-np.exp(-4*z))
+                    info_bonus_bandit2 = sigma2[game_num,trial_num]*baseline_info_bonus + sigma2[game_num,trial_num]*T*(np.exp(-z*(trial_num-5))-np.exp(-4*z))/(1-np.exp(-4*z))
+
+                    info_diff = info_bonus_bandit2 - info_bonus_bandit1 # information difference between the two bandits
+
+                    # total uncertainty is variance of both arms
+                    total_uncertainty[game_num,trial_num] = (sigma1[game_num,trial_num]**2 + sigma2[game_num,trial_num]**2)**.5
                     
-                reward_diff = mu2[trial_num] - mu1[trial_num] # reward difference between the two bandits
-
-                z = .5 # hyperparam controlling steepness of curve
-
-                # Exponential descent
-                info_bonus_bandit1 = sigma1[game_num,trial_num]*baseline_info_bonus + sigma1[game_num,trial_num]*T*(np.exp(-z*(trial_num-5))-np.exp(-4*z))/(1-np.exp(-4*z))
-                info_bonus_bandit2 = sigma2[game_num,trial_num]*baseline_info_bonus + sigma2[game_num,trial_num]*T*(np.exp(-z*(trial_num-5))-np.exp(-4*z))/(1-np.exp(-4*z))
-
-                info_diff = info_bonus_bandit2 - info_bonus_bandit1 # information difference between the two bandits
-
-                # total uncertainty is variance of both arms
-                total_uncertainty[game_num,trial_num] = (sigma1[game_num,trial_num]**2 + sigma2[game_num,trial_num]**2)**.5
-                
-                # Exponential descent
-                RE = Y + ((1 - Y) * (1 - np.exp(-z * (trial_num - 5))) / (1 - np.exp(-4 * z)))
-                
-                decision_noise = total_uncertainty[game_num,trial_num]*baseline_noise*RE
+                    # Exponential descent
+                    RE = Y + ((1 - Y) * (1 - np.exp(-z * (trial_num - 5))) / (1 - np.exp(-4 * z)))
+                    
+                    decision_noise = total_uncertainty[game_num,trial_num]*baseline_noise*RE
 
 
-                if fit_or_sim == "fit":
-                    choice = "left" if trial['choice'] == 0 else "right"
-                    # Only consider reaction times less than the max rt in the log likelihood
-                    if trial['RT'] < max_rt:
-                        # Transform the starting position value so it's between -1 and 1. Using 20 smooths out the function
-                        starting_position_value = np.tanh((info_diff+side_bias)/50)
+                    if fit_or_sim == "fit":
+                        choice = "left" if trial['choice'] == 0 else "right"
+                        # Only consider reaction times less than the max rt in the log likelihood
+                        if trial['RT'] < max_rt:
+                            # Transform the starting position value so it's between -1 and 1. Using 20 smooths out the function
+                            starting_position_value = np.tanh((info_diff+side_bias)/50)
+                            # Get the drift_value by combining the reward difference and decision noise. The decision noise will push the drift in opposite direction of the reward difference. 
+                            # This allows RTs to be faster in H6 than H1 when the reward difference is small (consistent with pattern of RTs we observe in model-free analyses and allowing for random exploration), 
+                            # but slower when the reward difference is large (also consistent) due to the decision noise.
+                            if reward_diff > 0:
+                                drift_value = (drift_rwrd_diff_mod * reward_diff) - (drift_dcsn_noise_mod * decision_noise)
+                            else:
+                                drift_value = (drift_rwrd_diff_mod * reward_diff) + (drift_dcsn_noise_mod * decision_noise)
+                            # solve a ddm (i.e., get the probability density function) for current DDM parameters
+                            # Higher values of reward_diff and side_bias indicate greater preference for right bandit (band it 1 vs 0)
+
+                            had_renorm = False
+                            sol = model.solve_analytical(
+                                conditions={
+                                    "drift_value": drift_value,
+                                    "starting_position_value": starting_position_value
+                                }
+                            )
+                            # Check to see if the renormalization warning was triggered
+                            if had_renorm:
+                                print("The mode had to renormalize the probability density function. Please check the model parameters:")
+                                params = model.parameters()
+                                for subdict in params.values():
+                                    for name, val in subdict.items():
+                                        print(f"{name} = {float(val)}")
+                                print("drift_value = ", drift_value)
+                                print("starting_position_value = ", starting_position_value)
+                                print()
+
+
+                            # Evaluate the pdf of the reaction time for the chosen option. Note that left will be the bottom boundary and right upper
+                            p = sol.evaluate(trial['RT'], choice)
+                            assert p >= 0, "Probability density of a reaction time must be non-negative"
+                            # Store the probability of the choice under the model
+                            rt_pdf[game_num, trial_num] = p
+                            # Store the action probability of the choice under the model
+                            action_probs[game_num, trial_num] = sol.prob(choice)
+                            model_acc[game_num, trial_num] = sol.prob(choice) > .5
+                        else:
+                            num_invalid_rts += 1
+                    else:
+                        # Simulate a reaction time from the model based on the parameters
+                        # Transform the starting position value so it's between -1 and 1. May want to smooth out function
+                        starting_position_value =  np.tanh((info_diff+side_bias)/50)
                         # Get the drift_value by combining the reward difference and decision noise. The decision noise will push the drift in opposite direction of the reward difference. 
-                        # This allows RTs to be faster in H6 than H1 when the reward difference is small (consistent with pattern of RTs we observe in model-free analyses and allowing for random exploration), 
-                        # but slower when the reward difference is large (also consistent) due to the decision noise.
                         if reward_diff > 0:
                             drift_value = (drift_rwrd_diff_mod * reward_diff) - (drift_dcsn_noise_mod * decision_noise)
                         else:
                             drift_value = (drift_rwrd_diff_mod * reward_diff) + (drift_dcsn_noise_mod * decision_noise)
                         # solve a ddm (i.e., get the probability density function) for current DDM parameters
                         # Higher values of reward_diff and side_bias indicate greater preference for right bandit (band it 1 vs 0)
-
-                        had_renorm = False
-                        sol = model.solve_analytical(
-                            conditions={
-                                "drift_value": drift_value,
-                                "starting_position_value": starting_position_value
-                            }
-                        )
-                        # Check to see if the renormalization warning was triggered
-                        if had_renorm:
-                            params = model.parameters()
-                            for subdict in params.values():
-                                for name, val in subdict.items():
-                                    print(f"{name} = {float(val)}")
-                            print("drift_value = ", drift_value)
-                            print("starting_position_value = ", starting_position_value)
-                            print()
-
-
-                        # Evaluate the pdf of the reaction time for the chosen option. Note that left will be the bottom boundary and right upper
-                        p = sol.evaluate(trial['RT'], choice)
-                        assert p >= 0, "Probability density of a reaction time must be non-negative"
-                        # Store the probability of the choice under the model
-                        rt_pdf[game_num, trial_num] = p
-                        # Store the action probability of the choice under the model
-                        action_probs[game_num, trial_num] = sol.prob(choice)
-                        model_acc[game_num, trial_num] = sol.prob(choice) > .5
-                    else:
-                        num_invalid_rts += 1
-                else:
-                    # Simulate a reaction time from the model based on the parameters
-                    # Transform the starting position value so it's between -1 and 1. May want to smooth out function
-                    starting_position_value =  np.tanh((info_diff+side_bias)/50)
-                    # Get the drift_value by combining the reward difference and decision noise. The decision noise will push the drift in opposite direction of the reward difference. 
-                    if reward_diff > 0:
-                        drift_value = (drift_rwrd_diff_mod * reward_diff) - (drift_dcsn_noise_mod * decision_noise)
-                    else:
-                        drift_value = (drift_rwrd_diff_mod * reward_diff) + (drift_dcsn_noise_mod * decision_noise)
-                    # solve a ddm (i.e., get the probability density function) for current DDM parameters
-                    # Higher values of reward_diff and side_bias indicate greater preference for right bandit (band it 1 vs 0)
-                    sol = model.solve_analytical(conditions={"drift_value": drift_value,
-                                                                "starting_position_value": starting_position_value})   
-                    res = sol.sample(1).to_pandas_dataframe(drop_undecided=True) # We only use the first non-undecided trial
-                    # dataframe will be empty if the trial was undecided. Simulate again
-                    max_num_simulations = 10
-                    while res.empty:
-                        if max_num_simulations == 0:
-                            raise ValueError("The model simulated an undecided trial after 10 attempts. Please check the model parameters.")
-                        max_num_simulations -= 1
+                        sol = model.solve_analytical(conditions={"drift_value": drift_value,
+                                                                    "starting_position_value": starting_position_value})   
                         res = sol.sample(1).to_pandas_dataframe(drop_undecided=True) # We only use the first non-undecided trial
+                        # dataframe will be empty if the trial was undecided. Simulate again
+                        max_num_simulations = 10
+                        while res.empty:
+                            if max_num_simulations == 0:
+                                raise ValueError("The model simulated an undecided trial after 10 attempts. Please check the model parameters.")
+                            max_num_simulations -= 1
+                            res = sol.sample(1).to_pandas_dataframe(drop_undecided=True) # We only use the first non-undecided trial
 
-                    # Assign the simulated action and RT to the dataframe
-                    data.loc[(data["game_number"] == game_numbers[game_num]) & (data["trial"] == trial.trial),"choice"] = res.choice[0]
-                    data.loc[(data["game_number"] == game_numbers[game_num]) & (data["trial"] == trial.trial), "RT"] = res.RT[0]
-                    # Assign the simulated reward to the dataframe based on the option chosen
-                    # If the choice is 0, the left bandit outcome is used, otherwise the right bandit outcome is used
-                    if res.choice[0] == 0:
-                        data.loc[(data["game_number"] == game_numbers[game_num]) & (data["trial"] == trial.trial), "r"] = trial['left_bandit_outcome']
-                    else:
-                        data.loc[(data["game_number"] == game_numbers[game_num]) & (data["trial"] == trial.trial), "r"] = trial['right_bandit_outcome']
-                    
-                    simulated_trial = data[(data["game_number"] == game_numbers[game_num]) & (data["trial"] == trial.trial)] 
-                    trial = simulated_trial.squeeze() # Convert the dataframe to a series
+                        # Assign the simulated action and RT to the dataframe
+                        data.loc[(data["game_number"] == game_numbers[game_num]) & (data["trial"] == trial.trial),"choice"] = res.choice[0]
+                        data.loc[(data["game_number"] == game_numbers[game_num]) & (data["trial"] == trial.trial), "RT"] = res.RT[0]
+                        # Assign the simulated reward to the dataframe based on the option chosen
+                        # If the choice is 0, the left bandit outcome is used, otherwise the right bandit outcome is used
+                        if res.choice[0] == 0:
+                            data.loc[(data["game_number"] == game_numbers[game_num]) & (data["trial"] == trial.trial), "r"] = trial['left_bandit_outcome']
+                        else:
+                            data.loc[(data["game_number"] == game_numbers[game_num]) & (data["trial"] == trial.trial), "r"] = trial['right_bandit_outcome']
+                        
+                        simulated_trial = data[(data["game_number"] == game_numbers[game_num]) & (data["trial"] == trial.trial)] 
+                        trial = simulated_trial.squeeze() # Convert the dataframe to a series
 
-            # left option chosen so mu1 updates
-            if trial['choice'] == 0:
-                # save relative uncertainty of choice
-                relative_uncertainty_of_choice[game_num, trial_num] = sigma1[game_num, trial_num] - sigma2[game_num, trial_num]
+                # left option chosen so mu1 updates
+                if trial['choice'] == 0:
+                    # save relative uncertainty of choice
+                    relative_uncertainty_of_choice[game_num, trial_num] = sigma1[game_num, trial_num] - sigma2[game_num, trial_num]
 
-                # update sigma and learning rate
-                temp = 1 / (sigma1[game_num, trial_num]**2 + sigma_d**2) + 1 / (sigma_r**2)
-                sigma1[game_num, trial_num + 1] = np.sqrt(1 / temp)
-                change_in_uncertainty_after_choice[game_num, trial_num] = sigma1[game_num, trial_num + 1] - sigma1[game_num, trial_num]
-                alpha1[trial_num] = (sigma1[game_num, trial_num + 1] / sigma_r)**2
+                    # update sigma and learning rate
+                    temp = 1 / (sigma1[game_num, trial_num]**2 + sigma_d**2) + 1 / (sigma_r**2)
+                    sigma1[game_num, trial_num + 1] = np.sqrt(1 / temp)
+                    change_in_uncertainty_after_choice[game_num, trial_num] = sigma1[game_num, trial_num + 1] - sigma1[game_num, trial_num]
+                    alpha1[trial_num] = (sigma1[game_num, trial_num + 1] / sigma_r)**2
 
-                temp = sigma2[game_num, trial_num]**2 + sigma_d**2
-                sigma2[game_num, trial_num + 1] = np.sqrt(temp)
+                    temp = sigma2[game_num, trial_num]**2 + sigma_d**2
+                    sigma2[game_num, trial_num + 1] = np.sqrt(temp)
 
-                exp_vals[game_num, trial_num] = mu1[trial_num]
-                pred_errors[game_num, trial_num] = (reward_sensitivity * trial['r']) - exp_vals[game_num, trial_num]
-                alpha[game_num, trial_num] = alpha1[trial_num]
-                pred_errors_alpha[game_num, trial_num] = alpha1[trial_num] * pred_errors[game_num, trial_num]
-                mu1[trial_num + 1] = mu1[trial_num] + pred_errors_alpha[game_num, trial_num]
-                mu2[trial_num + 1] = mu2[trial_num]
+                    exp_vals[game_num, trial_num] = mu1[trial_num]
+                    pred_errors[game_num, trial_num] = (reward_sensitivity * trial['r']) - exp_vals[game_num, trial_num]
+                    alpha[game_num, trial_num] = alpha1[trial_num]
+                    pred_errors_alpha[game_num, trial_num] = alpha1[trial_num] * pred_errors[game_num, trial_num]
+                    mu1[trial_num + 1] = mu1[trial_num] + pred_errors_alpha[game_num, trial_num]
+                    mu2[trial_num + 1] = mu2[trial_num]
 
-            else:
-                # right bandit choice, so mu2 updates
-                relative_uncertainty_of_choice[game_num, trial_num] = sigma2[game_num, trial_num] - sigma1[game_num, trial_num]
+                else:
+                    # right bandit choice, so mu2 updates
+                    relative_uncertainty_of_choice[game_num, trial_num] = sigma2[game_num, trial_num] - sigma1[game_num, trial_num]
 
-                temp = 1 / (sigma2[game_num, trial_num]**2 + sigma_d**2) + 1 / (sigma_r**2)
-                sigma2[game_num, trial_num + 1] = np.sqrt(1 / temp)
-                change_in_uncertainty_after_choice[game_num, trial_num] = sigma2[game_num, trial_num + 1] - sigma2[game_num, trial_num]
-                alpha2[trial_num] = (sigma2[game_num, trial_num + 1] / sigma_r)**2
+                    temp = 1 / (sigma2[game_num, trial_num]**2 + sigma_d**2) + 1 / (sigma_r**2)
+                    sigma2[game_num, trial_num + 1] = np.sqrt(1 / temp)
+                    change_in_uncertainty_after_choice[game_num, trial_num] = sigma2[game_num, trial_num + 1] - sigma2[game_num, trial_num]
+                    alpha2[trial_num] = (sigma2[game_num, trial_num + 1] / sigma_r)**2
 
-                temp = sigma1[game_num, trial_num]**2 + sigma_d**2
-                sigma1[game_num, trial_num + 1] = np.sqrt(temp)
+                    temp = sigma1[game_num, trial_num]**2 + sigma_d**2
+                    sigma1[game_num, trial_num + 1] = np.sqrt(temp)
 
-                exp_vals[game_num, trial_num] = mu2[trial_num]
-                pred_errors[game_num, trial_num] = (reward_sensitivity * trial['r']) - exp_vals[game_num, trial_num]
-                alpha[game_num, trial_num] = alpha2[trial_num]
-                pred_errors_alpha[game_num, trial_num] = alpha2[trial_num] * pred_errors[game_num, trial_num]
-                mu2[trial_num + 1] = mu2[trial_num] + pred_errors_alpha[game_num, trial_num]
-                mu1[trial_num + 1] = mu1[trial_num]
+                    exp_vals[game_num, trial_num] = mu2[trial_num]
+                    pred_errors[game_num, trial_num] = (reward_sensitivity * trial['r']) - exp_vals[game_num, trial_num]
+                    alpha[game_num, trial_num] = alpha2[trial_num]
+                    pred_errors_alpha[game_num, trial_num] = alpha2[trial_num] * pred_errors[game_num, trial_num]
+                    mu2[trial_num + 1] = mu2[trial_num] + pred_errors_alpha[game_num, trial_num]
+                    mu1[trial_num + 1] = mu1[trial_num]
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        print("Printing the parameter values: ")
+        for subdict in model.parameters().values():
+            for name, val in subdict.items():
+                print(f"  {name} = {val}")
+        # Raise the exception so we still get traceback
+        raise
 
     # Return a dictionary of model statistics
     return {
