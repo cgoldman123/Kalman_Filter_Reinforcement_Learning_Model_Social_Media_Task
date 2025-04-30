@@ -16,7 +16,7 @@ logger.addFilter(renorm_filter)
 
 
 
-def KF_DDM_model(sample,model,fit_or_sim):
+def KF_DDM_model(sample,model,fit_or_sim,sim_using_max_pdf=False):
     global had_renorm 
 
     data = sample.to_pandas_dataframe()
@@ -160,14 +160,31 @@ def KF_DDM_model(sample,model,fit_or_sim):
                         # Higher values of reward_diff and side_bias indicate greater preference for right bandit (band it 1 vs 0)
                         sol = model.solve_analytical(conditions={"drift_value": drift_value,
                                                                     "starting_position_value": starting_position_value})   
-                        res = sol.sample(1).to_pandas_dataframe(drop_undecided=True) # We only use the first non-undecided trial
-                        # dataframe will be empty if the trial was undecided. Simulate again
-                        max_num_simulations = 10
-                        while res.empty:
-                            if max_num_simulations == 0:
-                                raise ValueError("The model simulated an undecided trial after 10 attempts. Please check the model parameters.")
-                            max_num_simulations -= 1
+                        # Use the reaction time with the max probability density
+                        if sim_using_max_pdf:
+                            # If the left choice was more likely
+                            if max(sol.pdf("left")) > max(sol.pdf("right")):
+                                # Get the index of the max pdf
+                                rt_index = int(np.argmax(sol.pdf("left")))
+                                choice = 0
+                            else:
+                                rt_index = int(np.argmax(sol.pdf("right")))
+                                choice = 1
+                            # Get the reaction time at that index
+                            RT = model.dt * rt_index
+                            # Store the simulated action in a dataframe
+                            res = pd.DataFrame({'choice': [choice], 'RT': [RT]})
+
+                        # Sample from the pdf distributions
+                        else:
                             res = sol.sample(1).to_pandas_dataframe(drop_undecided=True) # We only use the first non-undecided trial
+                            # dataframe will be empty if the trial was undecided. Simulate again
+                            max_num_simulations = 10
+                            while res.empty:
+                                if max_num_simulations == 0:
+                                    raise ValueError("The model simulated an undecided trial after 10 attempts. Please check the model parameters.")
+                                max_num_simulations -= 1
+                                res = sol.sample(1).to_pandas_dataframe(drop_undecided=True) # We only use the first non-undecided trial
 
                         # Assign the simulated action and RT to the dataframe
                         data.loc[(data["game_number"] == game_numbers[game_num]) & (data["trial"] == trial.trial),"choice"] = res.choice[0]

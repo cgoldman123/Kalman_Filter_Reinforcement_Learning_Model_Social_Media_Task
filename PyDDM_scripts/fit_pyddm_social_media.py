@@ -182,7 +182,7 @@ model_fit_to_data = model_to_fit
 print("Setting up the model to simulate behavioral data")
 model_to_sim = pyddm.gddm(drift=lambda drift_rwrd_diff_mod,drift_dcsn_noise_mod,drift_value,sigma_d,sigma_r,baseline_noise,side_bias,directed_exp,baseline_info_bonus,random_exp : drift_value,
                           starting_position=lambda starting_position_value: starting_position_value, 
-                          noise=1.0, bound="B", nondecision=0, T_dur=4.17,
+                          noise=1.0, bound="B", nondecision=0, T_dur=100,
                           conditions=["game_number", "gameLength", "trial", "r", "drift_value","starting_position_value"],
                           parameters={"drift_rwrd_diff_mod": fit_result["post_drift_rwrd_diff_mod"], "drift_dcsn_noise_mod": 1, "B": fit_result["post_B"], "sigma_d": fit_result["post_sigma_d"], "sigma_r": fit_result["post_sigma_r"], "baseline_noise": fit_result["post_baseline_noise"], "side_bias": fit_result["post_side_bias"], "directed_exp": fit_result["post_directed_exp"], "baseline_info_bonus": fit_result["post_baseline_info_bonus"], "random_exp": fit_result["post_random_exp"]}, choice_names=("right","left"))
 print("Simulating behavioral data")

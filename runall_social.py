@@ -136,8 +136,8 @@ for room in room_type:
             os.makedirs(f"{combined_results_dir}/logs")
             print(f"Created results-logs directory {combined_results_dir}/logs")
         for subject in subjects: # do subjects[3] to just fit one subject
-            if subject != "568d0641b5a2c2000cb657d0":
-                continue
+            # if subject != "568d0641b5a2c2000cb657d0":
+            #     continue
             
             stdout_name = f"{combined_results_dir}/logs/SM-{model_class}-model_{index}-{room}_room-{subject}-%J.stdout"
             stderr_name = f"{combined_results_dir}/logs/SM-{model_class}-model_{index}-{room}_room-{subject}-%J.stderr"
