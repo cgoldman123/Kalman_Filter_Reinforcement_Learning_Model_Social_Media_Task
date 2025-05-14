@@ -87,17 +87,17 @@ def KF_DDM_model(sample,model,fit_or_sim,sim_using_max_pdf=False):
 
                     z = .5 # hyperparam controlling steepness of curve
 
-                    # Exponential descent
-                    info_bonus_bandit1 = sigma1[game_num,trial_num]*baseline_info_bonus + sigma1[game_num,trial_num]*T*(np.exp(-z*(trial_num-5))-np.exp(-4*z))/(1-np.exp(-4*z))
-                    info_bonus_bandit2 = sigma2[game_num,trial_num]*baseline_info_bonus + sigma2[game_num,trial_num]*T*(np.exp(-z*(trial_num-5))-np.exp(-4*z))/(1-np.exp(-4*z))
+                    # Exponential descent from T to 0 over trials within a game
+                    info_bonus_bandit1 = sigma1[game_num,trial_num]*baseline_info_bonus + sigma1[game_num,trial_num]*T*(np.exp(-z*(trial_num-4))-np.exp(-4*z))/(1-np.exp(-4*z))
+                    info_bonus_bandit2 = sigma2[game_num,trial_num]*baseline_info_bonus + sigma2[game_num,trial_num]*T*(np.exp(-z*(trial_num-4))-np.exp(-4*z))/(1-np.exp(-4*z))
 
                     info_diff = info_bonus_bandit2 - info_bonus_bandit1 # information difference between the two bandits
 
                     # total uncertainty is variance of both arms
                     total_uncertainty[game_num,trial_num] = (sigma1[game_num,trial_num]**2 + sigma2[game_num,trial_num]**2)**.5
                     
-                    # Exponential descent
-                    RE = Y + ((1 - Y) * (1 - np.exp(-z * (trial_num - 5))) / (1 - np.exp(-4 * z)))
+                    # Exponential descent from Y to 1 over trials within a game
+                    RE = Y + ((1 - Y) * (1 - np.exp(-z * (trial_num - 4))) / (1 - np.exp(-4 * z)))
                     
                     decision_noise = total_uncertainty[game_num,trial_num]*baseline_noise*RE
 

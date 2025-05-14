@@ -160,16 +160,23 @@ base_params = dict(
     random_exp           = 3
 )
 
-param_name   = "drift_rwrd_diff_mod"            # specify the parameter to sweep while holding others constant
-param_vals   = np.linspace(0, 1, 11)            # set the range of parameters to sweep for the parameter param_name
+param_name   = "random_exp"            # specify the parameter to sweep while holding others constant
+param_vals   = np.linspace(1, 10, 10)            # set the range of parameters to sweep for the parameter param_name
 n_runs       = 1                               # specify number of simulations to run for each set of parameters. Can leave at 1 if we are using the max pdf method (simulates a choice/rt based on the max pdf) instead of sampling from the distribution of choices/RTs.
-metric_fn    = lambda df: high_obs_mean(df, game_len=9, trial_idx=5)  # Use game_len to control whether plotting H1 (5) or H5 (9) games. Use trial_idx to control which which free choice to consider (5 = first free choice)
+game_len   = 9                               # specify the game length to use (5 or 9)
+trial_idx  = 5                               # specify the trial index to use (5, 6, 7, etc.)
+metric_fn    = lambda df: high_obs_mean(df, game_len=game_len, trial_idx=trial_idx)  # Use game_len to control whether plotting H1 (5) or H5 (9) games. Use trial_idx to control which which free choice to consider (5 = first free choice)
 # ==================================================================
 results = sweep(param_name, param_vals, base_params, n_runs, metric_fn)
 
 # ------------------------------------------------------------------
 # Plot
 # ------------------------------------------------------------------
+# Make subtitle
+horizon_label = "Horizon 5" if game_len == 9 else "Horizon=1"
+free_choice_label = f"Free Choice {trial_idx - 4}"  # since 5 => 1, 6 => 2, etc.
+plot_context = f"{horizon_label}, {free_choice_label}"
+
 # If every value in the stderr_prob_choose_high_mean column is NaN, skip the error bars. This happens when n_runs=1 since the standard error of a single value is NaN.
 choose_high_observed_mean_standard_error = None if results["stderr_prob_choose_high_mean"].isna().all() else results["stderr_prob_choose_high_mean"]
 plt.figure()
@@ -178,9 +185,10 @@ plt.errorbar(results[param_name], results["mean_prob_choose_high_mean"],
 plt.xlabel(param_name)
 plt.ylabel("P(choose higher observed mean)")
 plt.title(f"{param_name} sweep: P(choose higher observed mean)")
+plt.suptitle(plot_context, fontsize=10, y=0.95)
 plt.grid(alpha=.3)
 plt.tight_layout()
-plt.show()
+plt.show(block=False)
 
 
 plt.figure()
@@ -197,8 +205,10 @@ plt.errorbar(results[param_name], results["avg_rt_low_obs_mean"],
 plt.xlabel(param_name)
 plt.ylabel("Average RT")
 plt.title(f"{param_name} sweep: RT for high vs low observed mean choices")
+plt.suptitle(plot_context, fontsize=10, y=0.95)
 plt.legend()
 plt.grid(alpha=.3)
 plt.tight_layout()
-plt.show()
+plt.show(block=False)
 
+print("Hi")
