@@ -119,7 +119,7 @@ model_to_fit = pyddm.gddm(drift=lambda drift_rwrd_diff_mod,drift_dcsn_noise_mod,
                           starting_position=lambda starting_position_value: starting_position_value, 
                           noise=1.0, bound="B", nondecision=0, T_dur=4.17,
                           conditions=["game_number", "gameLength", "trial", "r", "drift_value","starting_position_value"],
-                          parameters={"drift_rwrd_diff_mod": (0,1),"drift_dcsn_noise_mod":1, "B": (.5, 5), "sigma_d": (0.01,10), "sigma_r": (0.01,10), "baseline_noise": (0,.1), "side_bias": (-5,5), "directed_exp": (-10,10), "baseline_info_bonus": (-10,10), "random_exp": (1,10)}, choice_names=("right","left"))
+                          parameters={"drift_rwrd_diff_mod": (0.01,0.1),"drift_dcsn_noise_mod":1, "B": (1.5, 6), "sigma_d": (0.1,10), "sigma_r": (3,15), "baseline_noise": (0.02,0.2), "side_bias": (-35,35), "directed_exp": (-6,6), "baseline_info_bonus": (-6,6), "random_exp": (1,14)}, choice_names=("right","left"))
 
 # Note that to plot using this function, I would have to pass in the conditions that get assigned in the model function (i.e., starting_position_value and drift_value). We would only be able to view the pdf and reaction time for one combination of conditions, which is not ideal.
 # pyddm.plot.plot_fit_diagnostics(model=model_to_fit, sample=social_media_sample)

@@ -106,7 +106,7 @@ def KF_DDM_model(sample,model,fit_or_sim,sim_using_max_pdf=False):
                         choice = "left" if trial['choice'] == 0 else "right"
                         # Only consider reaction times less than the max rt in the log likelihood
                         if trial['RT'] < max_rt:
-                            # Transform the starting position value so it's between -1 and 1. Using 20 smooths out the function
+                            # Transform the starting position value so it's between -1 and 1. 
                             starting_position_value = np.tanh((info_diff+side_bias)/50)
                             # Get the drift_value by combining the reward difference and decision noise. The decision noise will push the drift in opposite direction of the reward difference. 
                             # This allows RTs to be faster in H6 than H1 when the reward difference is small (consistent with pattern of RTs we observe in model-free analyses and allowing for random exploration), 

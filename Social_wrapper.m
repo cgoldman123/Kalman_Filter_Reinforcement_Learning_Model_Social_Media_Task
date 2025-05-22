@@ -14,7 +14,7 @@ function [fits_table] = Social_wrapper(varargin)
             MDP.do_simulated_model_free = 1; % Toggle on to do model-free analyses on data simulated from posterior parameter estimates of model.
         end
     elseif SIM
-        MDP.plot_simulated_data = 0; %Toggle on to plot data simulated by model
+        MDP.plot_simulated_data = 1; %Toggle on to plot data simulated by model
         MDP.do_simulated_model_free = 1; % Toggle on to do model-free analyses on data simulated from prior parameters initialized in this main file.
         id_label = '562c2ff0733ea000111630df_Iteration_5'; % Use this to give a name to the simulated data
     end
@@ -27,7 +27,7 @@ function [fits_table] = Social_wrapper(varargin)
     
     dbstop if error
     if ispc
-        fitting_procedure = "PYDDM"; % Specify fitting procedure as "SPM", "VBA", or "PYDDM"
+        fitting_procedure = "SPM"; % Specify fitting procedure as "SPM", "VBA", or "PYDDM"
         root = 'L:/';
         experiment = 'prolific'; % indicate local or prolific
         results_dir = sprintf([root 'rsmith/lab-members/cgoldman/Wellbeing/social_media/output/test/']);
@@ -256,7 +256,7 @@ function [fits_table] = Social_wrapper(varargin)
                 % choose horizon of 1 or 5
                 horizon = 5;
                 % if truncate_h5 is true, use the H5 bandit schedule but truncate so that all games are H1
-                truncate_h5 = 0;
+                truncate_h5 = 1;
                 plot_simulated_behavior(MDP, gen_mean_difference, horizon, truncate_h5);
             end
             if MDP.do_simulated_model_free
