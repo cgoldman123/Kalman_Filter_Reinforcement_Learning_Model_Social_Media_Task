@@ -119,7 +119,7 @@ def KF_DDM_model(sample,model,fit_or_sim,sim_using_max_pdf=False):
                             # Higher values of reward_diff and side_bias indicate greater preference for right bandit (band it 1 vs 0)
 
                             had_renorm = False
-                            sol = model.solve_analytical(
+                            sol = model.solve_numerical_c(
                                 conditions={
                                     "drift_value": drift_value,
                                     "starting_position_value": starting_position_value
@@ -158,7 +158,7 @@ def KF_DDM_model(sample,model,fit_or_sim,sim_using_max_pdf=False):
                             drift_value = (drift_rwrd_diff_mod * reward_diff) + (drift_dcsn_noise_mod * decision_noise)
                         # solve a ddm (i.e., get the probability density function) for current DDM parameters
                         # Higher values of reward_diff and side_bias indicate greater preference for right bandit (band it 1 vs 0)
-                        sol = model.solve_analytical(conditions={"drift_value": drift_value,
+                        sol = model.solve_numerical_c(conditions={"drift_value": drift_value,
                                                                     "starting_position_value": starting_position_value})   
                         # Use the reaction time with the max probability density
                         if sim_using_max_pdf:

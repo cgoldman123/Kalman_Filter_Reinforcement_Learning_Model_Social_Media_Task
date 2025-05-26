@@ -259,16 +259,16 @@ run_param_sweep = True # adjust this to True if you want to run the parameter sw
 if run_RT_by_reward_diff:
     #Simulate RTs for a range of reward differences
     base_params = dict(
-        drift_rwrd_diff_mod  = 0.09795913,
+        drift_rwrd_diff_mod  = 0.09795913, #(0.01,0.1)
         drift_dcsn_noise_mod = 1,
-        B                    = 1.500811, 
-        sigma_d              = 8.056401,
-        sigma_r              = 3.157274,
-        baseline_noise       = 0.02026041,
-        side_bias            = -2.629417,
-        directed_exp         = 2.705987,
-        baseline_info_bonus  = -5.872426,
-        random_exp           = 1.087744 
+        B                    = 2.3, #(1.5, 6)
+        sigma_d              = 2, #(0.1,10)
+        sigma_r              = 4, #(3,15)
+        baseline_noise       = .03, #(0.02,0.2)
+        side_bias            = 0, #(-35,35)
+        directed_exp         = 6, #(-6,6)
+        baseline_info_bonus  = -4, #(-6,6)
+        random_exp           = 2  #(1,14)
     )
 
     n_runs       = 1                               # specify number of simulations to run for each set of parameters. Can leave at 1 if we are using the max pdf method (simulates a choice/rt based on the max pdf) instead of sampling from the distribution of choices/RTs.
@@ -307,16 +307,16 @@ if run_RT_by_reward_diff:
 # be written over with the value of param_name.
 if run_param_sweep:
     base_params = dict(
-        drift_rwrd_diff_mod  = 0.09795913,
+        drift_rwrd_diff_mod  = 0.05, #(0.01,0.1)
         drift_dcsn_noise_mod = 1,
-        B                    = 1.500811, 
-        sigma_d              = 8.056401,
-        sigma_r              = 3.157274,
-        baseline_noise       = 0.02026041,
-        side_bias            = -2.629417,
-        directed_exp         = 2.705987,
-        baseline_info_bonus  = -2,
-        random_exp           = 1.087744 
+        B                    = 2.3, #(1.5, 6)
+        sigma_d              = 0, #(0.1,10)
+        sigma_r              = 8, #(3,15)
+        baseline_noise       = .03, #(0.02,0.2)
+        side_bias            = 0, #(-35,35)
+        directed_exp         = 6, #(-6,6)
+        baseline_info_bonus  = 0, #(-6,6)
+        random_exp           = 2  #(1,14)
     )
 
     param_name   = "directed_exp"            # specify the parameter to sweep while holding others constant

@@ -135,7 +135,7 @@ for room in room_type:
         if not os.path.exists(f"{combined_results_dir}/logs"):
             os.makedirs(f"{combined_results_dir}/logs")
             print(f"Created results-logs directory {combined_results_dir}/logs")
-        for subject in subjects[1:40]: # do subjects[3] to just fit one subject
+        for subject in subjects: # do subjects[3] to just fit one subject
             # if subject != "568d0641b5a2c2000cb657d0":
             #     continue
             
@@ -150,7 +150,6 @@ for room in room_type:
             os.system(f"sbatch -J {jobname} -o {stdout_name} -e {stderr_name} {ssub_path} {subject} {combined_results_dir} {room} {experiment} {field} {model_class} {drift_map} {bias_map} {thresh_map} {fitting_procedure}")
 
             print(f"SUBMITTED JOB [{jobname}]")
-    break # skip dislike for debugging
 
 # Note that the fitting procedure is automatically appended to result directory
 # Remember to adjust model being fit at the top of the script
