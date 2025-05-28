@@ -115,11 +115,11 @@ class KF_DDM_Loss(pyddm.LossFunction):
 ## FIT MODEL TO ACTUAL DATA
 # This is kind of hacky, but we pass in the learning parameters as arguments to drift even though they aren't used for it. This is just so the loss function has access to them
 print("Setting up the model to fit behavioral data")
-model_to_fit = pyddm.gddm(drift=lambda drift_rwrd_diff_mod,drift_dcsn_noise_mod,drift_value,sigma_d,sigma_r,baseline_noise,side_bias,directed_exp,baseline_info_bonus,random_exp : drift_value,
+model_to_fit = pyddm.gddm(drift=lambda drift_dcsn_noise_mod,drift_value,sigma_d,sigma_r,baseline_noise,side_bias,directed_exp,baseline_info_bonus,random_exp : drift_value,
                           starting_position=lambda starting_position_value: starting_position_value, 
                           noise=1.0, bound="B", nondecision=0, T_dur=4.17,
                           conditions=["game_number", "gameLength", "trial", "r", "drift_value","starting_position_value"],
-                          parameters={"drift_rwrd_diff_mod": (0.01,0.1),"drift_dcsn_noise_mod":1, "B": (1.5, 6), "sigma_d": (0,10), "sigma_r": (4,16), "baseline_noise": (0.02,0.2), "side_bias": (-35,35), "directed_exp": (-6,6), "baseline_info_bonus": (-6,6), "random_exp": (1,14)}, choice_names=("right","left"))
+                          parameters={"drift_dcsn_noise_mod":1, "B": (1.5, 6), "sigma_d": (0,10), "sigma_r": (4,16), "baseline_noise": (0.02,0.2), "side_bias": (-35,35), "directed_exp": (-6,6), "baseline_info_bonus": (-6,6), "random_exp": (0,6)}, choice_names=("right","left"))
 
 # Note that to plot using this function, I would have to pass in the conditions that get assigned in the model function (i.e., starting_position_value and drift_value). We would only be able to view the pdf and reaction time for one combination of conditions, which is not ideal.
 # pyddm.plot.plot_fit_diagnostics(model=model_to_fit, sample=social_media_sample)
@@ -180,11 +180,11 @@ model_fit_to_data = model_to_fit
 # Examine recoverability on fit parameters
 # This is kind of hacky, but we pass in the learning parameters as arguments to drift even though they aren't used for it. This is just so the loss function has access to them
 print("Setting up the model to simulate behavioral data")
-model_to_sim = pyddm.gddm(drift=lambda drift_rwrd_diff_mod,drift_dcsn_noise_mod,drift_value,sigma_d,sigma_r,baseline_noise,side_bias,directed_exp,baseline_info_bonus,random_exp : drift_value,
+model_to_sim = pyddm.gddm(drift=lambda drift_dcsn_noise_mod,drift_value,sigma_d,sigma_r,baseline_noise,side_bias,directed_exp,baseline_info_bonus,random_exp : drift_value,
                           starting_position=lambda starting_position_value: starting_position_value, 
                           noise=1.0, bound="B", nondecision=0, T_dur=100,
                           conditions=["game_number", "gameLength", "trial", "r", "drift_value","starting_position_value"],
-                          parameters={"drift_rwrd_diff_mod": fit_result["post_drift_rwrd_diff_mod"], "drift_dcsn_noise_mod": 1, "B": fit_result["post_B"], "sigma_d": fit_result["post_sigma_d"], "sigma_r": fit_result["post_sigma_r"], "baseline_noise": fit_result["post_baseline_noise"], "side_bias": fit_result["post_side_bias"], "directed_exp": fit_result["post_directed_exp"], "baseline_info_bonus": fit_result["post_baseline_info_bonus"], "random_exp": fit_result["post_random_exp"]}, choice_names=("right","left"))
+                          parameters={"drift_dcsn_noise_mod": 1, "B": fit_result["post_B"], "sigma_d": fit_result["post_sigma_d"], "sigma_r": fit_result["post_sigma_r"], "baseline_noise": fit_result["post_baseline_noise"], "side_bias": fit_result["post_side_bias"], "directed_exp": fit_result["post_directed_exp"], "baseline_info_bonus": fit_result["post_baseline_info_bonus"], "random_exp": fit_result["post_random_exp"]}, choice_names=("right","left"))
 print("Simulating behavioral data")
 simulated_behavior = KF_DDM_model(social_media_sample,model_to_sim,fit_or_sim="sim")
 

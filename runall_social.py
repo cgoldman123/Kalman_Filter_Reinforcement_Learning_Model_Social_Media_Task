@@ -135,7 +135,12 @@ for room in room_type:
         if not os.path.exists(f"{combined_results_dir}/logs"):
             os.makedirs(f"{combined_results_dir}/logs")
             print(f"Created results-logs directory {combined_results_dir}/logs")
-        for subject in subjects: # do subjects[3] to just fit one subject
+        
+        # make the subjects whose fits errored last time a priority; run them first
+        priority = ["56f9364e895094000c8f4967", "5b23d0784fb0d40001e95407"]
+        subjects_sorted = sorted(subjects, key=lambda x: (x not in priority, subjects.index(x)))
+        
+        for subject in subjects_sorted: # do subjects[3] to just fit one subject
             # if subject != "568d0641b5a2c2000cb657d0":
             #     continue
             

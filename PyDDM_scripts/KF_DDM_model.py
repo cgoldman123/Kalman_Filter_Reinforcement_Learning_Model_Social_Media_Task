@@ -3,6 +3,8 @@
 import pandas as pd
 import numpy as np
 from pyddm.logger import logger
+from jensen_shannon_divergence import jsd_normal
+
 
 # Add a filter to the logger to check for the Renormalization warning, where the probability of hitting the upper, lower, or undecided boundary is not 1 so it had to be renormalized
 had_renorm = False
@@ -13,7 +15,6 @@ def renorm_filter(record):
     return True
 
 logger.addFilter(renorm_filter)
-
 
 
 def KF_DDM_model(sample,model,fit_or_sim,sim_using_max_pdf=False):
@@ -31,7 +32,6 @@ def KF_DDM_model(sample,model,fit_or_sim,sim_using_max_pdf=False):
     directed_exp = model.get_dependence("drift").directed_exp
     baseline_info_bonus = model.get_dependence("drift").baseline_info_bonus
     random_exp = model.get_dependence("drift").random_exp
-    drift_rwrd_diff_mod = model.get_dependence("drift").drift_rwrd_diff_mod
     drift_dcsn_noise_mod = model.get_dependence("drift").drift_dcsn_noise_mod
 
     # Initialize variables to hold output
@@ -94,12 +94,16 @@ def KF_DDM_model(sample,model,fit_or_sim,sim_using_max_pdf=False):
                     info_diff = info_bonus_bandit2 - info_bonus_bandit1 # information difference between the two bandits
 
                     # total uncertainty is variance of both arms
-                    total_uncertainty[game_num,trial_num] = (sigma1[game_num,trial_num]**2 + sigma2[game_num,trial_num]**2)**.5
+                    # total_uncertainty[game_num,trial_num] = (sigma1[game_num,trial_num]**2 + sigma2[game_num,trial_num]**2)**.5
                     
                     # Exponential descent from Y to 1 over trials within a game
                     RE = Y + ((1 - Y) * (1 - np.exp(-z * (trial_num - 4))) / (1 - np.exp(-4 * z)))
                     
-                    decision_noise = total_uncertainty[game_num,trial_num]*baseline_noise*RE
+                    # Calculate the jensen shannon divergence between the reward distributions of the two bandits
+                    jsd_val = jsd_normal(mu1[trial_num], sigma1[game_num,trial_num], mu2[trial_num], sigma2[game_num,trial_num], rng=23)
+
+                    # decision_noise = total_uncertainty[game_num,trial_num]*baseline_noise*RE
+
 
 
                     if fit_or_sim == "fit":
@@ -112,9 +116,14 @@ def KF_DDM_model(sample,model,fit_or_sim,sim_using_max_pdf=False):
                             # This allows RTs to be faster in H6 than H1 when the reward difference is small (consistent with pattern of RTs we observe in model-free analyses and allowing for random exploration), 
                             # but slower when the reward difference is large (also consistent) due to the decision noise.
                             if reward_diff > 0:
-                                drift_value = (drift_rwrd_diff_mod * reward_diff) - (drift_dcsn_noise_mod * decision_noise)
+                                # drift_value = (drift_rwrd_diff_mod * reward_diff) - (drift_dcsn_noise_mod * decision_noise)
+                                drift_value = (jsd_val/baseline_noise) - (RE/jsd_val)
+
                             else:
-                                drift_value = (drift_rwrd_diff_mod * reward_diff) + (drift_dcsn_noise_mod * decision_noise)
+                                # drift_value = (drift_rwrd_diff_mod * reward_diff) + (drift_dcsn_noise_mod * decision_noise)
+                                drift_value = -(jsd_val/baseline_noise) + (RE/jsd_val)
+
+
                             # solve a ddm (i.e., get the probability density function) for current DDM parameters
                             # Higher values of reward_diff and side_bias indicate greater preference for right bandit (band it 1 vs 0)
 
@@ -153,9 +162,9 @@ def KF_DDM_model(sample,model,fit_or_sim,sim_using_max_pdf=False):
                         starting_position_value =  np.tanh((info_diff+side_bias)/50)
                         # Get the drift_value by combining the reward difference and decision noise. The decision noise will push the drift in opposite direction of the reward difference. 
                         if reward_diff > 0:
-                            drift_value = (drift_rwrd_diff_mod * reward_diff) - (drift_dcsn_noise_mod * decision_noise)
+                            drift_value = (jsd_val/baseline_noise) - (RE/jsd_val)
                         else:
-                            drift_value = (drift_rwrd_diff_mod * reward_diff) + (drift_dcsn_noise_mod * decision_noise)
+                            drift_value = -(jsd_val/baseline_noise) + (RE/jsd_val)
                         # solve a ddm (i.e., get the probability density function) for current DDM parameters
                         # Higher values of reward_diff and side_bias indicate greater preference for right bandit (band it 1 vs 0)
                         sol = model.solve_numerical_c(conditions={"drift_value": drift_value,

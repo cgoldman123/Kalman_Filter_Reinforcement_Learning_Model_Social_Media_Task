@@ -167,7 +167,7 @@ def sweep(param_name: str,
             params[param_name] = v        # overwrite the swept key
 
             model = pyddm.gddm(
-                drift = lambda drift_rwrd_diff_mod,drift_dcsn_noise_mod,drift_value,
+                drift = lambda drift_dcsn_noise_mod,drift_value,
                                sigma_d,sigma_r,baseline_noise,side_bias,directed_exp,
                                baseline_info_bonus,random_exp : drift_value,
                 starting_position = lambda starting_position_value: starting_position_value,
@@ -210,7 +210,7 @@ def get_rts_reward_difference(base_params: dict,
     mvals = []
     for _ in range(n_runs):
         model = pyddm.gddm(
-            drift = lambda drift_rwrd_diff_mod,drift_dcsn_noise_mod,drift_value,
+            drift = lambda drift_dcsn_noise_mod,drift_value,
                             sigma_d,sigma_r,baseline_noise,side_bias,directed_exp,
                             baseline_info_bonus,random_exp : drift_value,
             starting_position = lambda starting_position_value: starting_position_value,
@@ -259,7 +259,6 @@ run_param_sweep = True # adjust this to True if you want to run the parameter sw
 if run_RT_by_reward_diff:
     #Simulate RTs for a range of reward differences
     base_params = dict(
-        drift_rwrd_diff_mod  = 0.09795913, #(0.01,0.1)
         drift_dcsn_noise_mod = 1,
         B                    = 2.3, #(1.5, 6)
         sigma_d              = 2, #(0.1,10)
@@ -307,7 +306,6 @@ if run_RT_by_reward_diff:
 # be written over with the value of param_name.
 if run_param_sweep:
     base_params = dict(
-        drift_rwrd_diff_mod  = 0.05, #(0.01,0.1)
         drift_dcsn_noise_mod = 1,
         B                    = 2.3, #(1.5, 6)
         sigma_d              = 0, #(0.1,10)
@@ -316,11 +314,11 @@ if run_param_sweep:
         side_bias            = 0, #(-35,35)
         directed_exp         = 6, #(-6,6)
         baseline_info_bonus  = 0, #(-6,6)
-        random_exp           = 2  #(1,14)
+        random_exp           = .2  #(0,5)
     )
 
-    param_name   = "directed_exp"            # specify the parameter to sweep while holding others constant
-    param_vals   = np.linspace(-6, 6, 10)            # set the range of parameters to sweep for the parameter param_name
+    param_name   = "random_exp"            # specify the parameter to sweep while holding others constant
+    param_vals   = np.linspace(0, 5, 10)            # set the range of parameters to sweep for the parameter param_name
     n_runs       = 1                               # specify number of simulations to run for each set of parameters. Can leave at 1 if we are using the max pdf method (simulates a choice/rt based on the max pdf) instead of sampling from the distribution of choices/RTs.
     game_len   =  [5, 9] #[5,9] or [9]                              # specify the game length; use brackets
     trial_idx  = 5                               # specify the trial index to use (5, 6, 7, etc.)
