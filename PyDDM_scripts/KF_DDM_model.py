@@ -96,7 +96,13 @@ def KF_DDM_model(sample,model,fit_or_sim, sim_using_max_pdf=False):
                     # info_bonus_bandit1 = sigma1[game_num,trial_num]*baseline_info_bonus + sigma1[game_num,trial_num]*T*(np.exp(-z*(trial_num-4))-np.exp(-4*z))/(1-np.exp(-4*z))
                     # info_bonus_bandit2 = sigma2[game_num,trial_num]*baseline_info_bonus + sigma2[game_num,trial_num]*T*(np.exp(-z*(trial_num-4))-np.exp(-4*z))/(1-np.exp(-4*z))
 
-                    info_diff = (sigma2[game_num,trial_num] - sigma1[game_num,trial_num])*relative_uncertainty_mod + baseline_info_bonus + T*(np.exp(-z*(trial_num-4))-np.exp(-4*z))/(1-np.exp(-4*z))
+                    relative_uncertainty = (sigma2[game_num,trial_num] - sigma1[game_num,trial_num])
+                    if relative_uncertainty > 0:
+                        info_diff = relative_uncertainty*relative_uncertainty_mod  + baseline_info_bonus + T*(np.exp(-z*(trial_num-4))-np.exp(-4*z))/(1-np.exp(-4*z))
+                    else:
+                        info_diff = relative_uncertainty*relative_uncertainty_mod  - baseline_info_bonus - T*(np.exp(-z*(trial_num-4))-np.exp(-4*z))/(1-np.exp(-4*z))
+
+
 
                     # total uncertainty is variance of both arms
                     total_uncertainty[game_num,trial_num] = (sigma1[game_num,trial_num]**2 + sigma2[game_num,trial_num]**2)**.5

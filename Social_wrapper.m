@@ -29,13 +29,13 @@ function [fits_table] = Social_wrapper(varargin)
     if ispc
         fitting_procedure = "SPM"; % Specify fitting procedure as "SPM", "VBA", or "PYDDM"
         root = 'L:/';
-        experiment = 'prolific'; % indicate local or prolific
+        experiment = 'local'; % indicate local or prolific
         results_dir = sprintf([root 'rsmith/lab-members/cgoldman/Wellbeing/social_media/output/test/']);
         if nargin > 0
             id = varargin{1};
             room = varargin{2};
         else
-            id = '562eb896733ea000051638c6'; % 666878a27888fdd27f529c64 60caf58c38ce3e0f5a51f62b 668d6d380fb72b01a09dee54 659ab1b4640b25ce093058a2 5590a34cfdf99b729d4f69dc 53b98f20fdf99b472f4700e4
+            if strcmp(experiment,'prolific'); id = '562eb896733ea000051638c6'; elseif strcmp(experiment,'local'); id = 'CA336';end   % CA336 BO224 562eb896733ea000051638c6 666878a27888fdd27f529c64 
             room = 'Like';
         end
         % Only set the anonymous function for the model and assign the

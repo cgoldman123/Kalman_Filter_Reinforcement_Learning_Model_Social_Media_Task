@@ -181,7 +181,7 @@ def sweep(param_name: str,
                 choice_names=("right","left")
             )
             model.settings = settings
-            sim_df = KF_DDM_model(social_media_sample, model, fit_or_sim="sim", sim_using_max_pdf=False)["data"]
+            sim_df = KF_DDM_model(social_media_sample, model, fit_or_sim="sim", sim_using_max_pdf=True)["data"]
             mvals.append(metric_fn(sim_df))
 
             # Summarize the model free results in an output dictionary
@@ -226,7 +226,7 @@ def get_rts_reward_difference(base_params: dict,
         )
         model.settings = settings
 
-        sim_df = KF_DDM_model(social_media_sample, model, fit_or_sim="sim", sim_using_max_pdf=False)["data"]
+        sim_df = KF_DDM_model(social_media_sample, model, fit_or_sim="sim", sim_using_max_pdf=True)["data"]
         mvals.append(metric_fn(sim_df))
 
         # Example: extract each RT-by-reward-difference DataFrame from mvals
@@ -322,12 +322,12 @@ if run_param_sweep:
         directed_exp         = .1, #(-3,3)
         baseline_info_bonus  = -.1, #(-3,3)
         random_exp           = 2,  #(.1,10)
-        relative_uncertainty_mod = 0.1, #(-1,1)
+        relative_uncertainty_mod = .5, #(-1,1)
 
     )
 
-    param_name   = "relative_uncertainty_mod"            # specify the parameter to sweep while holding others constant
-    param_vals   = np.linspace(-1, 1, 10)            # set the range of parameters to sweep for the parameter param_name
+    param_name   = "baseline_info_bonus"            # specify the parameter to sweep while holding others constant
+    param_vals   = np.linspace(-3, 3, 10)            # set the range of parameters to sweep for the parameter param_name
     n_runs       = 1                               # specify number of simulations to run for each set of parameters. Can leave at 1 if we are using the max pdf method (simulates a choice/rt based on the max pdf) instead of sampling from the distribution of choices/RTs.
     game_len   =  [5, 9] #[5,9] or [9]                              # specify the game length; use brackets
     trial_idx  = 5                               # specify the trial index to use (5, 6, 7, etc.)
