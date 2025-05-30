@@ -19,6 +19,8 @@ if len(sys.argv) > 1:
     id = sys.argv[3] # Subject ID
     room_type = sys.argv[4] # Room type (e.g., Like, Dislike)
     timestamp = sys.argv[5] # Timestamp (e.g., 04_16_25_T10-39-55)
+    settings = sys.argv[6] # Settings for the model (e.g., "Use JSD; fit all RTs", "Use JSD; fit 3 RTs", "Use reward difference; fit all RTs", "Use reward difference; fit 3 RTs"
+
 else:
     # Note you'll have to change both outpath_beh and id to fit another subject
     outpath_beh = f"L:/rsmith/lab-members/cgoldman/Wellbeing/social_media/output/SM_fits_PYDDM_test_PYDDM_04-21-2025_15-04-20/Like/model1/568d0641b5a2c2000cb657d0_beh_Like_04_21_25_T15-57-57.csv" # Behavioral file location
@@ -26,6 +28,7 @@ else:
     results_dir = f"L:/rsmith/lab-members/cgoldman/Wellbeing/social_media/output/test/" # Directory to save results
     room_type = "Like" # Room type (e.g., Like, Dislike)
     timestamp = "current_timestamp" # Timestamp (e.g., 04_16_25_T10-39-55)
+    settings = "Use JSD; fit all RTs" # Settings for the model (e.g., "Use JSD; fit all RTs", "Use JSD; fit 3 RTs", "Use reward difference; fit all RTs", "Use reward difference; fit 3 RTs"
 
 
 log_path = f"{results_dir}{id}_{room_type}_{timestamp}_model_log.txt"
@@ -169,7 +172,7 @@ def sweep(param_name: str,
             model = pyddm.gddm(
                 drift = lambda drift_dcsn_noise_mod,drift_value,
                                sigma_d,sigma_r,baseline_noise,side_bias,directed_exp,
-                               baseline_info_bonus,random_exp : drift_value,
+                               baseline_info_bonus,random_exp,relative_uncertainty_mod : drift_value,
                 starting_position = lambda starting_position_value: starting_position_value,
                 noise=1.0, bound="B", nondecision=0, T_dur=100,
                 conditions=["game_number","gameLength","trial","r",
@@ -177,7 +180,8 @@ def sweep(param_name: str,
                 parameters=params,
                 choice_names=("right","left")
             )
-            sim_df = KF_DDM_model(social_media_sample, model, fit_or_sim="sim", sim_using_max_pdf=True)["data"]
+            model.settings = settings
+            sim_df = KF_DDM_model(social_media_sample, model, fit_or_sim="sim", sim_using_max_pdf=False)["data"]
             mvals.append(metric_fn(sim_df))
 
             # Summarize the model free results in an output dictionary
@@ -205,14 +209,14 @@ def sweep(param_name: str,
 # ------------------------------------------------------------------
 def get_rts_reward_difference(base_params: dict,
           n_runs: int,
-          metric_fn):
+          metric_fn,settings):
     out = []
     mvals = []
     for _ in range(n_runs):
         model = pyddm.gddm(
             drift = lambda drift_dcsn_noise_mod,drift_value,
                             sigma_d,sigma_r,baseline_noise,side_bias,directed_exp,
-                            baseline_info_bonus,random_exp : drift_value,
+                            baseline_info_bonus,random_exp,relative_uncertainty_mod : drift_value,
             starting_position = lambda starting_position_value: starting_position_value,
             noise=1.0, bound="B", nondecision=0, T_dur=100,
             conditions=["game_number","gameLength","trial","r",
@@ -220,7 +224,9 @@ def get_rts_reward_difference(base_params: dict,
             parameters=base_params,
             choice_names=("right","left")
         )
-        sim_df = KF_DDM_model(social_media_sample, model, fit_or_sim="sim", sim_using_max_pdf=True)["data"]
+        model.settings = settings
+
+        sim_df = KF_DDM_model(social_media_sample, model, fit_or_sim="sim", sim_using_max_pdf=False)["data"]
         mvals.append(metric_fn(sim_df))
 
         # Example: extract each RT-by-reward-difference DataFrame from mvals
@@ -261,13 +267,14 @@ if run_RT_by_reward_diff:
     base_params = dict(
         drift_dcsn_noise_mod = 1,
         B                    = 2.3, #(1.5, 6)
-        sigma_d              = 2, #(0.1,10)
-        sigma_r              = 4, #(3,15)
-        baseline_noise       = .03, #(0.02,0.2)
+        sigma_d              = 2, #(0,10)
+        sigma_r              = 8, #(4,16)
+        baseline_noise       = 1, #(.1,10)
         side_bias            = 0, #(-35,35)
-        directed_exp         = 6, #(-6,6)
-        baseline_info_bonus  = -4, #(-6,6)
-        random_exp           = 2  #(1,14)
+        directed_exp         = .1, #(-1,1)
+        baseline_info_bonus  = -.1, #(-1,1)
+        random_exp           = 2,  #(.1,10)
+        relative_uncertainty_mod = 0.1, #(-1,1)
     )
 
     n_runs       = 1                               # specify number of simulations to run for each set of parameters. Can leave at 1 if we are using the max pdf method (simulates a choice/rt based on the max pdf) instead of sampling from the distribution of choices/RTs.
@@ -275,7 +282,7 @@ if run_RT_by_reward_diff:
     trial_idx  = 5                               # specify the trial index to use (5, 6, 7, etc.)
     metric_fn    = lambda df: compute_stats(df, game_len=game_len, trial_idx=trial_idx)  # Use game_len to control whether plotting H1 (5) or H5 (9) games. Use trial_idx to control which which free choice to consider (5 = first free choice)
     # ==================================================================
-    results = get_rts_reward_difference(base_params, n_runs, metric_fn)
+    results = get_rts_reward_difference(base_params, n_runs, metric_fn,settings)
 
     plt.figure()
     summary_h1 = results.iloc[0]["avg_rt_by_reward_diff_game_len_5"]
@@ -308,17 +315,19 @@ if run_param_sweep:
     base_params = dict(
         drift_dcsn_noise_mod = 1,
         B                    = 2.3, #(1.5, 6)
-        sigma_d              = 0, #(0.1,10)
-        sigma_r              = 8, #(3,15)
-        baseline_noise       = .03, #(0.02,0.2)
+        sigma_d              = 2, #(0,10)
+        sigma_r              = 8, #(4,16)
+        baseline_noise       = 1, #(.1,10)
         side_bias            = 0, #(-35,35)
-        directed_exp         = 6, #(-6,6)
-        baseline_info_bonus  = 0, #(-6,6)
-        random_exp           = .2  #(0,5)
+        directed_exp         = .1, #(-3,3)
+        baseline_info_bonus  = -.1, #(-3,3)
+        random_exp           = 2,  #(.1,10)
+        relative_uncertainty_mod = 0.1, #(-1,1)
+
     )
 
-    param_name   = "random_exp"            # specify the parameter to sweep while holding others constant
-    param_vals   = np.linspace(0, 5, 10)            # set the range of parameters to sweep for the parameter param_name
+    param_name   = "relative_uncertainty_mod"            # specify the parameter to sweep while holding others constant
+    param_vals   = np.linspace(-1, 1, 10)            # set the range of parameters to sweep for the parameter param_name
     n_runs       = 1                               # specify number of simulations to run for each set of parameters. Can leave at 1 if we are using the max pdf method (simulates a choice/rt based on the max pdf) instead of sampling from the distribution of choices/RTs.
     game_len   =  [5, 9] #[5,9] or [9]                              # specify the game length; use brackets
     trial_idx  = 5                               # specify the trial index to use (5, 6, 7, etc.)

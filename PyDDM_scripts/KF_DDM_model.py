@@ -17,8 +17,10 @@ def renorm_filter(record):
 logger.addFilter(renorm_filter)
 
 
-def KF_DDM_model(sample,model,fit_or_sim,sim_using_max_pdf=False):
+def KF_DDM_model(sample,model,fit_or_sim, sim_using_max_pdf=False):
     global had_renorm 
+
+    settings = model.settings
 
     data = sample.to_pandas_dataframe()
     data = data.sort_values(by=["game_number", "trial"]) # Sort the dataframe by game number and trial number
@@ -33,6 +35,7 @@ def KF_DDM_model(sample,model,fit_or_sim,sim_using_max_pdf=False):
     baseline_info_bonus = model.get_dependence("drift").baseline_info_bonus
     random_exp = model.get_dependence("drift").random_exp
     drift_dcsn_noise_mod = model.get_dependence("drift").drift_dcsn_noise_mod
+    relative_uncertainty_mod = model.get_dependence("drift").relative_uncertainty_mod
 
     # Initialize variables to hold output
     G = 40 # Number of games
@@ -43,6 +46,8 @@ def KF_DDM_model(sample,model,fit_or_sim,sim_using_max_pdf=False):
     rt_pdf = np.full((G, 10), np.nan)
     action_probs = np.full((G, 9), np.nan)
     model_acc = np.full((G, 9), np.nan)
+    predicted_RT = np.full((G, 9), np.nan)
+    abs_error_RT = np.full((G, 9), np.nan)
 
     pred_errors = np.full((G, 10), np.nan)
     pred_errors_alpha = np.full((G, 9), np.nan)
@@ -88,45 +93,49 @@ def KF_DDM_model(sample,model,fit_or_sim,sim_using_max_pdf=False):
                     z = .5 # hyperparam controlling steepness of curve
 
                     # Exponential descent from T to 0 over trials within a game
-                    info_bonus_bandit1 = sigma1[game_num,trial_num]*baseline_info_bonus + sigma1[game_num,trial_num]*T*(np.exp(-z*(trial_num-4))-np.exp(-4*z))/(1-np.exp(-4*z))
-                    info_bonus_bandit2 = sigma2[game_num,trial_num]*baseline_info_bonus + sigma2[game_num,trial_num]*T*(np.exp(-z*(trial_num-4))-np.exp(-4*z))/(1-np.exp(-4*z))
+                    # info_bonus_bandit1 = sigma1[game_num,trial_num]*baseline_info_bonus + sigma1[game_num,trial_num]*T*(np.exp(-z*(trial_num-4))-np.exp(-4*z))/(1-np.exp(-4*z))
+                    # info_bonus_bandit2 = sigma2[game_num,trial_num]*baseline_info_bonus + sigma2[game_num,trial_num]*T*(np.exp(-z*(trial_num-4))-np.exp(-4*z))/(1-np.exp(-4*z))
 
-                    info_diff = info_bonus_bandit2 - info_bonus_bandit1 # information difference between the two bandits
+                    info_diff = (sigma2[game_num,trial_num] - sigma1[game_num,trial_num])*relative_uncertainty_mod + baseline_info_bonus + T*(np.exp(-z*(trial_num-4))-np.exp(-4*z))/(1-np.exp(-4*z))
 
                     # total uncertainty is variance of both arms
-                    # total_uncertainty[game_num,trial_num] = (sigma1[game_num,trial_num]**2 + sigma2[game_num,trial_num]**2)**.5
+                    total_uncertainty[game_num,trial_num] = (sigma1[game_num,trial_num]**2 + sigma2[game_num,trial_num]**2)**.5
                     
                     # Exponential descent from Y to 1 over trials within a game
                     RE = Y + ((1 - Y) * (1 - np.exp(-z * (trial_num - 4))) / (1 - np.exp(-4 * z)))
                     
                     # Calculate the jensen shannon divergence between the reward distributions of the two bandits
-                    jsd_val = jsd_normal(mu1[trial_num], sigma1[game_num,trial_num], mu2[trial_num], sigma2[game_num,trial_num], rng=23)
+                    # Note that jsd_val is in nats, so it's pretty small. We multiply by 10 to make it have a bigger effect on the drift value.
+                    jsd_val = jsd_normal(mu1[trial_num], sigma1[game_num,trial_num]*baseline_noise*RE, mu2[trial_num], sigma2[game_num,trial_num]*baseline_noise*RE, rng=23)
 
                     # decision_noise = total_uncertainty[game_num,trial_num]*baseline_noise*RE
 
+                    # Transform the starting position value so it's between -1 and 1. May want to smooth out function
+                    starting_position_value =  np.tanh((info_diff+side_bias)/1)
+                    # Get the drift_value by combining the reward difference and decision noise. The decision noise will push the drift in opposite direction of the reward difference. 
+                    if reward_diff > 0:
+                        # drift_value = (drift_rwrd_diff_mod * reward_diff) - (drift_dcsn_noise_mod * decision_noise)
+                        if "Use JSD" in settings:
+                            # Divide by ln(2) since that's the max jensen shannon divergence value
+                            drift_value = jsd_val/np.log(2)
+                        elif "Use reward difference" in settings:
+                            drift_value = (reward_diff/baseline_noise) - total_uncertainty[game_num,trial_num]*RE
+                            
+                    else:
+                        # drift_value = (drift_rwrd_diff_mod * reward_diff) + (drift_dcsn_noise_mod * decision_noise)
+                        if "Use JSD" in settings:
+                        # Divide by ln(2) since that's the max jensen shannon divergence value
+                            drift_value = -jsd_val/np.log(2)
+                        elif "Use reward difference" in settings:
+                            drift_value = (reward_diff/baseline_noise) + total_uncertainty[game_num,trial_num]*RE
 
 
                     if fit_or_sim == "fit":
                         choice = "left" if trial['choice'] == 0 else "right"
                         # Only consider reaction times less than the max rt in the log likelihood
                         if trial['RT'] < max_rt:
-                            # Transform the starting position value so it's between -1 and 1. 
-                            starting_position_value = np.tanh((info_diff+side_bias)/50)
-                            # Get the drift_value by combining the reward difference and decision noise. The decision noise will push the drift in opposite direction of the reward difference. 
-                            # This allows RTs to be faster in H6 than H1 when the reward difference is small (consistent with pattern of RTs we observe in model-free analyses and allowing for random exploration), 
-                            # but slower when the reward difference is large (also consistent) due to the decision noise.
-                            if reward_diff > 0:
-                                # drift_value = (drift_rwrd_diff_mod * reward_diff) - (drift_dcsn_noise_mod * decision_noise)
-                                drift_value = (jsd_val/baseline_noise) - (RE/jsd_val)
-
-                            else:
-                                # drift_value = (drift_rwrd_diff_mod * reward_diff) + (drift_dcsn_noise_mod * decision_noise)
-                                drift_value = -(jsd_val/baseline_noise) + (RE/jsd_val)
-
-
                             # solve a ddm (i.e., get the probability density function) for current DDM parameters
                             # Higher values of reward_diff and side_bias indicate greater preference for right bandit (band it 1 vs 0)
-
                             had_renorm = False
                             sol = model.solve_numerical_c(
                                 conditions={
@@ -154,17 +163,21 @@ def KF_DDM_model(sample,model,fit_or_sim,sim_using_max_pdf=False):
                             # Store the action probability of the choice under the model
                             action_probs[game_num, trial_num] = sol.prob(choice)
                             model_acc[game_num, trial_num] = sol.prob(choice) > .5
+
+                            # Get the absolute error between the model's predicted reaction time and the actual reaction time
+                            if max(sol.pdf("left")) > max(sol.pdf("right")):
+                                # Get the index of the max pdf
+                                predicted_rt_index = int(np.argmax(sol.pdf("left")))
+                            else:
+                                predicted_rt_index = int(np.argmax(sol.pdf("right")))
+                            predicted_RT[game_num, trial_num] = model.dt * predicted_rt_index
+                            abs_error_RT[game_num, trial_num] = abs(trial['RT'] - predicted_RT[game_num, trial_num])
+
                         else:
                             num_invalid_rts += 1
                     else:
                         # Simulate a reaction time from the model based on the parameters
-                        # Transform the starting position value so it's between -1 and 1. May want to smooth out function
-                        starting_position_value =  np.tanh((info_diff+side_bias)/50)
-                        # Get the drift_value by combining the reward difference and decision noise. The decision noise will push the drift in opposite direction of the reward difference. 
-                        if reward_diff > 0:
-                            drift_value = (jsd_val/baseline_noise) - (RE/jsd_val)
-                        else:
-                            drift_value = -(jsd_val/baseline_noise) + (RE/jsd_val)
+
                         # solve a ddm (i.e., get the probability density function) for current DDM parameters
                         # Higher values of reward_diff and side_bias indicate greater preference for right bandit (band it 1 vs 0)
                         sol = model.solve_numerical_c(conditions={"drift_value": drift_value,
@@ -271,5 +284,7 @@ def KF_DDM_model(sample,model,fit_or_sim,sim_using_max_pdf=False):
         "relative_uncertainty_of_choice": relative_uncertainty_of_choice,
         "total_uncertainty": total_uncertainty,
         "change_in_uncertainty_after_choice": change_in_uncertainty_after_choice,
+        "predicted_RT": predicted_RT,
+        "abs_error_RT": abs_error_RT,
         "data": data,
     }
