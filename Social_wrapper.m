@@ -42,7 +42,9 @@ function [fits_table] = Social_wrapper(varargin)
         % field/drift mappings if NOT fitting with PYDDM. If you are
         % fitting with PYDDM, you'll have to set the bounds for each parameter
         % in the fitting file.
-        if ~strcmp(fitting_procedure, "PYDDM")
+        if strcmp(fitting_procedure, "PYDDM")
+            MDP.settings = 'Use JSD; fit all RTs';
+        elseif ~strcmp(fitting_procedure, "PYDDM")
             model = "KF_SIGMA_DDM"; % indicate if 'KF_UCB', 'RL', 'KF_UCB_DDM', 'KF_SIGMA_DDM', 'KF_SIGMA'
             MDP.field = {'baseline_noise','side_bias','directed_exp','baseline_info_bonus','random_exp','sigma_d', 'sigma_r'};
             if strcmp(fitting_procedure, "VBA")
@@ -72,7 +74,10 @@ function [fits_table] = Social_wrapper(varargin)
         % field/drift mappings if NOT fitting with PYDDM. If you are
         % fitting with PYDDM, you'll have to set the bounds for each parameter
         % in the fitting file.
-        if ~strcmp(fitting_procedure, "PYDDM")
+        if strcmp(fitting_procedure, "PYDDM")
+            MDP.settings = getenv('FIELD'); % The FIELD variable from the environment is used to communicate settings in the PYDDM
+            
+        elseif ~strcmp(fitting_procedure, "PYDDM")
             model = getenv('MODEL')
             MDP.field = strsplit(getenv('FIELD'), ',')
             if strcmp(fitting_procedure, "VBA")

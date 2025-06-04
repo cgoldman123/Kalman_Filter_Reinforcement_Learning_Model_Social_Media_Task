@@ -7,7 +7,8 @@ from scipy.io import savemat
 import sys, random
 import pyddm.plot
 import matplotlib.pyplot as plt
-
+# import pickle # only needed for debugging purposes when a model_stats object is loaded into the loss function
+from pyddm import BoundConstant, Fitted, BoundCollapsingLinear # USed for debugging purposes when fixing parameters in the loss function
 
 # Get arguments from the command line if they are passed in
 if len(sys.argv) > 1:
@@ -16,15 +17,16 @@ if len(sys.argv) > 1:
     id = sys.argv[3] # Subject ID
     room_type = sys.argv[4] # Room type (e.g., Like, Dislike)
     timestamp = sys.argv[5] # Timestamp (e.g., 04_16_25_T10-39-55)
-    settings = sys.argv[6] # Settings for the model (e.g., "Use JSD; fit all RTs", "Use JSD; fit 3 RTs", "Use reward difference; fit all RTs", "Use reward difference; fit 3 RTs"
+    settings = sys.argv[6] # Settings for the model (e.g., "Use_JSD_fit_all_RTs", "Use_JSD_fit_3_RTs", "Use_reward_differences_fit_all_RTs", "Use_reward_differences_fit_3_RTs"
+
 else:
     # Note you'll have to change both outpath_beh and id to fit another subject
-    outpath_beh = f"L:/rsmith/lab-members/cgoldman/Wellbeing/social_media/output/SM_fits_PYDDM_test_PYDDM_04-21-2025_15-04-20/Like/model1/568d0641b5a2c2000cb657d0_beh_Like_04_21_25_T15-57-57.csv" # Behavioral file location
-    id = "568d0641b5a2c2000cb657d0" # Subject ID
+    outpath_beh = f"L:/rsmith/lab-members/cgoldman/Wellbeing/social_media/output/SM_fits_PYDDM_test_PYDDM_06-03-2025_21-30-31/Like/model1/5590a34cfdf99b729d4f69dc_beh_Like_06_03_25_T21-31-11.csv" # Behavioral file location
+    id = "5590a34cfdf99b729d4f69dc" # Subject ID
     results_dir = f"L:/rsmith/lab-members/cgoldman/Wellbeing/social_media/output/test/" # Directory to save results
     room_type = "Like" # Room type (e.g., Like, Dislike)
     timestamp = "current_timestamp" # Timestamp (e.g., 04_16_25_T10-39-55)
-    settings = "Use JSD; fit all RTs" # Settings for the model (e.g., "Use JSD; fit all RTs", "Use JSD; fit 3 RTs", "Use reward difference; fit all RTs", "Use reward difference; fit 3 RTs"
+    settings = "Use_JSD_fit_all_RTs" # Settings for the model (e.g., "Use_JSD_fit_all_RTs", "Use_JSD_fit_3_RTs", "Use_reward_differences_fit_all_RTs", "Use_reward_differences_fit_3_RTs"
 
 
 log_path = f"{results_dir}{id}_{room_type}_{timestamp}_model_log.txt"
@@ -77,17 +79,32 @@ social_media_sample = pyddm.Sample.from_pandas_dataframe(social_media_df_clean, 
 class KF_DDM_Loss(pyddm.LossFunction):
     name = "KF_DDM_Loss"
     def loss(self, model):
+        # Hardcode parameters for debugging purposes
+        # model._driftdep.baseline_info_bonus = Fitted(0.3496305974, minval=-4, maxval=4)
+        # model._driftdep.random_exp = Fitted(6.4630579, minval=0.1, maxval=10)
+        # model._driftdep.rel_uncert_mod = Fitted(-0.06463354, minval=-1, maxval=1) # This is the relative uncertainty of the choice
+        # model._driftdep.sigma_d = Fitted(9.676269288, minval=0, maxval=10) # This is the uncertainty of the left bandit
+        # model._driftdep.sigma_r = Fitted(4.000000, minval=0, maxval=10) # This is the uncertainty of the right bandit
+        # model._driftdep.side_bias = Fitted(0.034263500, minval=-4, maxval=4) # This is the side bias
+        # model._driftdep.directed_exp = Fitted(-0.59829014, minval=-4, maxval=4) # This is the directed exploration
+        # model._driftdep.baseline_noise = Fitted(3.1660782, minval=-4, maxval=4) # This is the directed exploration
+        # model._bounddep = BoundConstant(B=Fitted(1.501095, minval=1.5, maxval=6))
+
         model_stats = KF_DDM_model(self.sample,model, fit_or_sim="fit")
         
+        # Load in model_stats object if you want to use it for debugging purposes
+        # with open("model_stats.pkl", "rb") as f:
+        #     model_stats = pickle.load(f)
+
         # get log likelihood
         rt_pdf = model_stats["rt_pdf"]
         action_probs = model_stats["action_probs"]
         abs_error_RT = model_stats["abs_error_RT"]
         eps = np.finfo(float).eps
-        if "fit all RTs" in settings:
+        if "fit_all_RTs" in settings:
             likelihood = np.sum(np.log(rt_pdf[~np.isnan(rt_pdf)] + eps)) # add small value to avoid log(0)
             avg_abs_error_RT = np.mean((abs_error_RT[~np.isnan(abs_error_RT)]))
-        elif "fit 3 RTs" in settings:
+        elif "fit_3_RTs" in settings:
             first_3_rts = rt_pdf[:, 0:7]
             first_3_rts_log_pdf = np.sum(np.log(first_3_rts[~np.isnan(first_3_rts)])) # Fit only the first 3 RTs but the other choice probabilities
             choices_4_and_5 = action_probs[:, 7:9] # Fit the choice probabilities for the 4th and 5th choices
@@ -132,11 +149,11 @@ class KF_DDM_Loss(pyddm.LossFunction):
 ## FIT MODEL TO ACTUAL DATA
 # This is kind of hacky, but we pass in the learning parameters as arguments to drift even though they aren't used for it. This is just so the loss function has access to them
 print("Setting up the model to fit behavioral data")
-model_to_fit = pyddm.gddm(drift=lambda drift_dcsn_noise_mod,drift_value,sigma_d,sigma_r,baseline_noise,side_bias,directed_exp,baseline_info_bonus,random_exp,relative_uncertainty_mod : drift_value,
+model_to_fit = pyddm.gddm(drift=lambda drift_dcsn_noise_mod,drift_value,sigma_d,sigma_r,baseline_noise,side_bias,directed_exp,baseline_info_bonus,random_exp,rel_uncert_mod : drift_value,
                           starting_position=lambda starting_position_value: starting_position_value, 
                           noise=1.0, bound="B", nondecision=0, T_dur=4.17,
                           conditions=["game_number", "gameLength", "trial", "r", "drift_value","starting_position_value"],
-                          parameters={"drift_dcsn_noise_mod":1, "relative_uncertainty_mod": (0,1), "B": (1.5, 6), "sigma_d": (0,10), "sigma_r": (4,16), "baseline_noise": (0.02,0.2), "side_bias": (-35,35), "directed_exp": (-6,6), "baseline_info_bonus": (-6,6), "random_exp": (0,6)}, choice_names=("right","left"))
+                          parameters={"drift_dcsn_noise_mod":1, "rel_uncert_mod": (-1,1), "B": (1.5, 6), "sigma_d": (0,10), "sigma_r": (4,16), "baseline_noise": (0.1,10), "side_bias": (-4,4), "directed_exp": (-4,4), "baseline_info_bonus": (-4,4), "random_exp": (.1,10)}, choice_names=("right","left"))
 model_to_fit.settings = settings
 
 # Note that to plot using this function, I would have to pass in the conditions that get assigned in the model function (i.e., starting_position_value and drift_value). We would only be able to view the pdf and reaction time for one combination of conditions, which is not ideal.
@@ -199,11 +216,13 @@ model_fit_to_data = model_to_fit
 # Examine recoverability on fit parameters
 # This is kind of hacky, but we pass in the learning parameters as arguments to drift even though they aren't used for it. This is just so the loss function has access to them
 print("Setting up the model to simulate behavioral data")
-model_to_sim = pyddm.gddm(drift=lambda drift_dcsn_noise_mod,drift_value,sigma_d,sigma_r,baseline_noise,side_bias,directed_exp,baseline_info_bonus,random_exp,relative_uncertainty_mod : drift_value,
+model_to_sim = pyddm.gddm(drift=lambda drift_dcsn_noise_mod,drift_value,sigma_d,sigma_r,baseline_noise,side_bias,directed_exp,baseline_info_bonus,random_exp,rel_uncert_mod : drift_value,
                           starting_position=lambda starting_position_value: starting_position_value, 
                           noise=1.0, bound="B", nondecision=0, T_dur=100,
                           conditions=["game_number", "gameLength", "trial", "r", "drift_value","starting_position_value"],
-                          parameters={"drift_dcsn_noise_mod": 1, "relative_uncertainty_mod":fit_result["post_relative_uncertainty_mod"], "B": fit_result["post_B"], "sigma_d": fit_result["post_sigma_d"], "sigma_r": fit_result["post_sigma_r"], "baseline_noise": fit_result["post_baseline_noise"], "side_bias": fit_result["post_side_bias"], "directed_exp": fit_result["post_directed_exp"], "baseline_info_bonus": fit_result["post_baseline_info_bonus"], "random_exp": fit_result["post_random_exp"]}, choice_names=("right","left"))
+                          parameters={"drift_dcsn_noise_mod": 1, "rel_uncert_mod":fit_result["post_rel_uncert_mod"], "B": fit_result["post_B"], "sigma_d": fit_result["post_sigma_d"], "sigma_r": fit_result["post_sigma_r"], "baseline_noise": fit_result["post_baseline_noise"], "side_bias": fit_result["post_side_bias"], "directed_exp": fit_result["post_directed_exp"], "baseline_info_bonus": fit_result["post_baseline_info_bonus"], "random_exp": fit_result["post_random_exp"]}, choice_names=("right","left"))
+model_to_sim.settings = settings
+
 print("Simulating behavioral data")
 simulated_behavior = KF_DDM_model(social_media_sample,model_to_sim,fit_or_sim="sim")
 

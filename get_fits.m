@@ -76,8 +76,8 @@ if MDP.fit_model
             end
             script_path = [root 'rsmith/lab-members/cgoldman/Wellbeing/social_media/scripts/PyDDM_scripts/fit_pyddm_social_media.py'];
             % Build the command safely (quotes to handle spaces)
-            cmd = sprintf('"%s" "%s" "%s" "%s" "%s" "%s" "%s"', ...
-                python_path, script_path, outpath_beh, results_dir, id, room_type, timestamp);
+            cmd = sprintf('"%s" "%s" "%s" "%s" "%s" "%s" "%s" "%s"', ...
+                python_path, script_path, outpath_beh, results_dir, id, room_type, timestamp, MDP.settings);
             
             % Run and display output
             [status, cmdout] = system(cmd);
@@ -151,12 +151,17 @@ if MDP.fit_model
             end
         else
             % PYDDM fits
+
+            % Add any settings passed in through the field variable
+            fits_table.settings = MDP.settings;
             % Note that the prefix sft means the result was from fitting
             % simulated data.
             vars = fieldnames(fits);
             for i = 1:length(vars)
                 fits_table.(vars{i}) = fits.(vars{i});
             end
+
+
         end
         
        

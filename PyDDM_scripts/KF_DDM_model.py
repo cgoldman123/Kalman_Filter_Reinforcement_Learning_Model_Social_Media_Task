@@ -4,6 +4,8 @@ import pandas as pd
 import numpy as np
 from pyddm.logger import logger
 from jensen_shannon_divergence import jsd_normal
+import matplotlib.pyplot as plt # USed for plot in the model function
+from pyddm import BoundConstant, Fitted, BoundCollapsingLinear # USed for debugging purposes when fixing parameters in the loss function
 
 
 # Add a filter to the logger to check for the Renormalization warning, where the probability of hitting the upper, lower, or undecided boundary is not 1 so it had to be renormalized
@@ -35,7 +37,7 @@ def KF_DDM_model(sample,model,fit_or_sim, sim_using_max_pdf=False):
     baseline_info_bonus = model.get_dependence("drift").baseline_info_bonus
     random_exp = model.get_dependence("drift").random_exp
     drift_dcsn_noise_mod = model.get_dependence("drift").drift_dcsn_noise_mod
-    relative_uncertainty_mod = model.get_dependence("drift").relative_uncertainty_mod
+    rel_uncert_mod = model.get_dependence("drift").rel_uncert_mod
 
     # Initialize variables to hold output
     G = 40 # Number of games
@@ -98,9 +100,9 @@ def KF_DDM_model(sample,model,fit_or_sim, sim_using_max_pdf=False):
 
                     relative_uncertainty = (sigma2[game_num,trial_num] - sigma1[game_num,trial_num])
                     if relative_uncertainty > 0:
-                        info_diff = relative_uncertainty*relative_uncertainty_mod  + baseline_info_bonus + T*(np.exp(-z*(trial_num-4))-np.exp(-4*z))/(1-np.exp(-4*z))
+                        info_diff = relative_uncertainty*rel_uncert_mod  + baseline_info_bonus + T*(np.exp(-z*(trial_num-4))-np.exp(-4*z))/(1-np.exp(-4*z))
                     else:
-                        info_diff = relative_uncertainty*relative_uncertainty_mod  - baseline_info_bonus - T*(np.exp(-z*(trial_num-4))-np.exp(-4*z))/(1-np.exp(-4*z))
+                        info_diff = relative_uncertainty*rel_uncert_mod  - baseline_info_bonus - T*(np.exp(-z*(trial_num-4))-np.exp(-4*z))/(1-np.exp(-4*z))
 
 
 
@@ -121,18 +123,18 @@ def KF_DDM_model(sample,model,fit_or_sim, sim_using_max_pdf=False):
                     # Get the drift_value by combining the reward difference and decision noise. The decision noise will push the drift in opposite direction of the reward difference. 
                     if reward_diff > 0:
                         # drift_value = (drift_rwrd_diff_mod * reward_diff) - (drift_dcsn_noise_mod * decision_noise)
-                        if "Use JSD" in settings:
+                        if "Use_JSD" in settings:
                             # Divide by ln(2) since that's the max jensen shannon divergence value
                             drift_value = jsd_val/np.log(2)
-                        elif "Use reward difference" in settings:
+                        elif "Use_reward_difference" in settings:
                             drift_value = (reward_diff/baseline_noise) - total_uncertainty[game_num,trial_num]*RE
                             
                     else:
                         # drift_value = (drift_rwrd_diff_mod * reward_diff) + (drift_dcsn_noise_mod * decision_noise)
-                        if "Use JSD" in settings:
+                        if "Use_JSD" in settings:
                         # Divide by ln(2) since that's the max jensen shannon divergence value
                             drift_value = -jsd_val/np.log(2)
-                        elif "Use reward difference" in settings:
+                        elif "Use_reward_difference" in settings:
                             drift_value = (reward_diff/baseline_noise) + total_uncertainty[game_num,trial_num]*RE
 
 
@@ -143,12 +145,22 @@ def KF_DDM_model(sample,model,fit_or_sim, sim_using_max_pdf=False):
                             # solve a ddm (i.e., get the probability density function) for current DDM parameters
                             # Higher values of reward_diff and side_bias indicate greater preference for right bandit (band it 1 vs 0)
                             had_renorm = False
+
+                            # REMEMBER TO COMMENT THIS OUT!!!
+                            # model._bounddep = BoundCollapsingLinear(B=1.5, t=.5) 
+                            # model._bounddep = BoundConstant(B=Fitted(1.5, minval=1.5, maxval=6))
+
                             sol = model.solve_numerical_c(
                                 conditions={
                                     "drift_value": drift_value,
                                     "starting_position_value": starting_position_value
                                 }
                             )
+                            # plt.plot(sol.t_domain, sol.pdf("right"))
+                            # plt.axvline(x=trial['RT'], color='red', linestyle='--', label='RT')
+                            # plt.legend()  # Optional, if you want the 'RT' label to show up
+                            # plt.show()
+
                             # Check to see if the renormalization warning was triggered
                             if had_renorm:
                                 print("The mode had to renormalize the probability density function. Please check the model parameters:")
