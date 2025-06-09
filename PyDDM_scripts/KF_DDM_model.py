@@ -149,6 +149,8 @@ def KF_DDM_model(sample,model,fit_or_sim, sim_using_max_pdf=False):
                             # REMEMBER TO COMMENT THIS OUT!!!
                             # model._bounddep = BoundCollapsingLinear(B=1.5, t=.5) 
                             # model._bounddep = BoundConstant(B=Fitted(1.5, minval=1.5, maxval=6))
+                            # model._bounddep.bound_intercept = Fitted(3.1660782, minval=0, maxval=10) # This is the directed exploration
+                            # model._bounddep.bound_slope = Fitted(.5, minval=0, maxval=10) # This is the directed exploration
 
                             sol = model.solve_numerical_c(
                                 conditions={

@@ -6,7 +6,7 @@
 #SBATCH --nodes=1
 #SBATCH --begin=now
 #SBATCH --chdir=/media/labs/rsmith/lab-members/cgoldman/Wellbeing/social_media/scripts/
-#SBATCH --time=48:00:00
+#SBATCH --time=24:00:00
 
 #
 #################################################
