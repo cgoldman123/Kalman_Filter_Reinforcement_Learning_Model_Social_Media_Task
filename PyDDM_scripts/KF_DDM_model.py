@@ -43,7 +43,7 @@ def KF_DDM_model(sample,model,fit_or_sim, sim_using_max_pdf=False):
     G = 40 # Number of games
     initial_sigma = 10000
     reward_sensitivity = 1
-    max_rt = 4.17 # Maximum reaction time in seconds
+    max_rt = 7 # Maximum reaction time in seconds
 
     rt_pdf = np.full((G, 10), np.nan)
     action_probs = np.full((G, 9), np.nan)
@@ -99,10 +99,16 @@ def KF_DDM_model(sample,model,fit_or_sim, sim_using_max_pdf=False):
                     # info_bonus_bandit2 = sigma2[game_num,trial_num]*baseline_info_bonus + sigma2[game_num,trial_num]*T*(np.exp(-z*(trial_num-4))-np.exp(-4*z))/(1-np.exp(-4*z))
 
                     relative_uncertainty = (sigma2[game_num,trial_num] - sigma1[game_num,trial_num])
-                    if relative_uncertainty > 0:
+                    # If the number of times chosen the left side is higher than the right side, then higher values of baseline_info_bonus and directed exploration should increase the probability of choosing the right side
+                    subset = data.loc[(data["game_number"] == game_numbers[game_num]) & (data["trial"] <= trial_num)]
+                    num_choose_left = (subset['choice'] == 0).sum()
+                    num_choose_right = (subset['choice'] == 1).sum()
+                    if (num_choose_left - num_choose_right) > 0:
                         info_diff = relative_uncertainty*rel_uncert_mod  + baseline_info_bonus + T*(np.exp(-z*(trial_num-4))-np.exp(-4*z))/(1-np.exp(-4*z))
-                    else:
+                    elif (num_choose_left - num_choose_right) < 0:
                         info_diff = relative_uncertainty*rel_uncert_mod  - baseline_info_bonus - T*(np.exp(-z*(trial_num-4))-np.exp(-4*z))/(1-np.exp(-4*z))
+                    else:
+                        info_diff = relative_uncertainty*rel_uncert_mod
 
 
 
@@ -202,6 +208,11 @@ def KF_DDM_model(sample,model,fit_or_sim, sim_using_max_pdf=False):
                         # Higher values of reward_diff and side_bias indicate greater preference for right bandit (band it 1 vs 0)
                         sol = model.solve_numerical_c(conditions={"drift_value": drift_value,
                                                                     "starting_position_value": starting_position_value})   
+                        
+                        # print(f"RE: ",RE)                    
+                        # print(f"Drift: ",drift_value)                    
+                        # print(f"Starting position: ",starting_position_value)                    
+                        # print(f"Prob choose left: ",sol.prob("left"))
                         # Use the reaction time with the max probability density
                         if sim_using_max_pdf:
                             # If the left choice was more likely
