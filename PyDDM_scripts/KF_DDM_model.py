@@ -3,7 +3,7 @@
 import pandas as pd
 import numpy as np
 from pyddm.logger import logger
-from jensen_shannon_divergence import jsd_normal
+from jensen_shannon_divergence_quad_method import jsd_normal
 import matplotlib.pyplot as plt # USed for plot in the model function
 from pyddm import BoundConstant, Fitted, BoundCollapsingLinear # USed for debugging purposes when fixing parameters in the loss function
 
@@ -121,7 +121,7 @@ def KF_DDM_model(sample,model,fit_or_sim, sim_using_max_pdf=False):
                     
                     # Calculate the jensen shannon divergence between the reward distributions of the two bandits
                     # Note that jsd_val is in nats, so it's pretty small. We multiply by 10 to make it have a bigger effect on the drift value.
-                    jsd_val = jsd_normal(mu1[trial_num], sigma1[game_num,trial_num]*baseline_noise*RE, mu2[trial_num], sigma2[game_num,trial_num]*baseline_noise*RE, rng=23)
+                    jsd_val = jsd_normal(mu1[trial_num], sigma1[game_num,trial_num]*baseline_noise*RE, mu2[trial_num], sigma2[game_num,trial_num]*baseline_noise*RE)
 
                     # decision_noise = total_uncertainty[game_num,trial_num]*baseline_noise*RE
 

@@ -190,13 +190,13 @@ def compute_stats_across_horizons_and_choices(sim_df: pd.DataFrame) -> dict:
 # This function iterates over a specified range (param_vals) for a specified  parameter (param_name), holding the other parameters constant (base_params).
 # It performs n_runs simulations for each parameter value and computes the mean and standard error of the model-free metric function (metric_fn) for each parameter value.
 # ------------------------------------------------------------------
-def sweep(sample,
+def stats_simulate_parameter_sweep(sample,
           settings,
           param_name: str,
           param_vals,
           base_params: dict,
           n_runs: int,
-          metric_fn):
+          metric_fn, sim_using_max_pdf, number_samples_to_sim):
     out = []
     for v in param_vals:
         mvals = []
@@ -211,7 +211,7 @@ def sweep(sample,
                           conditions=["game_number", "gameLength", "trial", "r", "drift_value","starting_position_value"],
                           parameters=params, choice_names=("right","left"))
             model.settings = settings
-            sim_df = KF_DDM_model(sample, model, fit_or_sim="sim", sim_using_max_pdf=True)["data"]
+            sim_df = KF_DDM_model(sample, model, fit_or_sim="sim", sim_using_max_pdf=sim_using_max_pdf)["data"]
             mvals.append(metric_fn(sim_df))
 
             # Summarize the model free results in an output dictionary
@@ -237,12 +237,11 @@ def sweep(sample,
 # ------------------------------------------------------------------
 # This function simulates a set of parameter values and computes the reaction time of the specified choice number for different reward differences
 # ------------------------------------------------------------------
-def get_rts_reward_difference(base_params: dict,
-          n_runs: int, game_len,trial_idx, settings, sample):
+def stats_simulate_one_parameter_set(base_params: dict, game_len,trial_idx, settings, sample, sim_using_max_pdf, number_samples_to_sim):
     out = []
     model_free_across_horizons_and_choices = []
     model_free_for_specific_horizon_and_choice = []
-    for _ in range(n_runs):
+    for _ in range(number_samples_to_sim):
         model = pyddm.gddm(drift=lambda drift_dcsn_noise_mod,drift_value,sigma_d,sigma_r,baseline_noise,side_bias,directed_exp,baseline_info_bonus,random_exp,rel_uncert_mod, free_choice_sigma_scaler : drift_value,
                           starting_position=lambda starting_position_value: starting_position_value, 
                           noise=1.0,     bound=lambda bound_intercept, bound_slope, t: max( bound_intercept + bound_slope*t, eps),  # linearly collapsing bound
@@ -251,7 +250,7 @@ def get_rts_reward_difference(base_params: dict,
                           parameters=base_params, choice_names=("right","left"))
         model.settings = settings
 
-        sim_df = KF_DDM_model(sample, model, fit_or_sim="sim", sim_using_max_pdf=True)["data"]
+        sim_df = KF_DDM_model(sample, model, fit_or_sim="sim", sim_using_max_pdf=sim_using_max_pdf)["data"]
         ### Compute statistics across horizons and choices ###
         model_free_across_horizons_and_choices.append(compute_stats_across_horizons_and_choices(sim_df))
         model_free_across_horizons_and_choices_df = pd.DataFrame(model_free_across_horizons_and_choices)
@@ -263,23 +262,43 @@ def get_rts_reward_difference(base_params: dict,
         # extract each RT-by-reward-difference DataFrame from mvals
         dfs = [d["avg_rt_by_reward_diff_game_len_5"] for d in model_free_for_specific_horizon_and_choice]
         # Combine 
-        combined = pd.concat(dfs, axis=1)
+        combined_stats_game_len_5 = pd.concat(dfs, axis=1)
         # Calculate mean and std across runs (row-wise)
-        rt_by_reward_diff_summary_game_len_5 = pd.DataFrame({
-            'reward_diff': combined.index,
-            'mean_RT': combined.mean(axis=1),
-            'std_RT': combined.std(axis=1)
-        })
+
 
         dfs = [d["avg_rt_by_reward_diff_game_len_9"] for d in model_free_for_specific_horizon_and_choice]
         # Combine 
-        combined = pd.concat(dfs, axis=1)
+        combined_stats_game_len_9 = pd.concat(dfs, axis=1)
         # Calculate mean and std across runs (row-wise)
-        rt_by_reward_diff_summary_game_len_9 = pd.DataFrame({
-            'reward_diff': combined.index,
-            'mean_RT': combined.mean(axis=1),
-            'std_RT': combined.std(axis=1)
-        })
+    
+    rt_by_reward_diff_summary_game_len_5 = pd.DataFrame({
+        'reward_diff': combined_stats_game_len_5.index,
+        'mean_RT': combined_stats_game_len_5.mean(axis=1),
+        'std_RT': combined_stats_game_len_5.std(axis=1)
+    })
+
+    rt_by_reward_diff_summary_game_len_9 = pd.DataFrame({
+        'reward_diff': combined_stats_game_len_9.index,
+        'mean_RT': combined_stats_game_len_9.mean(axis=1),
+        'std_RT': combined_stats_game_len_9.std(axis=1)
+    })
+
+    # If taking multiple samples, compute the mean of the means of each sample
+    if len(model_free_across_horizons_and_choices_df) > 1:
+        # Get relevant columns
+        mean_cols = [col for col in model_free_across_horizons_and_choices_df.columns if col.startswith("mean_")]
+        std_cols = [col for col in model_free_across_horizons_and_choices_df.columns if col.startswith("std_")]
+
+        for mean_col, std_col in zip(mean_cols, std_cols):
+            col_mean = model_free_across_horizons_and_choices_df[mean_col].mean()
+            col_std  = model_free_across_horizons_and_choices_df[mean_col].std(ddof=1)
+
+            # Assign that mean and std to the entire columns
+            model_free_across_horizons_and_choices_df[mean_col] = col_mean
+            model_free_across_horizons_and_choices_df[std_col]  = col_std
+        # Take just one row since all rows are the same now
+        model_free_across_horizons_and_choices_df = model_free_across_horizons_and_choices_df.iloc[[0]]
+
 
     return {
         "avg_rt_by_reward_diff_game_len_5": rt_by_reward_diff_summary_game_len_5,

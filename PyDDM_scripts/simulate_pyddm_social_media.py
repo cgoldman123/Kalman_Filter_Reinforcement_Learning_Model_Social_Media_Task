@@ -55,8 +55,13 @@ social_media_sample = pyddm.Sample.from_pandas_dataframe(social_media_df_clean, 
 
 
 
-run_one_param_combo = True # adjust this to True if you want to run the RT by reward difference simulation
+run_one_param_set = True # adjust this to True if you want to run the RT by reward difference simulation
 run_param_sweep = False # adjust this to True if you want to run the parameter sweep simulation
+sim_using_max_pdf = False # If True, the model will simulate a choice/RT based on the maximum of the simulated pdf. If False, it will sample from the distribution of choices/RTs.
+if not sim_using_max_pdf:
+    number_samples_to_sim = 2
+else:
+    number_samples_to_sim = 0
 
 base_params = dict(
     drift_dcsn_noise_mod = 1,
@@ -75,22 +80,22 @@ base_params = dict(
 
 if run_param_sweep:
     param_name   = "sigma_r"            # specify the parameter to sweep while holding others constant
-    param_vals   = np.linspace(4, 16, 20)            # set the range of parameters to sweep for the parameter param_name
+    param_vals   = np.linspace(4, 16, 2)            # set the range of parameters to sweep for the parameter param_name
     trial_idx  = 5
 
 
 
 
-if run_one_param_combo:
-    #Simulate RTs for a range of reward differences
-    n_runs       = 1                               # specify number of simulations to run for each set of parameters. Can leave at 1 if we are using the max pdf method (simulates a choice/rt based on the max pdf) instead of sampling from the distribution of choices/RTs.
+if run_one_param_set:
     game_len   = [5, 9]                               # specify the game length to use ([5,9] )
     trial_idx  = 5                               # specify the trial index to use (5, 6, 7, etc.)
     # ==================================================================
-    results = get_rts_reward_difference(base_params, n_runs, game_len,trial_idx,settings, social_media_sample)
+    results = stats_simulate_one_parameter_set(base_params, game_len,trial_idx,settings, social_media_sample, sim_using_max_pdf, number_samples_to_sim)
 
     plt.figure()
     summary_h1 = results['avg_rt_by_reward_diff_game_len_5']
+    # summary_h1['reward_diff'] = summary_h1.index
+
     plt.errorbar(summary_h1['reward_diff'], summary_h1['mean_RT'], yerr=summary_h1['std_RT'],
                  fmt='o-', color="blue",capsize=4, label="H1")
     summary_h5 = results['avg_rt_by_reward_diff_game_len_9']
@@ -207,6 +212,7 @@ if run_one_param_combo:
     plt.tight_layout()
     plt.show(block=False)
 
+    # Create one big plot with the individual figures combined into a 2x2 grid.
     fig, axs = plt.subplots(2, 2, figsize=(12, 10))
 
     # Get only the 4 most recent individual figures (skip the combined one)
@@ -220,13 +226,24 @@ if run_one_param_combo:
         axs[i // 2, i % 2].imshow(buf)
         axs[i // 2, i % 2].axis('off')
 
-    plt.tight_layout()
+    plt.tight_layout(rect=[0, 0, 1, 0.92])  # leave space for title + subtitle
+
+    # Add title and conditional subtitle
+    fig.suptitle("Simulated behavior using one parameter set", fontsize=16)
+
+    if sim_using_max_pdf:
+        subtitle = "Simulations were based on the maximum of the pdf of the choice×RT distribution."
+    else:
+        subtitle = f"Simulations were sampled from the pdf of the choice×RT distribution {number_samples_to_sim} times."
+
+    fig.text(0.5, 0.935, subtitle, ha='center', fontsize=10)
 
     # Close only the individual figs (not the combined one)
     for fignum in fig_nums:
         plt.close(plt.figure(fignum))
 
     plt.show(block=False)
+
 
 
 
@@ -238,7 +255,7 @@ if run_param_sweep:
     game_len   =  [5,9] #[5,9] or [9]                              # specify the game length; use brackets
     metric_fn    = lambda df: compute_stats_for_specific_horizon_and_choice(df, game_len=game_len, trial_idx=trial_idx)  # Use game_len to control whether plotting H1 (5) or H5 (9) games. Use trial_idx to control which which free choice to consider (5 = first free choice)
     # ==================================================================
-    results = sweep(social_media_sample, settings, param_name, param_vals, base_params, n_runs, metric_fn)
+    results = stats_simulate_parameter_sweep(social_media_sample, settings, param_name, param_vals, base_params, n_runs, metric_fn, sim_using_max_pdf, number_samples_to_sim)
 
     # ------------------------------------------------------------------
     # Plot: Probability of choosing the option with the higher observed mean for each horizon across the parameter sweep.
