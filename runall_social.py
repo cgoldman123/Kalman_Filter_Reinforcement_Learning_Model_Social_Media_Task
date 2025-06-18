@@ -110,7 +110,7 @@ elif model_class=="KF_SIGMA":
 elif model_class=="PYDDM":
     models = [
         {'field': 'Use_JSD_fit_all_RTs'}, # Use the field to convey settings
-        {'field': 'Use_JSD_fit_3_RTs'}, # Use the field to convey settings
+        # {'field': 'Use_JSD_fit_3_RTs'}, # Use the field to convey settings
         # {'field': 'Use_reward_differences_fit_all_RTs'}, # Use the field to convey settings
         # {'field': 'Use_reward_differences_fit_3_RTs'}, # Use the field to convey settings
     ]
@@ -142,10 +142,10 @@ for room in room_type:
         # make the subjects whose fits errored last time (first two), had poor fits, and had great fits a priority; run them first
         priority = ["56f9364e895094000c8f4967", "5b23d0784fb0d40001e95407", "5ca749ff98b35f0001f7559d", "5a973481f05361000171dd86", "60079f45348bb62bdcd363ff", "652ab7948cb59f4c50c7972a", "648a3e85644594030e52bcfd", "665f1275a8344d26d5e340f5", "664b31793e9619258b204011","630cc9747cb664e8a03c29f0", "5c28feff5ffcb7000128a541", "65c0f119fa8fd299fde6b9e2","66034de136822e2d301c3796", "63614899ad49a91f1ef09067"]
         subjects_sorted = sorted(subjects, key=lambda x: (x not in priority, subjects.index(x)))
-        
-        for subject in subjects_sorted[:40]: # do subjects[3] to just fit one subject
-            # if subject != "568d0641b5a2c2000cb657d0":
-            #     continue
+
+        for subject in subjects_sorted: # do subjects[3] to just fit one subject
+            if subject != "6652b039261ef03ecb978b4b" and subject != "6032aa14166df72d4c8a331f" and subject != "565bff58c121fe0005fc390d":
+                continue
             
             stdout_name = f"{combined_results_dir}/logs/SM-{model_class}-model_{index}-{room}_room-{subject}-%J.stdout"
             stderr_name = f"{combined_results_dir}/logs/SM-{model_class}-model_{index}-{room}_room-{subject}-%J.stderr"

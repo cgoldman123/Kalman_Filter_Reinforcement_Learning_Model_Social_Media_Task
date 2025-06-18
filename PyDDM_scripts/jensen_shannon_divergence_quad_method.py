@@ -45,5 +45,5 @@ def jsd_normal(mu1, sigma1, mu2, sigma2, *,
     return js
  
  
-print(jsd_normal(50, 8, 42, 8))
-print("hi")
+# print(jsd_normal(50, 8, 42, 8))
+# print("hi")

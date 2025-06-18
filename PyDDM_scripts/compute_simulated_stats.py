@@ -204,7 +204,7 @@ def stats_simulate_parameter_sweep(sample,
             params = base_params.copy()   # keep original intact
             params[param_name] = v        # overwrite the swept key
 
-            model = pyddm.gddm(drift=lambda drift_dcsn_noise_mod,drift_value,sigma_d,sigma_r,baseline_noise,side_bias,directed_exp,baseline_info_bonus,random_exp,rel_uncert_mod, free_choice_sigma_scaler : drift_value,
+            model = pyddm.gddm(drift=lambda drift_dcsn_noise_mod,drift_value,sigma_d,sigma_r,baseline_noise,side_bias,directed_exp,baseline_info_bonus,random_exp,rel_uncert_mod, sigma_scaler : drift_value,
                           starting_position=lambda starting_position_value: starting_position_value, 
                           noise=1.0,     bound=lambda bound_intercept, bound_slope, t: max( bound_intercept + bound_slope*t, eps),  # linearly collapsing bound
                           nondecision=0, T_dur=7,
@@ -242,7 +242,7 @@ def stats_simulate_one_parameter_set(base_params: dict, game_len,trial_idx, sett
     model_free_across_horizons_and_choices = []
     model_free_for_specific_horizon_and_choice = []
     for _ in range(number_samples_to_sim):
-        model = pyddm.gddm(drift=lambda drift_dcsn_noise_mod,drift_value,sigma_d,sigma_r,baseline_noise,side_bias,directed_exp,baseline_info_bonus,random_exp,rel_uncert_mod, free_choice_sigma_scaler : drift_value,
+        model = pyddm.gddm(drift=lambda drift_dcsn_noise_mod,drift_value,sigma_d,sigma_r,baseline_noise,side_bias,directed_exp,baseline_info_bonus,random_exp,rel_uncert_mod, sigma_scaler : drift_value,
                           starting_position=lambda starting_position_value: starting_position_value, 
                           noise=1.0,     bound=lambda bound_intercept, bound_slope, t: max( bound_intercept + bound_slope*t, eps),  # linearly collapsing bound
                           nondecision=0, T_dur=7,

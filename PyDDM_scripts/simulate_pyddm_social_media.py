@@ -59,7 +59,7 @@ run_one_param_set = True # adjust this to True if you want to run the RT by rewa
 run_param_sweep = False # adjust this to True if you want to run the parameter sweep simulation
 sim_using_max_pdf = False # If True, the model will simulate a choice/RT based on the maximum of the simulated pdf. If False, it will sample from the distribution of choices/RTs.
 if not sim_using_max_pdf:
-    number_samples_to_sim = 2
+    number_samples_to_sim = 10
 else:
     number_samples_to_sim = 0
 
@@ -71,11 +71,11 @@ base_params = dict(
     sigma_r              = 4, #(4,16)
     baseline_noise       = 2, #(.1,10)
     side_bias            = 0, #(-4,4)
-    directed_exp         = 0, #(-4,4) #.15 reasonable value
-    baseline_info_bonus  = 0, #(-4,4) # -.07 reasonable value
-    random_exp           = 2,  #(.1,10)
+    directed_exp         = .1, #(-4,4) #.15 reasonable value
+    baseline_info_bonus  = -.1, #(-4,4) # -.07 reasonable value
+    random_exp           = 1.1,  #(.1,10)
     rel_uncert_mod       = 0, #(-1,1)
-    free_choice_sigma_scaler = 7, #(.1,10)
+    sigma_scaler = 7, #(.1,10)
 )
 
 if run_param_sweep:

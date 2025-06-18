@@ -38,7 +38,7 @@ def KF_DDM_model(sample,model,fit_or_sim, sim_using_max_pdf=False):
     random_exp = model.get_dependence("drift").random_exp
     drift_dcsn_noise_mod = model.get_dependence("drift").drift_dcsn_noise_mod
     rel_uncert_mod = model.get_dependence("drift").rel_uncert_mod
-    free_choice_sigma_scaler = model.get_dependence("drift").free_choice_sigma_scaler
+    sigma_scaler = model.get_dependence("drift").sigma_scaler
 
     # Initialize variables to hold output
     G = 40 # Number of games
@@ -295,8 +295,8 @@ def KF_DDM_model(sample,model,fit_or_sim, sim_using_max_pdf=False):
                                     
                 # Increase uncertainty for the first free choice
                 if trial_num == 3:
-                    sigma1[game_num, trial_num + 1] *= free_choice_sigma_scaler
-                    sigma2[game_num, trial_num + 1] *= free_choice_sigma_scaler
+                    sigma1[game_num, trial_num + 1] *= sigma_scaler
+                    sigma2[game_num, trial_num + 1] *= sigma_scaler
 
     
     
