@@ -155,7 +155,7 @@ model_to_fit = pyddm.gddm(drift=lambda drift_dcsn_noise_mod,rel_uncert_mod,sigma
                           noise=1.0,     bound=lambda bound_intercept, bound_slope, t: max( bound_intercept + bound_slope*t, eps),  # linearly collapsing bound
                           nondecision=0, T_dur=7,
                           conditions=["game_number", "gameLength", "trial", "r", "drift_value","starting_position_value"],
-                          parameters={"drift_dcsn_noise_mod":1, "rel_uncert_mod": (-1,1), "bound_intercept": (1, 6), "bound_slope": (-2, -.01), "sigma_d": (0,10), "sigma_r": (4,16), "baseline_noise": (0.1,10), "side_bias": (-4,4), "directed_exp": (-4,4), "baseline_info_bonus": (-4,4), "random_exp": (.1,10), "sigma_scaler": (.1, 10)}, choice_names=("right","left"))
+                          parameters={"drift_dcsn_noise_mod":1, "rel_uncert_mod": (-1,1), "bound_intercept": 1.1, "bound_slope": -.2, "sigma_d": (0,10), "sigma_r": (4,16), "baseline_noise": (0.1,10), "side_bias": 0, "directed_exp": (-4,4), "baseline_info_bonus": (-4,4), "random_exp": (.1,10), "sigma_scaler": (.1, 10)}, choice_names=("right","left"))
 model_to_fit.settings = settings
 
 # Note that to plot using this function, I would have to pass in the conditions that get assigned in the model function (i.e., starting_position_value and drift_value). We would only be able to view the pdf and reaction time for one combination of conditions, which is not ideal.
@@ -223,7 +223,7 @@ model_to_sim = pyddm.gddm(drift=lambda drift_dcsn_noise_mod,rel_uncert_mod,sigma
                           noise=1.0, bound=lambda bound_intercept, bound_slope, t: max( bound_intercept + bound_slope*t, eps),  # linearly collapsing bound
                           nondecision=0, T_dur=100,
                           conditions=["game_number", "gameLength", "trial", "r", "drift_value","starting_position_value"],
-                          parameters={"drift_dcsn_noise_mod": 1, "rel_uncert_mod":fit_result["post_rel_uncert_mod"], "bound_intercept": fit_result["post_bound_intercept"], "bound_slope": fit_result["post_bound_slope"], "sigma_d": fit_result["post_sigma_d"], "sigma_r": fit_result["post_sigma_r"], "baseline_noise": fit_result["post_baseline_noise"], "side_bias": fit_result["post_side_bias"], "directed_exp": fit_result["post_directed_exp"], "baseline_info_bonus": fit_result["post_baseline_info_bonus"], "random_exp": fit_result["post_random_exp"], "sigma_scaler": fit_result["post_sigma_scaler"]}, choice_names=("right","left"))
+                          parameters={"drift_dcsn_noise_mod": 1, "rel_uncert_mod":fit_result["post_rel_uncert_mod"], "bound_intercept": 1.1, "bound_slope": -.2, "sigma_d": fit_result["post_sigma_d"], "sigma_r": fit_result["post_sigma_r"], "baseline_noise": fit_result["post_baseline_noise"], "side_bias": 0, "directed_exp": fit_result["post_directed_exp"], "baseline_info_bonus": fit_result["post_baseline_info_bonus"], "random_exp": fit_result["post_random_exp"], "sigma_scaler": fit_result["post_sigma_scaler"]}, choice_names=("right","left"))
 model_to_sim.settings = settings
 
 print("Simulating behavioral data")

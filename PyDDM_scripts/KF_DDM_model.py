@@ -62,6 +62,9 @@ def KF_DDM_model(sample,model,fit_or_sim, sim_using_max_pdf=False):
     sigma2 = np.hstack((initial_sigma * np.ones((G, 1)), np.zeros((G, 9)))) # uncertainty of right bandit
 
     total_uncertainty = np.full((G, 10), np.nan)
+    rdiff_chosen_opt = np.full((G, 10), np.nan)
+    jsd_diff_chosen_opt = np.full((G, 10), np.nan)
+    
     relative_uncertainty_of_choice = np.full((G, 10), np.nan)
     change_in_uncertainty_after_choice = np.full((G, 10), np.nan)
 
@@ -82,7 +85,11 @@ def KF_DDM_model(sample,model,fit_or_sim, sim_using_max_pdf=False):
         
             for trial_num in range(0,len(game_df)):
                 trial = game_df.iloc[trial_num]
-                # Loop over forced choice trials
+                # Calculate the reward difference by subtracting the mean of the right vs left option
+                reward_diff = mu2[trial_num] - mu1[trial_num] # reward difference between the two bandits
+                # Calculate the jensen shannon divergence between the two bandits for the forced choices. Note this calculation will be written over for the free choices to account for the effect of random exploration.
+                jsd_val = jsd_normal(mu1[trial_num], sigma1[game_num,trial_num]*baseline_noise, mu2[trial_num], sigma2[game_num,trial_num]*baseline_noise)
+
                 if trial_num >= 4:
                     if trial['gameLength'] == 5: # horizon is 1
                         T = 0
@@ -91,7 +98,6 @@ def KF_DDM_model(sample,model,fit_or_sim, sim_using_max_pdf=False):
                         T = directed_exp
                         Y = random_exp
                         
-                    reward_diff = mu2[trial_num] - mu1[trial_num] # reward difference between the two bandits
 
                     z = .5 # hyperparam controlling steepness of curve
 
@@ -111,10 +117,6 @@ def KF_DDM_model(sample,model,fit_or_sim, sim_using_max_pdf=False):
                     else:
                         info_diff = relative_uncertainty*rel_uncert_mod
 
-
-
-                    # total uncertainty is variance of both arms
-                    total_uncertainty[game_num,trial_num] = (sigma1[game_num,trial_num]**2 + sigma2[game_num,trial_num]**2)**.5
                     
                     # Exponential descent from Y to 1 over trials within a game
                     RE = Y + ((1 - Y) * (1 - np.exp(-z * (trial_num - 4))) / (1 - np.exp(-4 * z)))
@@ -147,6 +149,7 @@ def KF_DDM_model(sample,model,fit_or_sim, sim_using_max_pdf=False):
 
                     if fit_or_sim == "fit":
                         choice = "left" if trial['choice'] == 0 else "right"
+
                         # Only consider reaction times less than the max rt in the log likelihood
                         if trial['RT'] < max_rt:
                             # solve a ddm (i.e., get the probability density function) for current DDM parameters
@@ -293,12 +296,21 @@ def KF_DDM_model(sample,model,fit_or_sim, sim_using_max_pdf=False):
                     mu2[trial_num + 1] = mu2[trial_num] + pred_errors_alpha[game_num, trial_num]
                     mu1[trial_num + 1] = mu1[trial_num]
                                     
-                # Increase uncertainty for the first free choice
+                # Increase uncertainty before the first free choice
                 if trial_num == 3:
                     sigma1[game_num, trial_num + 1] *= sigma_scaler
                     sigma2[game_num, trial_num + 1] *= sigma_scaler
 
-    
+
+                # Save the total uncertainty and reward difference for the chosen option
+                # total uncertainty is variance of both arms
+                total_uncertainty[game_num,trial_num] = (sigma1[game_num,trial_num]**2 + sigma2[game_num,trial_num]**2)**.5
+                # Reward difference is mu2 (right) - mu1 (left) so when the person chooses the left bandit, the reward difference is negative
+                rdiff_chosen_opt[game_num, trial_num] = reward_diff if trial['choice'] == 1 else -reward_diff
+                # The jensen shannon divergence is always positive, so we multiply it by -1 (i.e., model the person choosing the worse side) if the person chose the left bandit when (mu2 > mu1) or the right bandit when (mu1 > mu2)
+                jsd_diff_chosen_opt[game_num, trial_num] = jsd_val if (trial['choice'] == 1 and reward_diff > 0) or (trial['choice'] == 0 and reward_diff < 0) else -jsd_val
+
+
     
     except Exception as e:
         print(f"An error occurred: {e}")
@@ -326,5 +338,7 @@ def KF_DDM_model(sample,model,fit_or_sim, sim_using_max_pdf=False):
         "change_in_uncertainty_after_choice": change_in_uncertainty_after_choice,
         "predicted_RT": predicted_RT,
         "abs_error_RT": abs_error_RT,
+        "rdiff_chosen_opt":rdiff_chosen_opt, # Reward difference of the chosen option
+        "jsd_diff_chosen_opt":jsd_diff_chosen_opt, # JSD difference of the chosen option
         "data": data,
     }

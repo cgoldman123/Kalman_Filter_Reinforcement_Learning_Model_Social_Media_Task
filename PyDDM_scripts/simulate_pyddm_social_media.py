@@ -59,23 +59,23 @@ run_one_param_set = True # adjust this to True if you want to run the RT by rewa
 run_param_sweep = False # adjust this to True if you want to run the parameter sweep simulation
 sim_using_max_pdf = False # If True, the model will simulate a choice/RT based on the maximum of the simulated pdf. If False, it will sample from the distribution of choices/RTs.
 if not sim_using_max_pdf:
-    number_samples_to_sim = 10
+    number_samples_to_sim = 8
 else:
-    number_samples_to_sim = 0
+    number_samples_to_sim = 1
 
 base_params = dict(
     drift_dcsn_noise_mod = 1,
-    bound_intercept      = 2, #(1, 6)
-    bound_slope          = -.1, #(-2, -.01)
-    sigma_d              = 0, #(0,10)
-    sigma_r              = 4, #(4,16)
-    baseline_noise       = 2, #(.1,10)
+    bound_intercept      = 1.1, #(1, 6)
+    bound_slope          = -.2, #(-2, -.01)
+    sigma_d              = 3.50489068979558, #(0,10)
+    sigma_r              = 5.35040981103618, #(4,16)
+    baseline_noise       = 0.619300933257129, #(.1,10)
     side_bias            = 0, #(-4,4)
-    directed_exp         = .1, #(-4,4) #.15 reasonable value
-    baseline_info_bonus  = -.1, #(-4,4) # -.07 reasonable value
-    random_exp           = 1.1,  #(.1,10)
-    rel_uncert_mod       = 0, #(-1,1)
-    sigma_scaler = 7, #(.1,10)
+    directed_exp         = 0.08354190392724, #(-4,4) #.15 reasonable value
+    baseline_info_bonus  = -0.0119001219445525, #(-4,4) # -.07 reasonable value
+    random_exp           = 0.827128439662183,  #(.1,10)
+    rel_uncert_mod       = -0.0443378080630633, #(-1,1)
+    sigma_scaler = 1.09289827801646, #(.1,10)
 )
 
 if run_param_sweep:
@@ -239,6 +239,131 @@ if run_one_param_set:
     fig.text(0.5, 0.935, subtitle, ha='center', fontsize=10)
 
     # Close only the individual figs (not the combined one)
+    for fignum in fig_nums:
+        plt.close(plt.figure(fignum))
+
+    plt.show(block=False)
+
+
+    ### Plot total uncertainty by choice number and horizon ###
+    model_free_results = results['model_free_across_horizons_and_choices_df']
+    # Melt mean RT
+    df_mean = model_free_results.filter(like='mean_tot_uncert').melt(var_name="label", value_name="mean_tot_uncert")
+    # Melt std
+    df_std = model_free_results.filter(like='std_tot_uncert').melt(var_name="label", value_name="std_tot_uncert")
+    # Align by stripping 'std_' and 'mean_' prefixes
+    df_std["label"] = df_std["label"].str.replace("std_", "mean_", regex=False)
+    # Merge both long-format DataFrames
+    df_long = pd.merge(df_mean, df_std, on="label")
+    # Extract horizon and choice number
+    df_long["horizon"] = df_long["label"].str.extract(r"horizon_(\d+)").astype(int)
+    df_long["choice_number"] = df_long["label"].str.extract(r"choice_(\d+)").astype(int)
+    # Split into H1 and H5
+    h5 = df_long[df_long["horizon"] == 5]
+    h9 = df_long[df_long["horizon"] == 9]
+    # Plot
+    plt.figure(figsize=(8, 5))
+    plt.errorbar(h9["choice_number"], h9["mean_tot_uncert"], yerr=h9["std_tot_uncert"], fmt='o-', color="red", label="H5", capsize=4)
+    plt.errorbar(h5["choice_number"], h5["mean_tot_uncert"], yerr=h5["std_tot_uncert"], fmt='o', color="blue", label="H1", capsize=4)
+    # Labels and formatting
+    plt.xlabel("Choice Number")
+    plt.ylabel("Total Uncertainty")
+    plt.title("Total Uncertainty Choice Number and Horizon")
+    plt.grid(True)
+    plt.legend(title="Horizon")
+    plt.tight_layout()
+    plt.show(block=False)
+
+
+    ### Reward difference by choice number and horizon ###
+    model_free_results = results['model_free_across_horizons_and_choices_df']
+    # Melt mean RT
+    df_mean = model_free_results.filter(like='mean_reward_diff').melt(var_name="label", value_name="mean_reward_diff")
+    # Melt std
+    df_std = model_free_results.filter(like='std_reward_diff').melt(var_name="label", value_name="std_reward_diff")
+    # Align by stripping 'std_' and 'mean_' prefixes
+    df_std["label"] = df_std["label"].str.replace("std_", "mean_", regex=False)
+    # Merge both long-format DataFrames
+    df_long = pd.merge(df_mean, df_std, on="label")
+    # Extract horizon and choice number
+    df_long["horizon"] = df_long["label"].str.extract(r"horizon_(\d+)").astype(int)
+    df_long["choice_number"] = df_long["label"].str.extract(r"choice_(\d+)").astype(int)
+    # Split into H1 and H5
+    h5 = df_long[df_long["horizon"] == 5]
+    h9 = df_long[df_long["horizon"] == 9]
+    # Plot
+    plt.figure(figsize=(8, 5))
+    plt.errorbar(h9["choice_number"], h9["mean_reward_diff"], yerr=h9["std_reward_diff"], fmt='o-', color="red", label="H5", capsize=4)
+    plt.errorbar(h5["choice_number"], h5["mean_reward_diff"], yerr=h5["std_reward_diff"], fmt='o', color="blue", label="H1", capsize=4)
+    # Labels and formatting
+    plt.xlabel("Choice Number")
+    plt.ylabel("Reward Difference")
+    plt.title("Reward Difference by Choice Number and Horizon")
+    plt.grid(True)
+    plt.legend(title="Horizon")
+    plt.tight_layout()
+    plt.show(block=False)
+
+
+    ### Plot JSD by choice number and horizon ###
+    model_free_results = results['model_free_across_horizons_and_choices_df']
+    # Melt mean RT
+    df_mean = model_free_results.filter(like='mean_jsd').melt(var_name="label", value_name="mean_jsd")
+    # Melt std
+    df_std = model_free_results.filter(like='std_jsd').melt(var_name="label", value_name="std_jsd")
+    # Align by stripping 'std_' and 'mean_' prefixes
+    df_std["label"] = df_std["label"].str.replace("std_", "mean_", regex=False)
+    # Merge both long-format DataFrames
+    df_long = pd.merge(df_mean, df_std, on="label")
+    # Extract horizon and choice number
+    df_long["horizon"] = df_long["label"].str.extract(r"horizon_(\d+)").astype(int)
+    df_long["choice_number"] = df_long["label"].str.extract(r"choice_(\d+)").astype(int)
+    # Split into H1 and H5
+    h5 = df_long[df_long["horizon"] == 5]
+    h9 = df_long[df_long["horizon"] == 9]
+    # Plot
+    plt.figure(figsize=(8, 5))
+    plt.errorbar(h9["choice_number"], h9["mean_jsd"], yerr=h9["std_jsd"], fmt='o-', color="red", label="H5", capsize=4)
+    plt.errorbar(h5["choice_number"], h5["mean_jsd"], yerr=h5["std_jsd"], fmt='o', color="blue", label="H1", capsize=4)
+    # Labels and formatting
+    plt.xlabel("Choice Number")
+    plt.ylabel("JSD")
+    plt.title("JSD by Choice Number and Horizon")
+    plt.grid(True)
+    plt.legend(title="Horizon")
+    plt.tight_layout()
+    plt.show(block=False)
+
+    # ------------------------------------------------------------------
+    # Combine the last 3 single-panel figures into one multipanel fig
+    # ------------------------------------------------------------------
+    fig, axs = plt.subplots(2, 2, figsize=(12, 10))    # 2×2 grid; 1 cell will stay empty
+
+    # Grab the *three* most-recent individual figures (i.e. the bottom three plots)
+    fig_nums = plt.get_fignums()[-3:]                 # [-3:] → last three figures
+    fig_nums = [x - 1 for x in fig_nums]
+
+    for i, fignum in enumerate(fig_nums):
+        fig_src = plt.figure(fignum)
+        fig_src.canvas.draw()                          # make sure it’s rendered
+        buf = fig_src.canvas.buffer_rgba()             # read the pixels
+        axs[i // 2, i % 2].imshow(buf)                 # drop into the composite axes
+        axs[i // 2, i % 2].axis('off')
+
+
+    plt.tight_layout(rect=[0, 0, 1, 0.92])
+    # Add title and conditional subtitle
+    fig.suptitle("Simulated latent states using one parameter set", fontsize=16)
+
+    if sim_using_max_pdf:
+        subtitle = "Simulations were based on the maximum of the pdf of the choice×RT distribution."
+    else:
+        subtitle = f"Simulations were sampled from the pdf of the choice×RT distribution {number_samples_to_sim} times."
+
+    fig.text(0.5, 0.935, subtitle, ha='center', fontsize=10)
+
+
+    # If you don’t need the originals any more, close them:
     for fignum in fig_nums:
         plt.close(plt.figure(fignum))
 

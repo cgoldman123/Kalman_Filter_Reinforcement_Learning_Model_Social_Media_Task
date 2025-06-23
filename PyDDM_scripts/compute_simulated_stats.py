@@ -18,7 +18,7 @@ eps = np.finfo(float).eps
 #   • game_len   – 5 for H1 games, 9 for H5 games, etc.
 #   • trial_idx  – which free-choice trial to score (5, 6, 7, …)
 # ------------------------------------------------------------------
-def compute_stats_for_specific_horizon_and_choice(sim_df: pd.DataFrame,
+def compute_stats_for_specific_horizon_and_choice(sim_data: pd.DataFrame,
                   game_len: int,
                   trial_idx: int) -> dict:
 
@@ -27,7 +27,7 @@ def compute_stats_for_specific_horizon_and_choice(sim_df: pd.DataFrame,
         results_dict = {}
         for game_length in game_len:
             # iterate through each game length in the list
-            g = sim_df[sim_df["gameLength"] == game_length]
+            g = sim_data[sim_data["gameLength"] == game_length]
 
             # compute the means of the left and right options for the forced trials (1-4) 
             forced = g[g["trial"].isin([1, 2, 3, 4])]
@@ -70,7 +70,7 @@ def compute_stats_for_specific_horizon_and_choice(sim_df: pd.DataFrame,
         return results_dict
     else:
         # game length is not a list, so we can proceed subsetting to the specified game length
-        g = sim_df[sim_df["gameLength"] == game_len]
+        g = sim_data[sim_data["gameLength"] == game_len]
 
         # compute the means of the left and right options for the forced trials (1-4) 
         forced = g[g["trial"].isin([1, 2, 3, 4])]
@@ -98,11 +98,12 @@ def compute_stats_for_specific_horizon_and_choice(sim_df: pd.DataFrame,
         }
 
 
-def compute_stats_across_horizons_and_choices(sim_df: pd.DataFrame) -> dict:
+def compute_stats_across_horizons_and_choices(sim_df) -> dict:
+        sim_data = sim_df["data"]
         results_dict = {}
         for game_length in [5, 9]:
             # iterate through each game length in the list, filtering data to that game length
-            g = sim_df[sim_df["gameLength"] == game_length]
+            g = sim_data[sim_data["gameLength"] == game_length]
             
             # compute the means of the left and right options for the forced trials (1-4) 
             forced = g[g["trial"].isin([1, 2, 3, 4])]
@@ -157,30 +158,52 @@ def compute_stats_across_horizons_and_choices(sim_df: pd.DataFrame) -> dict:
             
             # Step 1: Get free choice numbers (i.e., unique trial values > 4)
             choice_array = g_complete['trial'].unique()
-            choice_array = choice_array[choice_array > 4]
+            # choice_array = choice_array[choice_array > 4]
             choice_array.sort()
             # Step 2: Iterate through each choice number and compute mean RT
             for choice_number in choice_array:
                 # Calculate mean RT and std for the specified choice number
+                if choice_number > 4:  # Only consider free choices (trial > 4)
+                    df_trial = g_complete[g_complete['trial'] == choice_number]                
+                    mean_rt = df_trial['RT'].mean()
+                    std_rt = df_trial['RT'].std()
+                    mean_prob_choose_high_mean = (df_trial['choice'] == df_trial['better_side']).mean()
+                    std_prob_choose_high_mean = (df_trial['choice'] == df_trial['better_side']).std()
+                    mean_prob_choose_high_info = (df_trial['made_high_info_choice']).mean()
+                    std_prob_choose_high_info = (df_trial['made_high_info_choice']).std()
 
-                df_trial = g_complete[g_complete['trial'] == choice_number]                
-                mean_rt = df_trial['RT'].mean()
-                std_rt = df_trial['RT'].std()
-                mean_prob_choose_high_mean = (df_trial['choice'] == df_trial['better_side']).mean()
-                std_prob_choose_high_mean = (df_trial['choice'] == df_trial['better_side']).std()
-                mean_prob_choose_high_info = (df_trial['made_high_info_choice']).mean()
-                std_prob_choose_high_info = (df_trial['made_high_info_choice']).std()
+                    results_dict[f"mean_rt_horizon_{game_length}_choice_{choice_number}"] = mean_rt
+                    results_dict[f"std_rt_horizon_{game_length}_choice_{choice_number}"] = std_rt
+                    results_dict[f"mean_prob_choose_high_mean_horizon_{game_length}_choice_{choice_number}"] = mean_prob_choose_high_mean
+                    results_dict[f"std_prob_choose_high_mean_horizon_{game_length}_choice_{choice_number}"] = std_prob_choose_high_mean
+                    results_dict[f"mean_prob_choose_high_info_horizon_{game_length}_choice_{choice_number}"] = mean_prob_choose_high_info
+                    results_dict[f"std_prob_choose_high_info_horizon_{game_length}_choice_{choice_number}"] = std_prob_choose_high_info
+                # For all choices, get the average total uncertainty, reward difference, and jensen shannon divergence for the option they chose
+                # Create Total Uncertainty dataframe!!! 
+                total_uncertainty_df = pd.DataFrame(sim_df["total_uncertainty"])
+                # subset the dataframe to the game length and trial number
+                horizon_mask = total_uncertainty_df.notna().sum(axis=1) == game_length
+                filtered_total_uncertainty_df = total_uncertainty_df.loc[horizon_mask].iloc[:, choice_number - 1]
+                results_dict[f"mean_tot_uncert_horizon_{game_length}_choice_{choice_number}"] = filtered_total_uncertainty_df.mean()
+                results_dict[f"std_tot_uncert_horizon_{game_length}_choice_{choice_number}"] = filtered_total_uncertainty_df.std()
 
-                results_dict[f"mean_rt_horizon_{game_length}_choice_{choice_number}"] = mean_rt
-                results_dict[f"std_rt_horizon_{game_length}_choice_{choice_number}"] = std_rt
-                results_dict[f"mean_prob_choose_high_mean_horizon_{game_length}_choice_{choice_number}"] = mean_prob_choose_high_mean
-                results_dict[f"std_prob_choose_high_mean_horizon_{game_length}_choice_{choice_number}"] = std_prob_choose_high_mean
-                results_dict[f"mean_prob_choose_high_info_horizon_{game_length}_choice_{choice_number}"] = mean_prob_choose_high_info
-                results_dict[f"std_prob_choose_high_info_horizon_{game_length}_choice_{choice_number}"] = std_prob_choose_high_info
+                # Create Reward Difference dataframe!!! 
+                reward_diff_df = pd.DataFrame(sim_df["rdiff_chosen_opt"])
+                # subset the dataframe to the game length and trial number
+                horizon_mask = reward_diff_df.notna().sum(axis=1) == game_length
+                filtered_reward_diff_df = reward_diff_df.loc[horizon_mask].iloc[:, choice_number - 1]
+                results_dict[f"mean_reward_diff_horizon_{game_length}_choice_{choice_number}"] = filtered_reward_diff_df.mean()
+                results_dict[f"std_reward_diff_horizon_{game_length}_choice_{choice_number}"] = filtered_reward_diff_df.std()
+
+                 # Create JSD dataframe!!! 
+                jsd_df = pd.DataFrame(sim_df["jsd_diff_chosen_opt"])
+                # subset the dataframe to the game length and trial number
+                horizon_mask = jsd_df.notna().sum(axis=1) == game_length
+                filtered_jsd_df = jsd_df.loc[horizon_mask].iloc[:, choice_number - 1]
+                results_dict[f"mean_jsd_horizon_{game_length}_choice_{choice_number}"] = filtered_jsd_df.mean()
+                results_dict[f"std_jsd_horizon_{game_length}_choice_{choice_number}"] = filtered_jsd_df.std()
 
 
-        
-        
         return results_dict
             
 
@@ -211,8 +234,8 @@ def stats_simulate_parameter_sweep(sample,
                           conditions=["game_number", "gameLength", "trial", "r", "drift_value","starting_position_value"],
                           parameters=params, choice_names=("right","left"))
             model.settings = settings
-            sim_df = KF_DDM_model(sample, model, fit_or_sim="sim", sim_using_max_pdf=sim_using_max_pdf)["data"]
-            mvals.append(metric_fn(sim_df))
+            sim_data = KF_DDM_model(sample, model, fit_or_sim="sim", sim_using_max_pdf=sim_using_max_pdf)["data"]
+            mvals.append(metric_fn(sim_data))
 
             # Summarize the model free results in an output dictionary
             # Exclude keys you don't want to summarize
@@ -250,14 +273,14 @@ def stats_simulate_one_parameter_set(base_params: dict, game_len,trial_idx, sett
                           parameters=base_params, choice_names=("right","left"))
         model.settings = settings
 
-        sim_df = KF_DDM_model(sample, model, fit_or_sim="sim", sim_using_max_pdf=sim_using_max_pdf)["data"]
+        sim_df = KF_DDM_model(sample, model, fit_or_sim="sim", sim_using_max_pdf=sim_using_max_pdf)
         ### Compute statistics across horizons and choices ###
         model_free_across_horizons_and_choices.append(compute_stats_across_horizons_and_choices(sim_df))
         model_free_across_horizons_and_choices_df = pd.DataFrame(model_free_across_horizons_and_choices)
 
-        
+        sim_data = sim_df["data"]
         ### Compute statistics for the specific horizon and choice ###
-        model_free_for_specific_horizon_and_choice.append(compute_stats_for_specific_horizon_and_choice(sim_df,game_len,trial_idx))
+        model_free_for_specific_horizon_and_choice.append(compute_stats_for_specific_horizon_and_choice(sim_data,game_len,trial_idx))
         
         # extract each RT-by-reward-difference DataFrame from mvals
         dfs = [d["avg_rt_by_reward_diff_game_len_5"] for d in model_free_for_specific_horizon_and_choice]
