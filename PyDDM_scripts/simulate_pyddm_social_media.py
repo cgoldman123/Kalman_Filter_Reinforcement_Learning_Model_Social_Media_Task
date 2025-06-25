@@ -57,9 +57,10 @@ social_media_sample = pyddm.Sample.from_pandas_dataframe(social_media_df_clean, 
 
 run_one_param_set = True # adjust this to True if you want to run the RT by reward difference simulation
 run_param_sweep = False # adjust this to True if you want to run the parameter sweep simulation
-sim_using_max_pdf = False # If True, the model will simulate a choice/RT based on the maximum of the simulated pdf. If False, it will sample from the distribution of choices/RTs.
+sim_using_max_pdf = True # If True, the model will simulate a choice/RT based on the maximum of the simulated pdf. If False, it will sample from the distribution of choices/RTs.
+plot_latent_states_separated_by_rdiff = True # If True, the latent states will be plotted separately for each reward difference. If False, they will be averaged across all reward differences.
 if not sim_using_max_pdf:
-    number_samples_to_sim = 8
+    number_samples_to_sim = 25
 else:
     number_samples_to_sim = 1
 
@@ -75,7 +76,7 @@ base_params = dict(
     baseline_info_bonus  = -0.0119001219445525, #(-4,4) # -.07 reasonable value
     random_exp           = 0.827128439662183,  #(.1,10)
     rel_uncert_mod       = -0.0443378080630633, #(-1,1)
-    sigma_scaler = 1.09289827801646, #(.1,10)
+    sigma_scaler = 1.09289827801646  #(.1,10)
 )
 
 if run_param_sweep:
@@ -245,128 +246,255 @@ if run_one_param_set:
     plt.show(block=False)
 
 
+
+
+
+    ###### PLOT LATENT STATES ######
+
+
     ### Plot total uncertainty by choice number and horizon ###
     model_free_results = results['model_free_across_horizons_and_choices_df']
-    # Melt mean RT
-    df_mean = model_free_results.filter(like='mean_tot_uncert').melt(var_name="label", value_name="mean_tot_uncert")
-    # Melt std
-    df_std = model_free_results.filter(like='std_tot_uncert').melt(var_name="label", value_name="std_tot_uncert")
-    # Align by stripping 'std_' and 'mean_' prefixes
+
+    # Melt mean and std columns to long format
+    melted_df_mean = model_free_results.filter(like='mean_tot_uncert').melt(var_name="label", value_name="mean_tot_uncert")
+    melted_df_std = model_free_results.filter(like='std_tot_uncert').melt(var_name="label", value_name="std_tot_uncert")
+
+    # Separate by whether labels contain specific reward differences
+    df_mean_foreach_rdiff = melted_df_mean[melted_df_mean['label'].str.contains('rdiff_')].copy()
+    df_mean_averaged_across_rdiff = melted_df_mean[~melted_df_mean['label'].str.contains('rdiff_')].copy()
+    df_std_foreach_rdiff = melted_df_std[melted_df_std['label'].str.contains('rdiff_')].copy()
+    df_std_averaged_across_rdiff = melted_df_std[~melted_df_std['label'].str.contains('rdiff_')].copy()
+
+    # Choose which version to use
+    if plot_latent_states_separated_by_rdiff:
+        df_mean = df_mean_foreach_rdiff.copy()
+        df_std = df_std_foreach_rdiff.copy()
+    else:
+        df_mean = df_mean_averaged_across_rdiff.copy()
+        df_std = df_std_averaged_across_rdiff.copy()
+
+    # Align std and mean by matching label names
     df_std["label"] = df_std["label"].str.replace("std_", "mean_", regex=False)
-    # Merge both long-format DataFrames
     df_long = pd.merge(df_mean, df_std, on="label")
-    # Extract horizon and choice number
-    df_long["horizon"] = df_long["label"].str.extract(r"horizon_(\d+)").astype(int)
-    df_long["choice_number"] = df_long["label"].str.extract(r"choice_(\d+)").astype(int)
-    # Split into H1 and H5
-    h5 = df_long[df_long["horizon"] == 5]
-    h9 = df_long[df_long["horizon"] == 9]
-    # Plot
+
+    # Extract horizon and choice number from label strings
+    df_long["horizon"] = df_long["label"].str.extract(r"horizon_(\d+)")[0].astype(int)
+    df_long["choice_number"] = df_long["label"].str.extract(r"choice_(\d+)")[0].astype(int)
+
     plt.figure(figsize=(8, 5))
-    plt.errorbar(h9["choice_number"], h9["mean_tot_uncert"], yerr=h9["std_tot_uncert"], fmt='o-', color="red", label="H5", capsize=4)
-    plt.errorbar(h5["choice_number"], h5["mean_tot_uncert"], yerr=h5["std_tot_uncert"], fmt='o', color="blue", label="H1", capsize=4)
-    # Labels and formatting
+
+    if plot_latent_states_separated_by_rdiff:
+        # Extract rdiff values
+        df_long["rdiff"] = df_long["label"].str.extract(r"rdiff_(\d+)")[0].astype(int)
+
+        rdiff_values = sorted(df_long["rdiff"].unique())
+        colors = plt.cm.tab10.colors  # Up to 10 distinct colors
+
+        for i, rdiff_val in enumerate(rdiff_values):
+            for horizon_val, linestyle in zip([5, 9], [':', '-']):  # dotted for H5, solid for H9
+                subset = df_long[(df_long["rdiff"] == rdiff_val) & (df_long["horizon"] == horizon_val)]
+                plt.plot(subset["choice_number"], subset["mean_tot_uncert"],
+                        marker='o', linestyle=linestyle, color=colors[i % len(colors)],
+                        label=f"r_diff = {rdiff_val}, H{horizon_val}")
+
+        plt.legend(title="Reward Difference")
+    else:
+        # Subset by horizon and plot with std error bars
+        h5 = df_long[df_long["horizon"] == 5]
+        h9 = df_long[df_long["horizon"] == 9]
+
+        plt.errorbar(h9["choice_number"], h9["mean_tot_uncert"], yerr=h9["std_tot_uncert"],
+                    fmt='o-', color="red", label="H5", capsize=4)
+        plt.errorbar(h5["choice_number"], h5["mean_tot_uncert"], yerr=h5["std_tot_uncert"],
+                    fmt='o:', color="blue", label="H1", capsize=4)
+
+        plt.legend(title="Horizon")
+
     plt.xlabel("Choice Number")
     plt.ylabel("Total Uncertainty")
-    plt.title("Total Uncertainty Choice Number and Horizon")
+    plt.title("Total Uncertainty by Choice Number")
     plt.grid(True)
-    plt.legend(title="Horizon")
     plt.tight_layout()
     plt.show(block=False)
 
 
     ### Reward difference by choice number and horizon ###
     model_free_results = results['model_free_across_horizons_and_choices_df']
-    # Melt mean RT
-    df_mean = model_free_results.filter(like='mean_reward_diff').melt(var_name="label", value_name="mean_reward_diff")
-    # Melt std
-    df_std = model_free_results.filter(like='std_reward_diff').melt(var_name="label", value_name="std_reward_diff")
-    # Align by stripping 'std_' and 'mean_' prefixes
+
+    # Melt wide-format mean and std columns to long format
+    melted_df_mean = model_free_results.filter(like='mean_reward_diff').melt(var_name="label", value_name="mean_reward_diff")
+    melted_df_std = model_free_results.filter(like='std_reward_diff').melt(var_name="label", value_name="std_reward_diff")
+
+    # Separate rows that include a specific reward difference (rdiff) vs. those averaged across all
+    df_mean_foreach_rdiff = melted_df_mean[melted_df_mean['label'].str.contains('rdiff_')].copy()
+    df_mean_averaged_across_rdiff = melted_df_mean[~melted_df_mean['label'].str.contains('rdiff_')].copy()
+    df_std_foreach_rdiff = melted_df_std[melted_df_std['label'].str.contains('rdiff_')].copy()
+    df_std_averaged_across_rdiff = melted_df_std[~melted_df_std['label'].str.contains('rdiff_')].copy()
+
+    # Choose which version to use based on plotting flag
+    if plot_latent_states_separated_by_rdiff:
+        df_mean = df_mean_foreach_rdiff.copy()
+        df_std = df_std_foreach_rdiff.copy()
+    else:
+        df_mean = df_mean_averaged_across_rdiff.copy()
+        df_std = df_std_averaged_across_rdiff.copy()
+
+    # Align std and mean by matching label names
     df_std["label"] = df_std["label"].str.replace("std_", "mean_", regex=False)
-    # Merge both long-format DataFrames
     df_long = pd.merge(df_mean, df_std, on="label")
-    # Extract horizon and choice number
-    df_long["horizon"] = df_long["label"].str.extract(r"horizon_(\d+)").astype(int)
-    df_long["choice_number"] = df_long["label"].str.extract(r"choice_(\d+)").astype(int)
-    # Split into H1 and H5
-    h5 = df_long[df_long["horizon"] == 5]
-    h9 = df_long[df_long["horizon"] == 9]
-    # Plot
+
+    # Extract horizon and choice number from label strings
+    df_long["horizon"] = df_long["label"].str.extract(r"horizon_(\d+)")[0].astype(int)
+    df_long["choice_number"] = df_long["label"].str.extract(r"choice_(\d+)")[0].astype(int)
+
     plt.figure(figsize=(8, 5))
-    plt.errorbar(h9["choice_number"], h9["mean_reward_diff"], yerr=h9["std_reward_diff"], fmt='o-', color="red", label="H5", capsize=4)
-    plt.errorbar(h5["choice_number"], h5["mean_reward_diff"], yerr=h5["std_reward_diff"], fmt='o', color="blue", label="H1", capsize=4)
-    # Labels and formatting
+
+    if plot_latent_states_separated_by_rdiff:
+        # Extract rdiff values
+        df_long["rdiff"] = df_long["label"].str.extract(r"rdiff_(\d+)")[0].astype(int)
+
+        # Get unique rdiffs and assign colors
+        rdiff_values = sorted(df_long["rdiff"].unique())
+        colors = plt.cm.tab10.colors  # Up to 10 distinct colors
+
+        for i, rdiff_val in enumerate(rdiff_values):
+            for horizon_val, linestyle in zip([5, 9], [':', '-']):  # dotted for 5, solid for 9
+                subset = df_long[(df_long["rdiff"] == rdiff_val) & (df_long["horizon"] == horizon_val)]
+                plt.plot(subset["choice_number"], subset["mean_reward_diff"],
+                        marker='o', linestyle=linestyle, color=colors[i % len(colors)],
+                        label=f"r_diff = {rdiff_val}, H{horizon_val}")
+
+        plt.legend(title="Reward Difference")
+    else:
+        # Subset by horizon and plot with std error bars
+        h5 = df_long[df_long["horizon"] == 5]
+        h9 = df_long[df_long["horizon"] == 9]
+
+        plt.errorbar(h9["choice_number"], h9["mean_reward_diff"], yerr=h9["std_reward_diff"],
+                    fmt='o-', color="red", label="H5", capsize=4)
+        plt.errorbar(h5["choice_number"], h5["mean_reward_diff"], yerr=h5["std_reward_diff"],
+                    fmt='o', color="blue", label="H1", capsize=4)
+
+        plt.legend(title="Horizon")
+
+    # Add axis labels and format the plot
     plt.xlabel("Choice Number")
     plt.ylabel("Reward Difference")
     plt.title("Reward Difference by Choice Number and Horizon")
     plt.grid(True)
-    plt.legend(title="Horizon")
     plt.tight_layout()
     plt.show(block=False)
 
 
+
     ### Plot JSD by choice number and horizon ###
     model_free_results = results['model_free_across_horizons_and_choices_df']
-    # Melt mean RT
+
+    # Melt wide-format mean and std columns to long format
     df_mean = model_free_results.filter(like='mean_jsd').melt(var_name="label", value_name="mean_jsd")
-    # Melt std
     df_std = model_free_results.filter(like='std_jsd').melt(var_name="label", value_name="std_jsd")
-    # Align by stripping 'std_' and 'mean_' prefixes
+
+    # Separate rows that include a specific reward difference (rdiff) vs. those averaged across all
+    df_mean_foreach_rdiff = df_mean[df_mean['label'].str.contains('rdiff_')].copy()
+    df_mean_averaged_across_rdiff = df_mean[~df_mean['label'].str.contains('rdiff_')].copy()
+    df_std_foreach_rdiff = df_std[df_std['label'].str.contains('rdiff_')].copy()
+    df_std_averaged_across_rdiff = df_std[~df_std['label'].str.contains('rdiff_')].copy()
+
+    # Choose which version to use based on plotting flag
+    if plot_latent_states_separated_by_rdiff:
+        df_mean = df_mean_foreach_rdiff.copy()
+        df_std = df_std_foreach_rdiff.copy()
+    else:
+        df_mean = df_mean_averaged_across_rdiff.copy()
+        df_std = df_std_averaged_across_rdiff.copy()
+
+    # Align std and mean by matching label names
     df_std["label"] = df_std["label"].str.replace("std_", "mean_", regex=False)
-    # Merge both long-format DataFrames
     df_long = pd.merge(df_mean, df_std, on="label")
-    # Extract horizon and choice number
-    df_long["horizon"] = df_long["label"].str.extract(r"horizon_(\d+)").astype(int)
-    df_long["choice_number"] = df_long["label"].str.extract(r"choice_(\d+)").astype(int)
-    # Split into H1 and H5
-    h5 = df_long[df_long["horizon"] == 5]
-    h9 = df_long[df_long["horizon"] == 9]
-    # Plot
+
+    # Extract horizon and choice number from label strings
+    df_long["horizon"] = df_long["label"].str.extract(r"horizon_(\d+)")[0].astype(int)
+    df_long["choice_number"] = df_long["label"].str.extract(r"choice_(\d+)")[0].astype(int)
+
     plt.figure(figsize=(8, 5))
-    plt.errorbar(h9["choice_number"], h9["mean_jsd"], yerr=h9["std_jsd"], fmt='o-', color="red", label="H5", capsize=4)
-    plt.errorbar(h5["choice_number"], h5["mean_jsd"], yerr=h5["std_jsd"], fmt='o', color="blue", label="H1", capsize=4)
+
+    if plot_latent_states_separated_by_rdiff:
+        # Extract rdiff values
+        df_long["rdiff"] = df_long["label"].str.extract(r"rdiff_(\d+)")[0].astype(int)
+
+        rdiff_values = sorted(df_long["rdiff"].unique())
+        colors = plt.cm.tab10.colors  # Up to 10 distinct colors
+
+        for i, rdiff_val in enumerate(rdiff_values):
+            for horizon_val, linestyle in zip([5, 9], [':', '-']):
+                subset = df_long[(df_long["rdiff"] == rdiff_val) & (df_long["horizon"] == horizon_val)]
+                plt.plot(subset["choice_number"], subset["mean_jsd"],
+                        marker='o', linestyle=linestyle, color=colors[i % len(colors)],
+                        label=f"r_diff = {rdiff_val}, H{horizon_val}")
+
+        plt.legend(title="Reward Difference")
+    else:
+        h5 = df_long[df_long["horizon"] == 5]
+        h9 = df_long[df_long["horizon"] == 9]
+
+        plt.errorbar(h9["choice_number"], h9["mean_jsd"], yerr=h9["std_jsd"],
+                    fmt='o-', color="red", label="H5", capsize=4)
+        plt.errorbar(h5["choice_number"], h5["mean_jsd"], yerr=h5["std_jsd"],
+                    fmt='o:', color="blue", label="H1", capsize=4)
+
+        plt.legend(title="Horizon")
+
     # Labels and formatting
     plt.xlabel("Choice Number")
     plt.ylabel("JSD")
     plt.title("JSD by Choice Number and Horizon")
     plt.grid(True)
-    plt.legend(title="Horizon")
     plt.tight_layout()
     plt.show(block=False)
 
+
+
+    
     # ------------------------------------------------------------------
     # Combine the last 3 single-panel figures into one multipanel fig
     # ------------------------------------------------------------------
-    fig, axs = plt.subplots(2, 2, figsize=(12, 10))    # 2×2 grid; 1 cell will stay empty
+    from matplotlib.gridspec import GridSpec
 
-    # Grab the *three* most-recent individual figures (i.e. the bottom three plots)
-    fig_nums = plt.get_fignums()[-3:]                 # [-3:] → last three figures
-    fig_nums = [x - 1 for x in fig_nums]
+    fig = plt.figure(figsize=(12, 10))
+    gs = GridSpec(2, 2, figure=fig)
+    ax0 = fig.add_subplot(gs[0, :])      # JSD (top row, full width)
+    ax1 = fig.add_subplot(gs[1, 0])      # Reward diff
+    ax2 = fig.add_subplot(gs[1, 1])      # Total uncertainty
 
-    for i, fignum in enumerate(fig_nums):
-        fig_src = plt.figure(fignum)
-        fig_src.canvas.draw()                          # make sure it’s rendered
-        buf = fig_src.canvas.buffer_rgba()             # read the pixels
-        axs[i // 2, i % 2].imshow(buf)                 # drop into the composite axes
-        axs[i // 2, i % 2].axis('off')
+    # Grab the three most-recent model-free plots: reward diff, uncertainty, JSD
+    fig_nums = plt.get_fignums()[-4:]  # Include the one before the model-free plots
+    fig_nums = fig_nums[-3:]           # Keep only the last three
+    fig_nums = [x - 1 for x in fig_nums] # Adjust for 0-based indexing in plt.get_fignums()
 
+    # Assign correctly: reward diff, uncertainty, JSD
+    fig_reward_diff = plt.figure(fig_nums[0])
+    fig_uncertainty = plt.figure(fig_nums[1])
+    fig_jsd = plt.figure(fig_nums[2])
 
-    plt.tight_layout(rect=[0, 0, 1, 0.92])
-    # Add title and conditional subtitle
+    # Composite each into the correct axis
+    for fig_src, ax in zip([fig_reward_diff,fig_jsd, fig_uncertainty], [ax0, ax1, ax2]):
+        fig_src.canvas.draw()
+        buf = fig_src.canvas.buffer_rgba()
+        ax.imshow(buf)
+        ax.axis('off')
+
+    # Add title and subtitle
     fig.suptitle("Simulated latent states using one parameter set", fontsize=16)
-
-    if sim_using_max_pdf:
-        subtitle = "Simulations were based on the maximum of the pdf of the choice×RT distribution."
-    else:
-        subtitle = f"Simulations were sampled from the pdf of the choice×RT distribution {number_samples_to_sim} times."
-
+    subtitle = ("Simulations were based on the maximum of the pdf of the choice×RT distribution."
+                if sim_using_max_pdf else
+                f"Simulations were sampled from the pdf of the choice×RT distribution {number_samples_to_sim} times.")
     fig.text(0.5, 0.935, subtitle, ha='center', fontsize=10)
 
-
-    # If you don’t need the originals any more, close them:
+    # Close old figures to clean up
     for fignum in fig_nums:
         plt.close(plt.figure(fignum))
 
+    plt.tight_layout(rect=[0, 0, 1, 0.92])
     plt.show(block=False)
 
 

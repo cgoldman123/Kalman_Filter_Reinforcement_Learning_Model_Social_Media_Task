@@ -135,7 +135,7 @@ def KF_DDM_model(sample,model,fit_or_sim, sim_using_max_pdf=False):
                         if "Use_JSD" in settings:
                             # Divide by ln(2) since that's the max jensen shannon divergence value
                             drift_value = jsd_val/np.log(2)
-                        elif "Use_reward_difference" in settings:
+                        elif "Use_z_score" in settings:
                             drift_value = (reward_diff/baseline_noise) - total_uncertainty[game_num,trial_num]*RE
                             
                     else:
@@ -143,7 +143,7 @@ def KF_DDM_model(sample,model,fit_or_sim, sim_using_max_pdf=False):
                         if "Use_JSD" in settings:
                         # Divide by ln(2) since that's the max jensen shannon divergence value
                             drift_value = -jsd_val/np.log(2)
-                        elif "Use_reward_difference" in settings:
+                        elif "Use_z_score" in settings:
                             drift_value = (reward_diff/baseline_noise) + total_uncertainty[game_num,trial_num]*RE
 
 

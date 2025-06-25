@@ -187,13 +187,13 @@ def compute_stats_across_horizons_and_choices(sim_df) -> dict:
                 results_dict[f"mean_tot_uncert_horizon_{game_length}_choice_{choice_number}"] = filtered_total_uncertainty_df.mean()
                 results_dict[f"std_tot_uncert_horizon_{game_length}_choice_{choice_number}"] = filtered_total_uncertainty_df.std()
 
-                # Create Reward Difference dataframe!!! 
+                # Create Mean Reward Difference dataframe!!! 
                 reward_diff_df = pd.DataFrame(sim_df["rdiff_chosen_opt"])
                 # subset the dataframe to the game length and trial number
                 horizon_mask = reward_diff_df.notna().sum(axis=1) == game_length
-                filtered_reward_diff_df = reward_diff_df.loc[horizon_mask].iloc[:, choice_number - 1]
-                results_dict[f"mean_reward_diff_horizon_{game_length}_choice_{choice_number}"] = filtered_reward_diff_df.mean()
-                results_dict[f"std_reward_diff_horizon_{game_length}_choice_{choice_number}"] = filtered_reward_diff_df.std()
+                filtered_reward_rdiff_df = reward_diff_df.loc[horizon_mask].iloc[:, choice_number - 1]
+                results_dict[f"mean_reward_diff_horizon_{game_length}_choice_{choice_number}"] = filtered_reward_rdiff_df.mean()
+                results_dict[f"std_reward_diff_horizon_{game_length}_choice_{choice_number}"] = filtered_reward_rdiff_df.std()
 
                  # Create JSD dataframe!!! 
                 jsd_df = pd.DataFrame(sim_df["jsd_diff_chosen_opt"])
@@ -202,6 +202,28 @@ def compute_stats_across_horizons_and_choices(sim_df) -> dict:
                 filtered_jsd_df = jsd_df.loc[horizon_mask].iloc[:, choice_number - 1]
                 results_dict[f"mean_jsd_horizon_{game_length}_choice_{choice_number}"] = filtered_jsd_df.mean()
                 results_dict[f"std_jsd_horizon_{game_length}_choice_{choice_number}"] = filtered_jsd_df.std()
+
+                # Get total uncertainty, mean reward difference, and JSD for different generative reward differences
+                for gen_diff in [2, 4, 8, 12, 24]:
+                    # Find the game numbers where the generative reward difference is gen_diff and the horizon is game_length (since we are using g_complete which only contains the specified game length)
+                    unique_games = g_complete.loc[abs(g_complete['reward_diff']) == gen_diff, 'game_number'].unique()
+                    unique_games = unique_games - 1 # Adjust for zero-based indexing
+                    # find the rows corresponding to these unique games
+                    rows_in_unique_games = np.isin(np.arange(total_uncertainty_df.shape[0]), unique_games)
+                    
+                    # Get the total uncertainty for these rows
+                    filtered_total_uncertainty_df_rdiff = total_uncertainty_df.loc[rows_in_unique_games].iloc[:, choice_number - 1]
+                    results_dict[f"mean_tot_uncert_horizon_{game_length}_choice_{choice_number}_rdiff_{gen_diff}"] = filtered_total_uncertainty_df_rdiff.mean()
+                    results_dict[f"std_tot_uncert_horizon_{game_length}_choice_{choice_number}_rdiff_{gen_diff}"] = filtered_total_uncertainty_df_rdiff.std()
+
+                    filtered_reward_diff_df_rdiff = reward_diff_df.loc[rows_in_unique_games].iloc[:, choice_number - 1]
+                    results_dict[f"mean_reward_diff_horizon_{game_length}_choice_{choice_number}_rdiff_{gen_diff}"] = filtered_reward_diff_df_rdiff.mean()
+                    results_dict[f"std_reward_diff_horizon_{game_length}_choice_{choice_number}_rdiff_{gen_diff}"] = filtered_reward_diff_df_rdiff.std()
+
+                    filtered_jsd_df_rdiff_rdiff = jsd_df.loc[rows_in_unique_games].iloc[:, choice_number - 1]
+                    results_dict[f"mean_jsd_horizon_{game_length}_choice_{choice_number}_rdiff_{gen_diff}"] = filtered_jsd_df_rdiff_rdiff.mean()
+                    results_dict[f"std_jsd_horizon_{game_length}_choice_{choice_number}_rdiff_{gen_diff}"] = filtered_jsd_df_rdiff_rdiff.std()
+
 
 
         return results_dict
