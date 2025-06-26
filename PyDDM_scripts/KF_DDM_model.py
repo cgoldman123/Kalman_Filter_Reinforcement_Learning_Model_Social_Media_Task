@@ -6,6 +6,7 @@ from pyddm.logger import logger
 from jensen_shannon_divergence_quad_method import jsd_normal
 import matplotlib.pyplot as plt # USed for plot in the model function
 from pyddm import BoundConstant, Fitted, BoundCollapsingLinear # USed for debugging purposes when fixing parameters in the loss function
+from scipy.stats import norm
 
 
 # Add a filter to the logger to check for the Renormalization warning, where the probability of hitting the upper, lower, or undecided boundary is not 1 so it had to be renormalized
@@ -91,6 +92,13 @@ def KF_DDM_model(sample,model,fit_or_sim, sim_using_max_pdf=False):
                 jsd_val = jsd_normal(mu1[trial_num], sigma1[game_num,trial_num]*baseline_noise, mu2[trial_num], sigma2[game_num,trial_num]*baseline_noise)
 
                 if trial_num >= 4:
+                    # Get the number of trials left in the game
+                    num_trials_left = trial['gameLength'] - trial_num # Number of trials left in the game
+                    # Find the number of times the person has chosen the left and right options in the game so far
+                    subset = data.loc[(data["game_number"] == game_numbers[game_num]) & (data["trial"] <= trial_num)]
+                    num_choose_left = (subset['choice'] == 0).sum()
+                    num_choose_right = (subset['choice'] == 1).sum()
+
                     if trial['gameLength'] == 5: # horizon is 1
                         T = 0
                         Y = 1
@@ -99,25 +107,35 @@ def KF_DDM_model(sample,model,fit_or_sim, sim_using_max_pdf=False):
                         Y = random_exp
                         
 
-                    z = .5 # hyperparam controlling steepness of curve
-
-                    # Exponential descent from T to 0 over trials within a game
-                    # info_bonus_bandit1 = sigma1[game_num,trial_num]*baseline_info_bonus + sigma1[game_num,trial_num]*T*(np.exp(-z*(trial_num-4))-np.exp(-4*z))/(1-np.exp(-4*z))
-                    # info_bonus_bandit2 = sigma2[game_num,trial_num]*baseline_info_bonus + sigma2[game_num,trial_num]*T*(np.exp(-z*(trial_num-4))-np.exp(-4*z))/(1-np.exp(-4*z))
-
-                    relative_uncertainty = (sigma2[game_num,trial_num] - sigma1[game_num,trial_num])
-                    # If the number of times chosen the left side is higher than the right side, then higher values of baseline_info_bonus and directed exploration should increase the probability of choosing the right side
-                    subset = data.loc[(data["game_number"] == game_numbers[game_num]) & (data["trial"] <= trial_num)]
-                    num_choose_left = (subset['choice'] == 0).sum()
-                    num_choose_right = (subset['choice'] == 1).sum()
-                    if (num_choose_left - num_choose_right) > 0:
-                        info_diff = relative_uncertainty*rel_uncert_mod  + baseline_info_bonus + T*(np.exp(-z*(trial_num-4))-np.exp(-4*z))/(1-np.exp(-4*z))
-                    elif (num_choose_left - num_choose_right) < 0:
-                        info_diff = relative_uncertainty*rel_uncert_mod  - baseline_info_bonus - T*(np.exp(-z*(trial_num-4))-np.exp(-4*z))/(1-np.exp(-4*z))
+                    z = .5 # hyperparam controlling steepness of decay function ensuring participants don't have DE/RE by last choice of H5
+                    # Define total uncertainty. Note that another variable will be used to save total uncertainty for each trial and game.
+                    total_uncert = (sigma1[game_num,trial_num]**2 + sigma2[game_num,trial_num]**2)**.5
+                    # Get the drift_value by combining the reward difference and decision noise. The decision noise will push the drift in opposite direction of the reward difference. 
+                    if reward_diff > 0:
+                        worse_option_sigma = sigma1[game_num,trial_num]
+                        better_option_sigma = sigma2[game_num,trial_num]
+                        if "Use_JSD" in settings:
+                            # Divide by ln(2) since that's the max jensen shannon divergence value
+                            drift_value = jsd_val/np.log(2)
+                        elif "Use_z_score" in settings:
+                            z_score_reward_diff = reward_diff / (sigma_r * ((1/num_choose_left) + (1/num_choose_right))**.5)
+                            cdf_reward_diff = norm.cdf(z_score_reward_diff)
+                            noise = baseline_noise + (total_uncert*random_exp*np.log(num_trials_left)*worse_option_sigma/(sigma1[game_num,trial_num]+sigma2[game_num,trial_num]))
+                            # Get the drift value by subtracting the noise from the cdf of the reward difference. Also subtract the midpoint (.5) to center the drift value (e.g., cdf < 0 yields a negative drift value)
+                            drift_value = cdf_reward_diff - noise - .5                        
                     else:
-                        info_diff = relative_uncertainty*rel_uncert_mod
+                        worse_option_sigma = sigma2[game_num,trial_num]
+                        better_option_sigma = sigma1[game_num,trial_num]
+                        if "Use_JSD" in settings:
+                        # Divide by ln(2) since that's the max jensen shannon divergence value
+                            drift_value = -jsd_val/np.log(2)
+                        elif "Use_z_score" in settings:
+                            z_score_reward_diff = reward_diff / (sigma_r * ((1/num_choose_left) + (1/num_choose_right))**.5)
+                            cdf_reward_diff = norm.cdf(z_score_reward_diff)
+                            noise = baseline_noise + (total_uncert*random_exp*np.log(num_trials_left)*worse_option_sigma/(sigma1[game_num,trial_num]+sigma2[game_num,trial_num]))
+                            # Get the drift value by subtracting the noise from the cdf of the reward difference. Also subtract the midpoint (.5) to center the drift value (e.g., cdf < 0 yields a negative drift value)
+                            drift_value = cdf_reward_diff + noise - .5
 
-                    
                     # Exponential descent from Y to 1 over trials within a game
                     RE = Y + ((1 - Y) * (1 - np.exp(-z * (trial_num - 4))) / (1 - np.exp(-4 * z)))
                     
@@ -125,26 +143,26 @@ def KF_DDM_model(sample,model,fit_or_sim, sim_using_max_pdf=False):
                     # Note that jsd_val is in nats, so it's pretty small. We multiply by 10 to make it have a bigger effect on the drift value.
                     jsd_val = jsd_normal(mu1[trial_num], sigma1[game_num,trial_num]*baseline_noise*RE, mu2[trial_num], sigma2[game_num,trial_num]*baseline_noise*RE)
 
+
+
+                    relative_uncertainty = (sigma2[game_num,trial_num] - sigma1[game_num,trial_num])
+                    # If the number of times chosen the left side is higher than the right side, then higher values of baseline_info_bonus and directed exploration should increase the probability of choosing the right side
+
+                    if (num_choose_left - num_choose_right) > 0:
+                        info_diff = relative_uncertainty*rel_uncert_mod  + baseline_info_bonus + (directed_exp*better_option_sigma*np.log(num_trials_left))
+                        #info_diff = relative_uncertainty*rel_uncert_mod  + baseline_info_bonus + T*(np.exp(-z*(trial_num-4))-np.exp(-4*z))/(1-np.exp(-4*z))
+                    elif (num_choose_left - num_choose_right) < 0:
+                        info_diff = relative_uncertainty*rel_uncert_mod  - baseline_info_bonus - (directed_exp*better_option_sigma*np.log(num_trials_left))
+                        #info_diff = relative_uncertainty*rel_uncert_mod  - baseline_info_bonus - T*(np.exp(-z*(trial_num-4))-np.exp(-4*z))/(1-np.exp(-4*z))
+                    else:
+                        info_diff = relative_uncertainty*rel_uncert_mod
+
+                    
+
                     # decision_noise = total_uncertainty[game_num,trial_num]*baseline_noise*RE
 
                     # Transform the starting position value so it's between -1 and 1. May want to smooth out function
                     starting_position_value =  np.tanh((info_diff+side_bias)/1)
-                    # Get the drift_value by combining the reward difference and decision noise. The decision noise will push the drift in opposite direction of the reward difference. 
-                    if reward_diff > 0:
-                        # drift_value = (drift_rwrd_diff_mod * reward_diff) - (drift_dcsn_noise_mod * decision_noise)
-                        if "Use_JSD" in settings:
-                            # Divide by ln(2) since that's the max jensen shannon divergence value
-                            drift_value = jsd_val/np.log(2)
-                        elif "Use_z_score" in settings:
-                            drift_value = (reward_diff/baseline_noise) - total_uncertainty[game_num,trial_num]*RE
-                            
-                    else:
-                        # drift_value = (drift_rwrd_diff_mod * reward_diff) + (drift_dcsn_noise_mod * decision_noise)
-                        if "Use_JSD" in settings:
-                        # Divide by ln(2) since that's the max jensen shannon divergence value
-                            drift_value = -jsd_val/np.log(2)
-                        elif "Use_z_score" in settings:
-                            drift_value = (reward_diff/baseline_noise) + total_uncertainty[game_num,trial_num]*RE
 
 
                     if fit_or_sim == "fit":

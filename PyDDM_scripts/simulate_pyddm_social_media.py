@@ -19,7 +19,7 @@ id = "568d0641b5a2c2000cb657d0" # Subject ID
 results_dir = f"L:/rsmith/lab-members/cgoldman/Wellbeing/social_media/output/test/" # Directory to save results
 room_type = "Like" # Room type (e.g., Like, Dislike)
 timestamp = "current_timestamp" # Timestamp (e.g., 04_16_25_T10-39-55)
-settings = "Use_JSD_fit_all_RTs" # Settings for the model 
+settings = "Use_JSD_fit_all_RTs" # Settings for the model Use_z_score_fit_all_RTs, Use_JSD_fit_all_RTs
 
 
 # Set the random seed for reproducibility
@@ -76,7 +76,7 @@ base_params = dict(
     baseline_info_bonus  = -0.0119001219445525, #(-4,4) # -.07 reasonable value
     random_exp           = 0.827128439662183,  #(.1,10)
     rel_uncert_mod       = -0.0443378080630633, #(-1,1)
-    sigma_scaler = 1.09289827801646  #(.1,10)
+    sigma_scaler = 1.09289827801646 #1.09289827801646  #(.1,10)
 )
 
 if run_param_sweep:

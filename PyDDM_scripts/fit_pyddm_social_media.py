@@ -17,7 +17,7 @@ if len(sys.argv) > 1:
     id = sys.argv[3] # Subject ID
     room_type = sys.argv[4] # Room type (e.g., Like, Dislike)
     timestamp = sys.argv[5] # Timestamp (e.g., 04_16_25_T10-39-55)
-    settings = sys.argv[6] # Settings for the model (e.g., "Use_JSD_fit_all_RTs", "Use_JSD_fit_3_RTs", "Use_reward_differences_fit_all_RTs", "Use_reward_differences_fit_3_RTs"
+    settings = sys.argv[6] # Settings for the model (e.g., "Use_JSD_fit_all_RTs", "Use_JSD_fit_3_RTs", "Use_z_score_fit_all_RTs", "Use_z_score_fit_3_RTs")
 
 else:
     # Note you'll have to change both outpath_beh and id to fit another subject
@@ -26,8 +26,7 @@ else:
     results_dir = f"L:/rsmith/lab-members/cgoldman/Wellbeing/social_media/output/test/" # Directory to save results
     room_type = "Like" # Room type (e.g., Like, Dislike)
     timestamp = "current_timestamp" # Timestamp (e.g., 04_16_25_T10-39-55)
-    settings = "Use_JSD_fit_all_RTs" # Settings for the model (e.g., "Use_JSD_fit_all_RTs", "Use_JSD_fit_3_RTs", "Use_reward_differences_fit_all_RTs", "Use_reward_differences_fit_3_RTs"
-
+    settings = "Use_z_score_fit_all_RTs" # Settings for the model (e.g., "Use_JSD_fit_all_RTs", "Use_JSD_fit_3_RTs", "Use_z_score_fit_all_RTs", "Use_z_score_fit_3_RTs"
 
 log_path = f"{results_dir}{id}_{room_type}_{timestamp}_model_log.txt"
 sys.stdout = open(log_path, "w", buffering=1)  # line-buffered so that it updates the file in real-time
