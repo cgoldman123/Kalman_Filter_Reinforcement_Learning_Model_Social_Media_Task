@@ -53,7 +53,7 @@ social_media_df_clean.loc[:, 'rt'] = social_media_df_clean['rt'].fillna(-1)
 # Create a sample of values to pass into the model
 social_media_sample = pyddm.Sample.from_pandas_dataframe(social_media_df_clean, rt_column_name="rt", choice_column_name="c", choice_names=("right", "left")) # note the ordering here is intentional since pyddm codes the first choice as 1 (upper) and the second as 0 (lower) which matches our coding left as 0 and right as 1
 
-
+########### SETTINGS ##############
 
 run_one_param_set = True # adjust this to True if you want to run the RT by reward difference simulation
 run_param_sweep = False # adjust this to True if you want to run the parameter sweep simulation
@@ -61,7 +61,7 @@ sim_using_max_pdf = True # If True, the model will simulate a choice/RT based on
 plot_latent_states_separated_by_rdiff = True # If True, the latent states will be plotted separately for each reward difference. If False, they will be averaged across all reward differences.
 plot_jsd = False # If True, the JSD will be plotted in the latent states plot. If False, it will not be plotted.
 if not sim_using_max_pdf:
-    number_samples_to_sim = 25
+    number_samples_to_sim = 3
 else:
     number_samples_to_sim = 1
 
@@ -78,11 +78,12 @@ base_params = dict(
     side_bias = 0,
 )
 
+###############################
+
 if run_param_sweep:
     param_name   = "sigma_r"            # specify the parameter to sweep while holding others constant
     param_vals   = np.linspace(4, 16, 2)            # set the range of parameters to sweep for the parameter param_name
     trial_idx  = 5
-
 
 
 settings["plot_jsd"] = plot_jsd # Set the settings for the model to plot JSD or not
