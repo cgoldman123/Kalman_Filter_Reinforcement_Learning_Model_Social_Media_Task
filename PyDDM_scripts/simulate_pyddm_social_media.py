@@ -19,8 +19,8 @@ id = "568d0641b5a2c2000cb657d0" # Subject ID
 results_dir = f"L:/rsmith/lab-members/cgoldman/Wellbeing/social_media/output/test/" # Directory to save results
 room_type = "Like" # Room type (e.g., Like, Dislike)
 timestamp = "current_timestamp" # Timestamp (e.g., 04_16_25_T10-39-55)
-settings = "Use_JSD_fit_all_RTs" # Settings for the model Use_z_score_fit_all_RTs, Use_JSD_fit_all_RTs
-
+# settings = "" # Settings for the model Use_z_score_fit_all_RTs, Use_JSD_fit_all_RTs
+settings = dict()
 
 # Set the random seed for reproducibility
 seed = 24
@@ -59,24 +59,23 @@ run_one_param_set = True # adjust this to True if you want to run the RT by rewa
 run_param_sweep = False # adjust this to True if you want to run the parameter sweep simulation
 sim_using_max_pdf = True # If True, the model will simulate a choice/RT based on the maximum of the simulated pdf. If False, it will sample from the distribution of choices/RTs.
 plot_latent_states_separated_by_rdiff = True # If True, the latent states will be plotted separately for each reward difference. If False, they will be averaged across all reward differences.
+plot_jsd = False # If True, the JSD will be plotted in the latent states plot. If False, it will not be plotted.
 if not sim_using_max_pdf:
     number_samples_to_sim = 25
 else:
     number_samples_to_sim = 1
 
 base_params = dict(
-    drift_dcsn_noise_mod = 1,
-    bound_intercept      = 1.1, #(1, 6)
-    bound_slope          = -.2, #(-2, -.01)
-    sigma_d              = 3.50489068979558, #(0,10)
-    sigma_r              = 5.35040981103618, #(4,16)
-    baseline_noise       = 0.619300933257129, #(.1,10)
-    side_bias            = 0, #(-4,4)
-    directed_exp         = 0.08354190392724, #(-4,4) #.15 reasonable value
-    baseline_info_bonus  = -0.0119001219445525, #(-4,4) # -.07 reasonable value
-    random_exp           = 0.827128439662183,  #(.1,10)
-    rel_uncert_mod       = -0.0443378080630633, #(-1,1)
-    sigma_scaler = 1.09289827801646 #1.09289827801646  #(.1,10)
+    bound_intercept = 3,
+    baseline_rdiff_mod = .03,
+    h6_rdiff_mod = .1,
+    baseline_info_bonus = .1,
+    h6_info_bonus = .1,
+    baseline_thompson_wght = .1,
+    h6_thompson_wght = .1,
+    sigma_d = 3,
+    sigma_r = 5,
+    side_bias = 0,
 )
 
 if run_param_sweep:
@@ -86,7 +85,7 @@ if run_param_sweep:
 
 
 
-
+settings["plot_jsd"] = plot_jsd # Set the settings for the model to plot JSD or not
 if run_one_param_set:
     game_len   = [5, 9]                               # specify the game length to use ([5,9] )
     trial_idx  = 5                               # specify the trial index to use (5, 6, 7, etc.)
@@ -388,69 +387,70 @@ if run_one_param_set:
 
 
     ### Plot JSD by choice number and horizon ###
-    model_free_results = results['model_free_across_horizons_and_choices_df']
+    if plot_jsd:
+        model_free_results = results['model_free_across_horizons_and_choices_df']
 
-    # Melt wide-format mean and std columns to long format
-    df_mean = model_free_results.filter(like='mean_jsd').melt(var_name="label", value_name="mean_jsd")
-    df_std = model_free_results.filter(like='std_jsd').melt(var_name="label", value_name="std_jsd")
+        # Melt wide-format mean and std columns to long format
+        df_mean = model_free_results.filter(like='mean_jsd').melt(var_name="label", value_name="mean_jsd")
+        df_std = model_free_results.filter(like='std_jsd').melt(var_name="label", value_name="std_jsd")
 
-    # Separate rows that include a specific reward difference (rdiff) vs. those averaged across all
-    df_mean_foreach_rdiff = df_mean[df_mean['label'].str.contains('rdiff_')].copy()
-    df_mean_averaged_across_rdiff = df_mean[~df_mean['label'].str.contains('rdiff_')].copy()
-    df_std_foreach_rdiff = df_std[df_std['label'].str.contains('rdiff_')].copy()
-    df_std_averaged_across_rdiff = df_std[~df_std['label'].str.contains('rdiff_')].copy()
+        # Separate rows that include a specific reward difference (rdiff) vs. those averaged across all
+        df_mean_foreach_rdiff = df_mean[df_mean['label'].str.contains('rdiff_')].copy()
+        df_mean_averaged_across_rdiff = df_mean[~df_mean['label'].str.contains('rdiff_')].copy()
+        df_std_foreach_rdiff = df_std[df_std['label'].str.contains('rdiff_')].copy()
+        df_std_averaged_across_rdiff = df_std[~df_std['label'].str.contains('rdiff_')].copy()
 
-    # Choose which version to use based on plotting flag
-    if plot_latent_states_separated_by_rdiff:
-        df_mean = df_mean_foreach_rdiff.copy()
-        df_std = df_std_foreach_rdiff.copy()
-    else:
-        df_mean = df_mean_averaged_across_rdiff.copy()
-        df_std = df_std_averaged_across_rdiff.copy()
+        # Choose which version to use based on plotting flag
+        if plot_latent_states_separated_by_rdiff:
+            df_mean = df_mean_foreach_rdiff.copy()
+            df_std = df_std_foreach_rdiff.copy()
+        else:
+            df_mean = df_mean_averaged_across_rdiff.copy()
+            df_std = df_std_averaged_across_rdiff.copy()
 
-    # Align std and mean by matching label names
-    df_std["label"] = df_std["label"].str.replace("std_", "mean_", regex=False)
-    df_long = pd.merge(df_mean, df_std, on="label")
+        # Align std and mean by matching label names
+        df_std["label"] = df_std["label"].str.replace("std_", "mean_", regex=False)
+        df_long = pd.merge(df_mean, df_std, on="label")
 
-    # Extract horizon and choice number from label strings
-    df_long["horizon"] = df_long["label"].str.extract(r"horizon_(\d+)")[0].astype(int)
-    df_long["choice_number"] = df_long["label"].str.extract(r"choice_(\d+)")[0].astype(int)
+        # Extract horizon and choice number from label strings
+        df_long["horizon"] = df_long["label"].str.extract(r"horizon_(\d+)")[0].astype(int)
+        df_long["choice_number"] = df_long["label"].str.extract(r"choice_(\d+)")[0].astype(int)
 
-    plt.figure(figsize=(8, 5))
+        plt.figure(figsize=(8, 5))
 
-    if plot_latent_states_separated_by_rdiff:
-        # Extract rdiff values
-        df_long["rdiff"] = df_long["label"].str.extract(r"rdiff_(\d+)")[0].astype(int)
+        if plot_latent_states_separated_by_rdiff:
+            # Extract rdiff values
+            df_long["rdiff"] = df_long["label"].str.extract(r"rdiff_(\d+)")[0].astype(int)
 
-        rdiff_values = sorted(df_long["rdiff"].unique())
-        colors = plt.cm.tab10.colors  # Up to 10 distinct colors
+            rdiff_values = sorted(df_long["rdiff"].unique())
+            colors = plt.cm.tab10.colors  # Up to 10 distinct colors
 
-        for i, rdiff_val in enumerate(rdiff_values):
-            for horizon_val, linestyle in zip([5, 9], [':', '-']):
-                subset = df_long[(df_long["rdiff"] == rdiff_val) & (df_long["horizon"] == horizon_val)]
-                plt.plot(subset["choice_number"], subset["mean_jsd"],
-                        marker='o', linestyle=linestyle, color=colors[i % len(colors)],
-                        label=f"r_diff = {rdiff_val}, H{horizon_val}")
+            for i, rdiff_val in enumerate(rdiff_values):
+                for horizon_val, linestyle in zip([5, 9], [':', '-']):
+                    subset = df_long[(df_long["rdiff"] == rdiff_val) & (df_long["horizon"] == horizon_val)]
+                    plt.plot(subset["choice_number"], subset["mean_jsd"],
+                            marker='o', linestyle=linestyle, color=colors[i % len(colors)],
+                            label=f"r_diff = {rdiff_val}, H{horizon_val}")
 
-        plt.legend(title="Reward Difference")
-    else:
-        h5 = df_long[df_long["horizon"] == 5]
-        h9 = df_long[df_long["horizon"] == 9]
+            plt.legend(title="Reward Difference")
+        else:
+            h5 = df_long[df_long["horizon"] == 5]
+            h9 = df_long[df_long["horizon"] == 9]
 
-        plt.errorbar(h9["choice_number"], h9["mean_jsd"], yerr=h9["std_jsd"],
-                    fmt='o-', color="red", label="H5", capsize=4)
-        plt.errorbar(h5["choice_number"], h5["mean_jsd"], yerr=h5["std_jsd"],
-                    fmt='o:', color="blue", label="H1", capsize=4)
+            plt.errorbar(h9["choice_number"], h9["mean_jsd"], yerr=h9["std_jsd"],
+                        fmt='o-', color="red", label="H5", capsize=4)
+            plt.errorbar(h5["choice_number"], h5["mean_jsd"], yerr=h5["std_jsd"],
+                        fmt='o:', color="blue", label="H1", capsize=4)
 
-        plt.legend(title="Horizon")
+            plt.legend(title="Horizon")
 
-    # Labels and formatting
-    plt.xlabel("Choice Number")
-    plt.ylabel("JSD")
-    plt.title("JSD by Choice Number and Horizon")
-    plt.grid(True)
-    plt.tight_layout()
-    plt.show(block=False)
+        # Labels and formatting
+        plt.xlabel("Choice Number")
+        plt.ylabel("JSD")
+        plt.title("JSD by Choice Number and Horizon")
+        plt.grid(True)
+        plt.tight_layout()
+        plt.show(block=False)
 
 
 
@@ -460,28 +460,53 @@ if run_one_param_set:
     # ------------------------------------------------------------------
     from matplotlib.gridspec import GridSpec
 
-    fig = plt.figure(figsize=(12, 10))
-    gs = GridSpec(2, 2, figure=fig)
-    ax0 = fig.add_subplot(gs[0, :])      # JSD (top row, full width)
-    ax1 = fig.add_subplot(gs[1, 0])      # Reward diff
-    ax2 = fig.add_subplot(gs[1, 1])      # Total uncertainty
+    if plot_jsd:
+        fig = plt.figure(figsize=(12, 10))
+        gs = GridSpec(2, 2, figure=fig)
+        ax0 = fig.add_subplot(gs[0, :])      # JSD (top row, full width)
+        ax1 = fig.add_subplot(gs[1, 0])      # Reward diff
+        ax2 = fig.add_subplot(gs[1, 1])      # Total uncertainty
 
-    # Grab the three most-recent model-free plots: reward diff, uncertainty, JSD
-    fig_nums = plt.get_fignums()[-4:]  # Include the one before the model-free plots
-    fig_nums = fig_nums[-3:]           # Keep only the last three
-    fig_nums = [x - 1 for x in fig_nums] # Adjust for 0-based indexing in plt.get_fignums()
+        # Grab the three most-recent model-free plots: reward diff, uncertainty, JSD
+        fig_nums = plt.get_fignums()[-4:]  # Include the one before the model-free plots
+        fig_nums = fig_nums[-3:]           # Keep only the last three
+        fig_nums = [x - 1 for x in fig_nums] # Adjust for 0-based indexing in plt.get_fignums()
 
-    # Assign correctly: reward diff, uncertainty, JSD
-    fig_reward_diff = plt.figure(fig_nums[0])
-    fig_uncertainty = plt.figure(fig_nums[1])
-    fig_jsd = plt.figure(fig_nums[2])
+        # Assign correctly: reward diff, uncertainty, JSD
+        fig_reward_diff = plt.figure(fig_nums[0])
+        fig_uncertainty = plt.figure(fig_nums[1])
+        fig_jsd = plt.figure(fig_nums[2])
 
-    # Composite each into the correct axis
-    for fig_src, ax in zip([fig_reward_diff,fig_jsd, fig_uncertainty], [ax0, ax1, ax2]):
-        fig_src.canvas.draw()
-        buf = fig_src.canvas.buffer_rgba()
-        ax.imshow(buf)
-        ax.axis('off')
+        # Composite each into the correct axis
+        for fig_src, ax in zip([fig_reward_diff,fig_jsd, fig_uncertainty], [ax0, ax1, ax2]):
+            fig_src.canvas.draw()
+            buf = fig_src.canvas.buffer_rgba()
+            ax.imshow(buf)
+            ax.axis('off')
+    else:
+        fig = plt.figure(figsize=(12, 10))
+        gs = GridSpec(2, 1, figure=fig)
+        ax1 = fig.add_subplot(gs[0, 0])      # Reward diff
+        ax2 = fig.add_subplot(gs[1, 0])      # Total uncertainty
+
+        # Grab the three most-recent model-free plots: reward diff, uncertainty, JSD
+        fig_nums = plt.get_fignums()[-3:]  # Include the one before the model-free plots
+        fig_nums = fig_nums[-2:]           # Keep only the last three
+        fig_nums = [x - 1 for x in fig_nums] # Adjust for 0-based indexing in plt.get_fignums()
+
+        # Assign correctly: reward diff, uncertainty, JSD
+        fig_reward_diff = plt.figure(fig_nums[0])
+        fig_uncertainty = plt.figure(fig_nums[1])
+
+        # Composite each into the correct axis
+        for fig_src, ax in zip([fig_reward_diff, fig_uncertainty], [ax1, ax2]):
+            fig_src.canvas.draw()
+            buf = fig_src.canvas.buffer_rgba()
+            ax.imshow(buf)
+            ax.axis('off')
+
+
+    
 
     # Add title and subtitle
     fig.suptitle("Simulated latent states using one parameter set", fontsize=16)

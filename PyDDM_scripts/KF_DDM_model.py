@@ -30,16 +30,16 @@ def KF_DDM_model(sample,model,fit_or_sim, sim_using_max_pdf=False):
 
     game_numbers = data['game_number'].unique()
 
+    bound_intercept = model.get_dependence("drift").bound_intercept
+    baseline_rdiff_mod = model.get_dependence("drift").baseline_rdiff_mod
+    h6_rdiff_mod = model.get_dependence("drift").h6_rdiff_mod
+    baseline_info_bonus = model.get_dependence("drift").baseline_info_bonus
+    h6_info_bonus = model.get_dependence("drift").h6_info_bonus
+    baseline_thompson_wght = model.get_dependence("drift").baseline_thompson_wght
+    h6_thompson_wght = model.get_dependence("drift").h6_thompson_wght
     sigma_d = model.get_dependence("drift").sigma_d
     sigma_r = model.get_dependence("drift").sigma_r
-    baseline_noise = model.get_dependence("drift").baseline_noise
     side_bias = model.get_dependence("drift").side_bias
-    directed_exp = model.get_dependence("drift").directed_exp
-    baseline_info_bonus = model.get_dependence("drift").baseline_info_bonus
-    random_exp = model.get_dependence("drift").random_exp
-    drift_dcsn_noise_mod = model.get_dependence("drift").drift_dcsn_noise_mod
-    rel_uncert_mod = model.get_dependence("drift").rel_uncert_mod
-    sigma_scaler = model.get_dependence("drift").sigma_scaler
 
     # Initialize variables to hold output
     G = 40 # Number of games
@@ -64,7 +64,6 @@ def KF_DDM_model(sample,model,fit_or_sim, sim_using_max_pdf=False):
 
     total_uncertainty = np.full((G, 10), np.nan)
     rdiff_chosen_opt = np.full((G, 10), np.nan)
-    jsd_diff_chosen_opt = np.full((G, 10), np.nan)
     
     relative_uncertainty_of_choice = np.full((G, 10), np.nan)
     change_in_uncertainty_after_choice = np.full((G, 10), np.nan)
@@ -88,82 +87,23 @@ def KF_DDM_model(sample,model,fit_or_sim, sim_using_max_pdf=False):
                 trial = game_df.iloc[trial_num]
                 # Calculate the reward difference by subtracting the mean of the right vs left option
                 reward_diff = mu2[trial_num] - mu1[trial_num] # reward difference between the two bandits
-                # Calculate the jensen shannon divergence between the two bandits for the forced choices. Note this calculation will be written over for the free choices to account for the effect of random exploration.
-                jsd_val = jsd_normal(mu1[trial_num], sigma1[game_num,trial_num]*baseline_noise, mu2[trial_num], sigma2[game_num,trial_num]*baseline_noise)
-
                 if trial_num >= 4:
                     # Get the number of trials left in the game
-                    num_trials_left = trial['gameLength'] - trial_num # Number of trials left in the game
-                    # Find the number of times the person has chosen the left and right options in the game so far
-                    subset = data.loc[(data["game_number"] == game_numbers[game_num]) & (data["trial"] <= trial_num)]
-                    num_choose_left = (subset['choice'] == 0).sum()
-                    num_choose_right = (subset['choice'] == 1).sum()
-
-                    if trial['gameLength'] == 5: # horizon is 1
-                        T = 0
-                        Y = 1
-                    else: # horizon is 5
-                        T = directed_exp
-                        Y = random_exp
-                        
-
-                    z = .5 # hyperparam controlling steepness of decay function ensuring participants don't have DE/RE by last choice of H5
+                    num_trials_left = trial['gameLength'] - trial_num # Number of trials left in the game               
                     # Define total uncertainty. Note that another variable will be used to save total uncertainty for each trial and game.
                     total_uncert = (sigma1[game_num,trial_num]**2 + sigma2[game_num,trial_num]**2)**.5
-                    # Get the drift_value by combining the reward difference and decision noise. The decision noise will push the drift in opposite direction of the reward difference. 
-                    if reward_diff > 0:
-                        worse_option_sigma = sigma1[game_num,trial_num]
-                        better_option_sigma = sigma2[game_num,trial_num]
-                        if "Use_JSD" in settings:
-                            # Divide by ln(2) since that's the max jensen shannon divergence value
-                            drift_value = jsd_val/np.log(2)
-                        elif "Use_z_score" in settings:
-                            z_score_reward_diff = reward_diff / (sigma_r * ((1/num_choose_left) + (1/num_choose_right))**.5)
-                            cdf_reward_diff = norm.cdf(z_score_reward_diff)
-                            noise = baseline_noise + (total_uncert*random_exp*np.log(num_trials_left)*worse_option_sigma/(sigma1[game_num,trial_num]+sigma2[game_num,trial_num]))
-                            # Get the drift value by subtracting the noise from the cdf of the reward difference. Also subtract the midpoint (.5) to center the drift value (e.g., cdf < 0 yields a negative drift value)
-                            drift_value = cdf_reward_diff - noise - .5                        
-                    else:
-                        worse_option_sigma = sigma2[game_num,trial_num]
-                        better_option_sigma = sigma1[game_num,trial_num]
-                        if "Use_JSD" in settings:
-                        # Divide by ln(2) since that's the max jensen shannon divergence value
-                            drift_value = -jsd_val/np.log(2)
-                        elif "Use_z_score" in settings:
-                            z_score_reward_diff = reward_diff / (sigma_r * ((1/num_choose_left) + (1/num_choose_right))**.5)
-                            cdf_reward_diff = norm.cdf(z_score_reward_diff)
-                            noise = baseline_noise + (total_uncert*random_exp*np.log(num_trials_left)*worse_option_sigma/(sigma1[game_num,trial_num]+sigma2[game_num,trial_num]))
-                            # Get the drift value by subtracting the noise from the cdf of the reward difference. Also subtract the midpoint (.5) to center the drift value (e.g., cdf < 0 yields a negative drift value)
-                            drift_value = cdf_reward_diff + noise - .5
-
-                    # Exponential descent from Y to 1 over trials within a game
-                    RE = Y + ((1 - Y) * (1 - np.exp(-z * (trial_num - 4))) / (1 - np.exp(-4 * z)))
-                    
-                    # Calculate the jensen shannon divergence between the reward distributions of the two bandits
-                    # Note that jsd_val is in nats, so it's pretty small. We multiply by 10 to make it have a bigger effect on the drift value.
-                    jsd_val = jsd_normal(mu1[trial_num], sigma1[game_num,trial_num]*baseline_noise*RE, mu2[trial_num], sigma2[game_num,trial_num]*baseline_noise*RE)
-
-
-
+                    # Define relative uncertainty. Note that another variable will be used to save relative uncertainty for each trial and game.
                     relative_uncertainty = (sigma2[game_num,trial_num] - sigma1[game_num,trial_num])
-                    # If the number of times chosen the left side is higher than the right side, then higher values of baseline_info_bonus and directed exploration should increase the probability of choosing the right side
-
-                    if (num_choose_left - num_choose_right) > 0:
-                        info_diff = relative_uncertainty*rel_uncert_mod  + baseline_info_bonus + (directed_exp*better_option_sigma*np.log(num_trials_left))
-                        #info_diff = relative_uncertainty*rel_uncert_mod  + baseline_info_bonus + T*(np.exp(-z*(trial_num-4))-np.exp(-4*z))/(1-np.exp(-4*z))
-                    elif (num_choose_left - num_choose_right) < 0:
-                        info_diff = relative_uncertainty*rel_uncert_mod  - baseline_info_bonus - (directed_exp*better_option_sigma*np.log(num_trials_left))
-                        #info_diff = relative_uncertainty*rel_uncert_mod  - baseline_info_bonus - T*(np.exp(-z*(trial_num-4))-np.exp(-4*z))/(1-np.exp(-4*z))
-                    else:
-                        info_diff = relative_uncertainty*rel_uncert_mod
+                    # Get the drift_value by combining the reward difference and decision noise. The decision noise will push the drift in opposite direction of the reward difference. 
+                    drift_value = reward_diff*(baseline_rdiff_mod + h6_rdiff_mod*np.log(num_trials_left)) + relative_uncertainty*(baseline_info_bonus + h6_info_bonus*np.log(num_trials_left)) + (reward_diff/total_uncert)*(baseline_thompson_wght + h6_thompson_wght*np.log(num_trials_left)) 
 
                     
-
                     # decision_noise = total_uncertainty[game_num,trial_num]*baseline_noise*RE
 
                     # Transform the starting position value so it's between -1 and 1. May want to smooth out function
-                    starting_position_value =  np.tanh((info_diff+side_bias)/1)
+                    starting_position_value =  np.tanh(((reward_diff*(baseline_rdiff_mod + h6_rdiff_mod*np.log(num_trials_left))) + side_bias)/1)
 
+                    bound_value = bound_intercept - abs(reward_diff*(baseline_rdiff_mod + h6_rdiff_mod*np.log(num_trials_left))) - abs(reward_diff/total_uncert)*(baseline_thompson_wght + h6_thompson_wght*np.log(num_trials_left)) 
 
                     if fit_or_sim == "fit":
                         choice = "left" if trial['choice'] == 0 else "right"
@@ -183,7 +123,8 @@ def KF_DDM_model(sample,model,fit_or_sim, sim_using_max_pdf=False):
                             sol = model.solve_numerical_c(
                                 conditions={
                                     "drift_value": drift_value,
-                                    "starting_position_value": starting_position_value
+                                    "starting_position_value": starting_position_value,
+                                    "bound_value": bound_value,
                                 }
                             )
                             # plt.plot(sol.t_domain, sol.pdf("right"))
@@ -228,12 +169,15 @@ def KF_DDM_model(sample,model,fit_or_sim, sim_using_max_pdf=False):
 
                         # solve a ddm (i.e., get the probability density function) for current DDM parameters
                         # Higher values of reward_diff and side_bias indicate greater preference for right bandit (band it 1 vs 0)
-                        sol = model.solve_numerical_c(conditions={"drift_value": drift_value,
-                                                                    "starting_position_value": starting_position_value})   
-                        
-                        # print(f"RE: ",RE)                    
-                        # print(f"Drift: ",drift_value)                    
-                        # print(f"Starting position: ",starting_position_value)                    
+                        sol = model.solve_numerical_c(conditions={
+                            "drift_value": drift_value,
+                            "starting_position_value": starting_position_value,
+                            "bound_value": bound_value,
+                        })
+
+                        # print(f"RE: ",RE)
+                        # print(f"Drift: ",drift_value)
+                        # print(f"Starting position: ",starting_position_value)
                         # print(f"Prob choose left: ",sol.prob("left"))
                         # Use the reaction time with the max probability density
                         if sim_using_max_pdf:
@@ -315,9 +259,9 @@ def KF_DDM_model(sample,model,fit_or_sim, sim_using_max_pdf=False):
                     mu1[trial_num + 1] = mu1[trial_num]
                                     
                 # Increase uncertainty before the first free choice
-                if trial_num == 3:
-                    sigma1[game_num, trial_num + 1] *= sigma_scaler
-                    sigma2[game_num, trial_num + 1] *= sigma_scaler
+                # if trial_num == 3:
+                #     sigma1[game_num, trial_num + 1] *= sigma_scaler
+                #     sigma2[game_num, trial_num + 1] *= sigma_scaler
 
 
                 # Save the total uncertainty and reward difference for the chosen option
@@ -326,7 +270,7 @@ def KF_DDM_model(sample,model,fit_or_sim, sim_using_max_pdf=False):
                 # Reward difference is mu2 (right) - mu1 (left) so when the person chooses the left bandit, the reward difference is negative
                 rdiff_chosen_opt[game_num, trial_num] = reward_diff if trial['choice'] == 1 else -reward_diff
                 # The jensen shannon divergence is always positive, so we multiply it by -1 (i.e., model the person choosing the worse side) if the person chose the left bandit when (mu2 > mu1) or the right bandit when (mu1 > mu2)
-                jsd_diff_chosen_opt[game_num, trial_num] = jsd_val if (trial['choice'] == 1 and reward_diff > 0) or (trial['choice'] == 0 and reward_diff < 0) else -jsd_val
+                # jsd_diff_chosen_opt[game_num, trial_num] = jsd_val if (trial['choice'] == 1 and reward_diff > 0) or (trial['choice'] == 0 and reward_diff < 0) else -jsd_val
 
 
     
@@ -357,6 +301,6 @@ def KF_DDM_model(sample,model,fit_or_sim, sim_using_max_pdf=False):
         "predicted_RT": predicted_RT,
         "abs_error_RT": abs_error_RT,
         "rdiff_chosen_opt":rdiff_chosen_opt, # Reward difference of the chosen option
-        "jsd_diff_chosen_opt":jsd_diff_chosen_opt, # JSD difference of the chosen option
+        # "jsd_diff_chosen_opt":jsd_diff_chosen_opt, # JSD difference of the chosen option
         "data": data,
     }

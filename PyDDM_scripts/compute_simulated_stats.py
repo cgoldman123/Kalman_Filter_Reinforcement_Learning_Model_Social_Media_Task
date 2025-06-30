@@ -98,7 +98,7 @@ def compute_stats_for_specific_horizon_and_choice(sim_data: pd.DataFrame,
         }
 
 
-def compute_stats_across_horizons_and_choices(sim_df) -> dict:
+def compute_stats_across_horizons_and_choices(sim_df, settings) -> dict:
         sim_data = sim_df["data"]
         results_dict = {}
         for game_length in [5, 9]:
@@ -195,13 +195,14 @@ def compute_stats_across_horizons_and_choices(sim_df) -> dict:
                 results_dict[f"mean_reward_diff_horizon_{game_length}_choice_{choice_number}"] = filtered_reward_rdiff_df.mean()
                 results_dict[f"std_reward_diff_horizon_{game_length}_choice_{choice_number}"] = filtered_reward_rdiff_df.std()
 
-                 # Create JSD dataframe!!! 
-                jsd_df = pd.DataFrame(sim_df["jsd_diff_chosen_opt"])
-                # subset the dataframe to the game length and trial number
-                horizon_mask = jsd_df.notna().sum(axis=1) == game_length
-                filtered_jsd_df = jsd_df.loc[horizon_mask].iloc[:, choice_number - 1]
-                results_dict[f"mean_jsd_horizon_{game_length}_choice_{choice_number}"] = filtered_jsd_df.mean()
-                results_dict[f"std_jsd_horizon_{game_length}_choice_{choice_number}"] = filtered_jsd_df.std()
+                if settings["plot_jsd"]:
+                    # Create JSD dataframe!!! 
+                    jsd_df = pd.DataFrame(sim_df["jsd_diff_chosen_opt"])
+                    # subset the dataframe to the game length and trial number
+                    horizon_mask = jsd_df.notna().sum(axis=1) == game_length
+                    filtered_jsd_df = jsd_df.loc[horizon_mask].iloc[:, choice_number - 1]
+                    results_dict[f"mean_jsd_horizon_{game_length}_choice_{choice_number}"] = filtered_jsd_df.mean()
+                    results_dict[f"std_jsd_horizon_{game_length}_choice_{choice_number}"] = filtered_jsd_df.std()
 
                 # Get total uncertainty, mean reward difference, and JSD for different generative reward differences
                 for gen_diff in [2, 4, 8, 12, 24]:
@@ -220,9 +221,10 @@ def compute_stats_across_horizons_and_choices(sim_df) -> dict:
                     results_dict[f"mean_reward_diff_horizon_{game_length}_choice_{choice_number}_rdiff_{gen_diff}"] = filtered_reward_diff_df_rdiff.mean()
                     results_dict[f"std_reward_diff_horizon_{game_length}_choice_{choice_number}_rdiff_{gen_diff}"] = filtered_reward_diff_df_rdiff.std()
 
-                    filtered_jsd_df_rdiff_rdiff = jsd_df.loc[rows_in_unique_games].iloc[:, choice_number - 1]
-                    results_dict[f"mean_jsd_horizon_{game_length}_choice_{choice_number}_rdiff_{gen_diff}"] = filtered_jsd_df_rdiff_rdiff.mean()
-                    results_dict[f"std_jsd_horizon_{game_length}_choice_{choice_number}_rdiff_{gen_diff}"] = filtered_jsd_df_rdiff_rdiff.std()
+                    if settings["plot_jsd"]:
+                        filtered_jsd_df_rdiff_rdiff = jsd_df.loc[rows_in_unique_games].iloc[:, choice_number - 1]
+                        results_dict[f"mean_jsd_horizon_{game_length}_choice_{choice_number}_rdiff_{gen_diff}"] = filtered_jsd_df_rdiff_rdiff.mean()
+                        results_dict[f"std_jsd_horizon_{game_length}_choice_{choice_number}_rdiff_{gen_diff}"] = filtered_jsd_df_rdiff_rdiff.std()
 
 
 
@@ -249,11 +251,11 @@ def stats_simulate_parameter_sweep(sample,
             params = base_params.copy()   # keep original intact
             params[param_name] = v        # overwrite the swept key
 
-            model = pyddm.gddm(drift=lambda drift_dcsn_noise_mod,drift_value,sigma_d,sigma_r,baseline_noise,side_bias,directed_exp,baseline_info_bonus,random_exp,rel_uncert_mod, sigma_scaler : drift_value,
+            model = pyddm.gddm(drift=lambda bound_intercept, baseline_rdiff_mod, h6_rdiff_mod ,sigma_d,sigma_r, baseline_info_bonus, h6_info_bonus, baseline_thompson_wght, h6_thompson_wght,side_bias, drift_value : drift_value,
                           starting_position=lambda starting_position_value: starting_position_value, 
-                          noise=1.0,     bound=lambda bound_intercept, bound_slope, t: max( bound_intercept + bound_slope*t, eps),  # linearly collapsing bound
+                          noise=1.0,     bound=lambda bound_value: max(bound_value, eps),  
                           nondecision=0, T_dur=7,
-                          conditions=["game_number", "gameLength", "trial", "r", "drift_value","starting_position_value"],
+                          conditions=["game_number", "gameLength", "trial", "r", "drift_value","starting_position_value", "bound_value"],
                           parameters=params, choice_names=("right","left"))
             model.settings = settings
             sim_data = KF_DDM_model(sample, model, fit_or_sim="sim", sim_using_max_pdf=sim_using_max_pdf)["data"]
@@ -287,17 +289,17 @@ def stats_simulate_one_parameter_set(base_params: dict, game_len,trial_idx, sett
     model_free_across_horizons_and_choices = []
     model_free_for_specific_horizon_and_choice = []
     for _ in range(number_samples_to_sim):
-        model = pyddm.gddm(drift=lambda drift_dcsn_noise_mod,drift_value,sigma_d,sigma_r,baseline_noise,side_bias,directed_exp,baseline_info_bonus,random_exp,rel_uncert_mod, sigma_scaler : drift_value,
+        model = pyddm.gddm(drift=lambda bound_intercept, baseline_rdiff_mod, h6_rdiff_mod ,sigma_d,sigma_r, baseline_info_bonus, h6_info_bonus, baseline_thompson_wght, h6_thompson_wght,side_bias, drift_value : drift_value,
                           starting_position=lambda starting_position_value: starting_position_value, 
-                          noise=1.0,     bound=lambda bound_intercept, bound_slope, t: max( bound_intercept + bound_slope*t, eps),  # linearly collapsing bound
+                          noise=1.0,     bound=lambda bound_value: max(bound_value, eps),
                           nondecision=0, T_dur=7,
-                          conditions=["game_number", "gameLength", "trial", "r", "drift_value","starting_position_value"],
+                          conditions=["game_number", "gameLength", "trial", "r", "drift_value","starting_position_value", "bound_value"],
                           parameters=base_params, choice_names=("right","left"))
         model.settings = settings
 
         sim_df = KF_DDM_model(sample, model, fit_or_sim="sim", sim_using_max_pdf=sim_using_max_pdf)
         ### Compute statistics across horizons and choices ###
-        model_free_across_horizons_and_choices.append(compute_stats_across_horizons_and_choices(sim_df))
+        model_free_across_horizons_and_choices.append(compute_stats_across_horizons_and_choices(sim_df, settings))
         model_free_across_horizons_and_choices_df = pd.DataFrame(model_free_across_horizons_and_choices)
 
         sim_data = sim_df["data"]

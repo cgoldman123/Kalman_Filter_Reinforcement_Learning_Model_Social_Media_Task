@@ -26,7 +26,7 @@ else:
     results_dir = f"L:/rsmith/lab-members/cgoldman/Wellbeing/social_media/output/test/" # Directory to save results
     room_type = "Like" # Room type (e.g., Like, Dislike)
     timestamp = "current_timestamp" # Timestamp (e.g., 04_16_25_T10-39-55)
-    settings = "Use_z_score_fit_all_RTs" # Settings for the model (e.g., "Use_JSD_fit_all_RTs", "Use_JSD_fit_3_RTs", "Use_z_score_fit_all_RTs", "Use_z_score_fit_3_RTs"
+    settings = "" # Settings for the model (e.g., "Use_JSD_fit_all_RTs", "Use_JSD_fit_3_RTs", "Use_z_score_fit_all_RTs", "Use_z_score_fit_3_RTs"
 
 log_path = f"{results_dir}{id}_{room_type}_{timestamp}_model_log.txt"
 sys.stdout = open(log_path, "w", buffering=1)  # line-buffered so that it updates the file in real-time
