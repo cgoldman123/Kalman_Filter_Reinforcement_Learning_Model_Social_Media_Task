@@ -31,6 +31,7 @@ def KF_DDM_model(sample,model,fit_or_sim, sim_using_max_pdf=False):
     game_numbers = data['game_number'].unique()
 
     bound_intercept = model.get_dependence("drift").bound_intercept
+    bound_slope_mod = model.get_dependence("drift").bound_slope_mod
     baseline_rdiff_mod = model.get_dependence("drift").baseline_rdiff_mod
     h6_rdiff_mod = model.get_dependence("drift").h6_rdiff_mod
     baseline_info_bonus = model.get_dependence("drift").baseline_info_bonus
@@ -40,6 +41,7 @@ def KF_DDM_model(sample,model,fit_or_sim, sim_using_max_pdf=False):
     sigma_d = model.get_dependence("drift").sigma_d
     sigma_r = model.get_dependence("drift").sigma_r
     side_bias = model.get_dependence("drift").side_bias
+    
 
     # Initialize variables to hold output
     G = 40 # Number of games
@@ -74,6 +76,7 @@ def KF_DDM_model(sample,model,fit_or_sim, sim_using_max_pdf=False):
     try:
         for game_num in range(0, len(game_numbers)):
             game_df = data[data["game_number"] == game_numbers[game_num]] # Subset the dataframe by game number
+            
             # Initialize empty vectors for each game
             mu1 = np.full(10, np.nan)
             mu1[0] = 50 # Irrelevant when initial_sigma is 10000 since it makes the learning rate on the first trial 1
@@ -103,7 +106,9 @@ def KF_DDM_model(sample,model,fit_or_sim, sim_using_max_pdf=False):
                     # Transform the starting position value so it's between -1 and 1. May want to smooth out function
                     starting_position_value =  np.tanh(((reward_diff*(baseline_rdiff_mod + h6_rdiff_mod*np.log(num_trials_left))) + side_bias)/1)
 
-                    bound_value = bound_intercept - abs(reward_diff*(baseline_rdiff_mod + h6_rdiff_mod*np.log(num_trials_left))) - abs(reward_diff/total_uncert)*(baseline_thompson_wght + h6_thompson_wght*np.log(num_trials_left)) 
+                    bound_value = bound_intercept - (num_trials_left-1)*bound_slope_mod
+                    # Calculate bound value based on current trial number (trial['gameLength'] - num_trials_left -3) 
+                    #bound_value = bound_intercept - bound_slope_mod*np.log(trial['gameLength'] - num_trials_left -3) 
 
                     if fit_or_sim == "fit":
                         choice = "left" if trial['choice'] == 0 else "right"

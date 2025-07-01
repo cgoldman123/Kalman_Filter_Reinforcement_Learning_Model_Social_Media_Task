@@ -68,14 +68,16 @@ else:
 base_params = dict(
     bound_intercept = 3,
     baseline_rdiff_mod = .03,
-    h6_rdiff_mod = .1,
+    h6_rdiff_mod = .2,
     baseline_info_bonus = .1,
     h6_info_bonus = .1,
     baseline_thompson_wght = .1,
-    h6_thompson_wght = .1,
+    h6_thompson_wght = .2,
     sigma_d = 3,
     sigma_r = 5,
     side_bias = 0,
+    bound_slope_mod = .1,
+    nondecision_time = .2,
 )
 
 ###############################
