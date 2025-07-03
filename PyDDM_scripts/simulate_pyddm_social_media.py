@@ -70,7 +70,6 @@ base_params = dict(
     h6_rdiff_mod_drift = -.019, # to get rdiff .05 on the first free choice of H5
     baseline_rdiff_mod_bias = .018,
     h6_rdiff_mod_bias = -.005, # to get rdiff .01 on the first free choice of H5
-    
     baseline_info_bonus = -.05,
     h6_info_bonus = .34, # to get info bonus of 0.5 on the first free choice of H5
     baseline_thompson_wght = 0, # This param doesn't do anything in the current model
@@ -79,7 +78,7 @@ base_params = dict(
     sigma_r = 5,
     side_bias = 0,
     bound_intercept = 2.5,
-    bound_slope_mod = .025, 
+    bound_slope_mod = -.025, 
     nondecision_time = .05,
 )
 
