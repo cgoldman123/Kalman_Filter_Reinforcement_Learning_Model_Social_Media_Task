@@ -100,14 +100,14 @@ def KF_DDM_model(sample,model,fit_or_sim, sim_using_max_pdf=False):
                     # Define relative uncertainty. Note that another variable will be used to save relative uncertainty for each trial and game.
                     relative_uncertainty = (sigma2[game_num,trial_num] - sigma1[game_num,trial_num])
                     # Get the drift_value by combining the reward difference and decision noise. The decision noise will push the drift in opposite direction of the reward difference. 
-                    drift_value = reward_diff*(baseline_rdiff_mod_drift + h6_rdiff_mod_drift*np.log(num_trials_left)) + relative_uncertainty*(baseline_info_bonus + h6_info_bonus*np.log(num_trials_left))
+                    drift_value = reward_diff*(baseline_rdiff_mod_drift/total_uncert + total_uncert*h6_rdiff_mod_drift*(num_trials_left-1)) + relative_uncertainty*(baseline_info_bonus + h6_info_bonus*(num_trials_left-1))
 
                     # decision_noise = total_uncertainty[game_num,trial_num]*baseline_noise*RE
 
                     # Transform the starting position value so it's between -1 and 1. May want to smooth out function
-                    starting_position_value =  np.tanh(((reward_diff*(baseline_rdiff_mod_bias + h6_rdiff_mod_bias*np.log(num_trials_left))) + side_bias)/1)
+                    starting_position_value =  np.tanh(((reward_diff*(baseline_rdiff_mod_bias + h6_rdiff_mod_bias*(num_trials_left-1))) + side_bias)/1)
 
-                    bound_value = bound_intercept + np.log(num_trials_left)*bound_slope_mod
+                    bound_value = bound_intercept + bound_slope_mod * np.log10(trial['gameLength'] - num_trials_left-3) # Calculate bound value based on current trial number (trial['gameLength'] - num_trials_left -3)
                     # Calculate bound value based on current trial number (trial['gameLength'] - num_trials_left -3) 
                     #bound_value = bound_intercept - bound_slope_mod*np.log(trial['gameLength'] - num_trials_left -3) 
 

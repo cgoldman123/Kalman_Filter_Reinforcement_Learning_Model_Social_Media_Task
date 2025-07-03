@@ -66,19 +66,19 @@ else:
     number_samples_to_sim = 1
 
 base_params = dict(
-    baseline_rdiff_mod_drift = .08,
-    h6_rdiff_mod_drift = -.019, # to get rdiff .05 on the first free choice of H5
+    baseline_rdiff_mod_drift = .50, # so baseline_rdiff_mod_drift / total uncert (approx 6.3) = .08
+    h6_rdiff_mod_drift = -.002, # -0.0012, # to get rdiff mod .05 on the first free choice of H5
     baseline_rdiff_mod_bias = .018,
-    h6_rdiff_mod_bias = -.005, # to get rdiff .01 on the first free choice of H5
+    h6_rdiff_mod_bias = -.002, # to get rdiff .01 on the first free choice of H5
     baseline_info_bonus = -.05,
-    h6_info_bonus = .34, # to get info bonus of 0.5 on the first free choice of H5
+    h6_info_bonus = .14, # to get info bonus of 0.5 on the first free choice of H5
     baseline_thompson_wght = 0, # This param doesn't do anything in the current model
     h6_thompson_wght = 0, # This param doesn't do anything in the current model
     sigma_d = 2,
     sigma_r = 5,
     side_bias = 0,
     bound_intercept = 2.5,
-    bound_slope_mod = -.025, 
+    bound_slope_mod = -2, # to get 2.46 on first free choice of H5
     nondecision_time = .05,
 )
 
