@@ -33,16 +33,13 @@ def KF_DDM_model(sample,model,fit_or_sim, sim_using_max_pdf=False):
 
     bound_intercept = model.get_dependence("drift").bound_intercept
     bound_slope_mod = model.get_dependence("drift").bound_slope_mod
-    baseline_rdiff_mod_drift = model.get_dependence("drift").baseline_rdiff_mod_drift
     baseline_rdiff_mod_bias = model.get_dependence("drift").baseline_rdiff_mod_bias
-    h6_rdiff_mod_drift = model.get_dependence("drift").h6_rdiff_mod_drift
+    baseline_noise = model.get_dependence("drift").baseline_noise
     congruent_ucb_rdiff_tradeoff_h6 = model.get_dependence("drift").congruent_ucb_rdiff_tradeoff_h6
     incongruent_ucb_rdiff_tradeoff_h6 = model.get_dependence("drift").incongruent_ucb_rdiff_tradeoff_h6
     h6_rdiff_mod_bias = model.get_dependence("drift").h6_rdiff_mod_bias
-    baseline_info_bonus = model.get_dependence("drift").baseline_info_bonus
-    h6_info_bonus = model.get_dependence("drift").h6_info_bonus
-    # baseline_thompson_wght = model.get_dependence("drift").baseline_thompson_wght
-    # h6_thompson_wght = model.get_dependence("drift").h6_thompson_wght
+    congruent_ucb_rdiff_tradeoff_h1 = model.get_dependence("drift").congruent_ucb_rdiff_tradeoff_h1
+    incongruent_ucb_rdiff_tradeoff_h1 = model.get_dependence("drift").incongruent_ucb_rdiff_tradeoff_h1
     sigma_d = model.get_dependence("drift").sigma_d
     sigma_r = model.get_dependence("drift").sigma_r
     side_bias = model.get_dependence("drift").side_bias
@@ -110,7 +107,11 @@ def KF_DDM_model(sample,model,fit_or_sim, sim_using_max_pdf=False):
                     
                     # In H1, the drift value is based on reward difference but not UCB
                     if trial['gameLength'] == 5:
-                        ucb_rdiff_tradeoff = 0
+                        # If both reward difference and UCB difference push in same direction, use the congruent tradeoff; otherwise, use incongruent.
+                        if reward_diff*UCB_diff > 0:
+                            ucb_rdiff_tradeoff = congruent_ucb_rdiff_tradeoff_h1
+                        else:
+                            ucb_rdiff_tradeoff = incongruent_ucb_rdiff_tradeoff_h1
                     # In H5, the drift value is based on reward difference and UCB
                     elif trial['gameLength'] == 9:
                         # If both reward difference and UCB difference push in same direction, use the congruent tradeoff; otherwise, use incongruent.
@@ -119,7 +120,7 @@ def KF_DDM_model(sample,model,fit_or_sim, sim_using_max_pdf=False):
                         else:
                             ucb_rdiff_tradeoff = incongruent_ucb_rdiff_tradeoff_h6
                         
-                    drift_value = ((1-ucb_rdiff_tradeoff)*baseline_rdiff_mod_drift*reward_diff/num_trials_left) + (ucb_rdiff_tradeoff*UCB_diff/num_trials_left)
+                    drift_value = (((1-ucb_rdiff_tradeoff)*reward_diff) + (ucb_rdiff_tradeoff*UCB_diff))/(baseline_noise*total_uncert*num_trials_left)
 
                     # decision_noise = total_uncertainty[game_num,trial_num]*baseline_noise*RE
 
