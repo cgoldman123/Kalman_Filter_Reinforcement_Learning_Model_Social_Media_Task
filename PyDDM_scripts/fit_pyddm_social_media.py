@@ -151,9 +151,9 @@ class KF_DDM_Loss(pyddm.LossFunction):
 print("Setting up the model to fit behavioral data")
 model_to_fit = pyddm.gddm(drift=lambda drift_dcsn_noise_mod,rel_uncert_mod,sigma_d,sigma_r,baseline_noise,side_bias,directed_exp,baseline_info_bonus,random_exp, sigma_scaler,drift_value : drift_value,
                           starting_position=lambda starting_position_value: starting_position_value, 
-                          noise=1.0,     bound=lambda bound_intercept, bound_slope, t: max( bound_intercept + bound_slope*t, eps),  # linearly collapsing bound
+                          noise=1.0,     bound=lambda bound_value: bound_value,  
                           nondecision=0, T_dur=7,
-                          conditions=["game_number", "gameLength", "trial", "r", "drift_value","starting_position_value"],
+                          conditions=["game_number", "gameLength", "trial", "r", "drift_value","starting_position_value", "bound_value"],
                           parameters={"drift_dcsn_noise_mod":1, "rel_uncert_mod": (-1,1), "bound_intercept": 1.1, "bound_slope": -.2, "sigma_d": (0,10), "sigma_r": (4,16), "baseline_noise": (0.1,10), "side_bias": 0, "directed_exp": (-4,4), "baseline_info_bonus": (-4,4), "random_exp": (.1,10), "sigma_scaler": (.1, 10)}, choice_names=("right","left"))
 model_to_fit.settings = settings
 

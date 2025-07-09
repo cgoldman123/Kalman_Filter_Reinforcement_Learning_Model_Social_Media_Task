@@ -251,7 +251,7 @@ def stats_simulate_parameter_sweep(sample,
             params = base_params.copy()   # keep original intact
             params[param_name] = v        # overwrite the swept key
 
-            model = pyddm.gddm(drift=lambda bound_intercept, baseline_rdiff_mod_bias, h6_rdiff_mod_bias, baseline_rdiff_mod_drift, h6_rdiff_mod_drift ,sigma_d,sigma_r, baseline_info_bonus, h6_info_bonus, baseline_thompson_wght, h6_thompson_wght,side_bias, bound_slope_mod, drift_value : drift_value,
+            model = pyddm.gddm(drift=lambda bound_intercept, baseline_rdiff_mod_drift, h6_rdiff_mod_drift, baseline_rdiff_mod_bias, h6_rdiff_mod_bias, congruent_ucb_rdiff_tradeoff_h6, incongruent_ucb_rdiff_tradeoff_h6 ,sigma_d,sigma_r, baseline_info_bonus, h6_info_bonus, baseline_thompson_wght, h6_thompson_wght,side_bias, bound_slope_mod, drift_value : drift_value,
                           starting_position=lambda starting_position_value: starting_position_value, 
                           noise=1.0,     bound=lambda bound_value: max(bound_value, eps),
                           nondecision="nondecision_time",
@@ -290,7 +290,7 @@ def stats_simulate_one_parameter_set(base_params: dict, game_len,trial_idx, sett
     model_free_across_horizons_and_choices = []
     model_free_for_specific_horizon_and_choice = []
     for _ in range(number_samples_to_sim):
-        model = pyddm.gddm(drift=lambda bound_intercept, baseline_rdiff_mod_bias, h6_rdiff_mod_bias, baseline_rdiff_mod_drift, h6_rdiff_mod_drift ,sigma_d,sigma_r, baseline_info_bonus, h6_info_bonus, baseline_thompson_wght, h6_thompson_wght,side_bias, bound_slope_mod, drift_value : drift_value,
+        model = pyddm.gddm(drift=lambda bound_intercept, baseline_rdiff_mod_drift, h6_rdiff_mod_drift, baseline_rdiff_mod_bias, h6_rdiff_mod_bias, congruent_ucb_rdiff_tradeoff_h6, incongruent_ucb_rdiff_tradeoff_h6 ,sigma_d,sigma_r, baseline_info_bonus, h6_info_bonus, baseline_thompson_wght, h6_thompson_wght,side_bias, bound_slope_mod, drift_value : drift_value,
                           starting_position=lambda starting_position_value: starting_position_value, 
                           noise=1.0,     bound=lambda bound_value: max(bound_value, eps),
                           nondecision="nondecision_time",

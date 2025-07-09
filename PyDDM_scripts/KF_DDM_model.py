@@ -22,6 +22,7 @@ logger.addFilter(renorm_filter)
 
 def KF_DDM_model(sample,model,fit_or_sim, sim_using_max_pdf=False):
     global had_renorm 
+    eps = np.finfo(float).eps
 
     settings = model.settings
 
@@ -35,6 +36,8 @@ def KF_DDM_model(sample,model,fit_or_sim, sim_using_max_pdf=False):
     baseline_rdiff_mod_drift = model.get_dependence("drift").baseline_rdiff_mod_drift
     baseline_rdiff_mod_bias = model.get_dependence("drift").baseline_rdiff_mod_bias
     h6_rdiff_mod_drift = model.get_dependence("drift").h6_rdiff_mod_drift
+    congruent_ucb_rdiff_tradeoff_h6 = model.get_dependence("drift").congruent_ucb_rdiff_tradeoff_h6
+    incongruent_ucb_rdiff_tradeoff_h6 = model.get_dependence("drift").incongruent_ucb_rdiff_tradeoff_h6
     h6_rdiff_mod_bias = model.get_dependence("drift").h6_rdiff_mod_bias
     baseline_info_bonus = model.get_dependence("drift").baseline_info_bonus
     h6_info_bonus = model.get_dependence("drift").h6_info_bonus
@@ -52,6 +55,7 @@ def KF_DDM_model(sample,model,fit_or_sim, sim_using_max_pdf=False):
     max_rt = 7 # Maximum reaction time in seconds
 
     rt_pdf = np.full((G, 10), np.nan)
+    rt_pdf_entropy = np.full((G, 10), np.nan)
     action_probs = np.full((G, 9), np.nan)
     model_acc = np.full((G, 9), np.nan)
     predicted_RT = np.full((G, 9), np.nan)
@@ -92,6 +96,7 @@ def KF_DDM_model(sample,model,fit_or_sim, sim_using_max_pdf=False):
                 trial = game_df.iloc[trial_num]
                 # Calculate the reward difference by subtracting the mean of the right vs left option
                 reward_diff = mu2[trial_num] - mu1[trial_num] # reward difference between the two bandits
+                UCB_diff = (mu2[trial_num] + 3*sigma2[game_num, trial_num]) - (mu1[trial_num] + 3*sigma1[game_num, trial_num]) # Upper confidence bound difference between the two bandits
                 if trial_num >= 4:
                     # Get the number of trials left in the game
                     num_trials_left = trial['gameLength'] - trial_num # Number of trials left in the game               
@@ -99,15 +104,29 @@ def KF_DDM_model(sample,model,fit_or_sim, sim_using_max_pdf=False):
                     total_uncert = (sigma1[game_num,trial_num]**2 + sigma2[game_num,trial_num]**2)**.5
                     # Define relative uncertainty. Note that another variable will be used to save relative uncertainty for each trial and game.
                     relative_uncertainty = (sigma2[game_num,trial_num] - sigma1[game_num,trial_num])
-                    # Get the drift_value by combining the reward difference and decision noise. The decision noise will push the drift in opposite direction of the reward difference. 
-                    drift_value = reward_diff*(baseline_rdiff_mod_drift/total_uncert + total_uncert*h6_rdiff_mod_drift*(num_trials_left-1)) + relative_uncertainty*(baseline_info_bonus + h6_info_bonus*(num_trials_left-1))
+                    # Get the drift_value 
+                    # drift_value = reward_diff*(baseline_rdiff_mod_drift/total_uncert + total_uncert*h6_rdiff_mod_drift*(num_trials_left-1)) + relative_uncertainty*(baseline_info_bonus + h6_info_bonus*(num_trials_left-1))
+                    # drift_value = reward_diff*baseline_rdiff_mod_drift/num_trials_left
+                    
+                    # In H1, the drift value is based on reward difference but not UCB
+                    if trial['gameLength'] == 5:
+                        ucb_rdiff_tradeoff = 0
+                    # In H5, the drift value is based on reward difference and UCB
+                    elif trial['gameLength'] == 9:
+                        # If both reward difference and UCB difference push in same direction, use the congruent tradeoff; otherwise, use incongruent.
+                        if reward_diff*UCB_diff > 0:
+                            ucb_rdiff_tradeoff = congruent_ucb_rdiff_tradeoff_h6
+                        else:
+                            ucb_rdiff_tradeoff = incongruent_ucb_rdiff_tradeoff_h6
+                        
+                    drift_value = ((1-ucb_rdiff_tradeoff)*baseline_rdiff_mod_drift*reward_diff) + (ucb_rdiff_tradeoff*UCB_diff)
 
                     # decision_noise = total_uncertainty[game_num,trial_num]*baseline_noise*RE
 
                     # Transform the starting position value so it's between -1 and 1. May want to smooth out function
                     starting_position_value =  np.tanh(((reward_diff*(baseline_rdiff_mod_bias + h6_rdiff_mod_bias*(num_trials_left-1))) + side_bias)/1)
 
-                    bound_value = bound_intercept + bound_slope_mod * np.log10(trial['gameLength'] - num_trials_left-3) # Calculate bound value based on current trial number (trial['gameLength'] - num_trials_left -3)
+                    bound_value = bound_intercept + bound_slope_mod * (num_trials_left-1) # Calculate bound value based on current trial number (trial['gameLength'] - num_trials_left -3)
                     # Calculate bound value based on current trial number (trial['gameLength'] - num_trials_left -3) 
                     #bound_value = bound_intercept - bound_slope_mod*np.log(trial['gameLength'] - num_trials_left -3) 
 
@@ -224,6 +243,10 @@ def KF_DDM_model(sample,model,fit_or_sim, sim_using_max_pdf=False):
                         simulated_trial = data[(data["game_number"] == game_numbers[game_num]) & (data["trial"] == trial.trial)] 
                         trial = simulated_trial.squeeze() # Convert the dataframe to a series
 
+                    # Record the entropy of the reaction time and choice pdf for the trial
+                    # Add a small value to avoid log(0)
+                    rt_pdf_entropy[game_num, trial_num] = (-np.sum(sol.pdf("left") * np.log(sol.pdf("left") + eps)) * sol.dt ) + (-np.sum(sol.pdf("right") * np.log(sol.pdf("right") + eps)) * sol.dt) + (-sol.prob_undecided() * np.log(sol.prob_undecided() + eps))
+
                 # left option chosen so mu1 updates
                 if trial['choice'] == 0:
                     # save relative uncertainty of choice
@@ -307,6 +330,7 @@ def KF_DDM_model(sample,model,fit_or_sim, sim_using_max_pdf=False):
         "predicted_RT": predicted_RT,
         "abs_error_RT": abs_error_RT,
         "rdiff_chosen_opt":rdiff_chosen_opt, # Reward difference of the chosen option
+        "rt_pdf_entropy": rt_pdf_entropy, # Entropy of the reaction time and choice pdf
         # "jsd_diff_chosen_opt":jsd_diff_chosen_opt, # JSD difference of the chosen option
         "data": data,
     }

@@ -66,19 +66,21 @@ else:
     number_samples_to_sim = 1
 
 base_params = dict(
-    baseline_rdiff_mod_drift = .50, # so baseline_rdiff_mod_drift / total uncert (approx 6.3) = .08
-    h6_rdiff_mod_drift = -.002, # -0.0012, # to get rdiff mod .05 on the first free choice of H5
-    baseline_rdiff_mod_bias = .018,
-    h6_rdiff_mod_bias = -.002, # to get rdiff .01 on the first free choice of H5
-    baseline_info_bonus = -.05,
-    h6_info_bonus = .14, # to get info bonus of 0.5 on the first free choice of H5
+    congruent_ucb_rdiff_tradeoff_h6 = .05, # 
+    incongruent_ucb_rdiff_tradeoff_h6 = .08, # 
+    baseline_rdiff_mod_drift = .1,
+    h6_rdiff_mod_drift = 0,
+    baseline_rdiff_mod_bias = 0,
+    h6_rdiff_mod_bias = 0, # to get rdiff .01 on the first free choice of H5
+    baseline_info_bonus = 0,
+    h6_info_bonus = 0, # to get info bonus of 0.5 on the first free choice of H5
     baseline_thompson_wght = 0, # This param doesn't do anything in the current model
     h6_thompson_wght = 0, # This param doesn't do anything in the current model
-    sigma_d = 2,
-    sigma_r = 5,
+    sigma_d = 0,
+    sigma_r = 8,
     side_bias = 0,
     bound_intercept = 2.5,
-    bound_slope_mod = -2, # to get 2.46 on first free choice of H5
+    bound_slope_mod = .0, # to get 2.46 on first free choice of H5
     nondecision_time = .05,
 )
 
@@ -87,7 +89,7 @@ base_params = dict(
 if run_param_sweep:
     param_name   = "sigma_r"            # specify the parameter to sweep while holding others constant
     param_vals   = np.linspace(4, 16, 2)            # set the range of parameters to sweep for the parameter param_name
-    trial_idx  = 5
+    trial_idx  = 5 # Choice number (5 to 9)
 
 
 settings["plot_jsd"] = plot_jsd # Set the settings for the model to plot JSD or not

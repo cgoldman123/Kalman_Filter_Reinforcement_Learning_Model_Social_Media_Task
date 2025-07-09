@@ -7,7 +7,7 @@ function [output_table] = Social_wrapper(varargin)
     SIM = 0; % Simulate the model
     FIT = 1; % Fit the model
     if FIT
-        MDP.get_rts_and_dont_fit_model = 1; % Toggle on to extract the rts and not fit the model
+        MDP.get_rts_and_dont_fit_model = 0; % Toggle on to extract the rts and not fit the model
         MDP.do_model_free = 1; % Toggle on to do model-free analyses on actual data
         MDP.fit_model = 1; % Toggle on to fit the model
         if MDP.fit_model
@@ -27,7 +27,7 @@ function [output_table] = Social_wrapper(varargin)
     
     dbstop if error
     if ispc
-        fitting_procedure = "SPM"; % Specify fitting procedure as "SPM", "VBA", or "PYDDM"
+        fitting_procedure = "PYDDM"; % Specify fitting procedure as "SPM", "VBA", or "PYDDM"
         root = 'L:/';
         experiment = 'prolific'; % indicate local or prolific
         results_dir = sprintf([root 'rsmith/lab-members/cgoldman/Wellbeing/social_media/output/test/']);
@@ -43,7 +43,7 @@ function [output_table] = Social_wrapper(varargin)
         % fitting with PYDDM, you'll have to set the bounds for each parameter
         % in the fitting file.
         if strcmp(fitting_procedure, "PYDDM")
-            MDP.settings = 'Use JSD; fit all RTs';
+            MDP.settings = 'Use JSD; fit all RTs'; %(e.g., "Use_JSD_fit_all_RTs", "Use_JSD_fit_3_RTs", "Use_z_score_fit_all_RTs", "Use_z_score_fit_3_RTs")
         elseif ~strcmp(fitting_procedure, "PYDDM")
             model = "KF_SIGMA_DDM"; % indicate if 'KF_UCB', 'RL', 'KF_UCB_DDM', 'KF_SIGMA_DDM', 'KF_SIGMA'
             MDP.field = {'baseline_noise','side_bias','directed_exp','baseline_info_bonus','random_exp','sigma_d', 'sigma_r'};
