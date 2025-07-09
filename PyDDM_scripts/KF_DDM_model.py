@@ -119,7 +119,7 @@ def KF_DDM_model(sample,model,fit_or_sim, sim_using_max_pdf=False):
                         else:
                             ucb_rdiff_tradeoff = incongruent_ucb_rdiff_tradeoff_h6
                         
-                    drift_value = ((1-ucb_rdiff_tradeoff)*baseline_rdiff_mod_drift*reward_diff) + (ucb_rdiff_tradeoff*UCB_diff)
+                    drift_value = ((1-ucb_rdiff_tradeoff)*baseline_rdiff_mod_drift*reward_diff/num_trials_left) + (ucb_rdiff_tradeoff*UCB_diff/num_trials_left)
 
                     # decision_noise = total_uncertainty[game_num,trial_num]*baseline_noise*RE
 

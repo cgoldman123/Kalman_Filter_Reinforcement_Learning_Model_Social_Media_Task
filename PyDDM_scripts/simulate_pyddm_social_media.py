@@ -80,7 +80,7 @@ base_params = dict(
     sigma_r = 8,
     side_bias = 0,
     bound_intercept = 2.5,
-    bound_slope_mod = .0, # to get 2.46 on first free choice of H5
+    bound_slope_mod = -.1, 
     nondecision_time = .05,
 )
 
