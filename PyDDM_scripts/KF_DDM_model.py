@@ -31,18 +31,22 @@ def KF_DDM_model(sample,model,fit_or_sim, sim_using_max_pdf=False):
 
     game_numbers = data['game_number'].unique()
 
+
+    baseline_rdiff_mod_drift = model.get_dependence("drift").baseline_rdiff_mod_drift
+    random_exp = model.get_dependence("drift").random_exp
     bound_intercept = model.get_dependence("drift").bound_intercept
-    bound_slope_mod = model.get_dependence("drift").bound_slope_mod
-    baseline_rdiff_mod_bias = model.get_dependence("drift").baseline_rdiff_mod_bias
+    bound_shift = model.get_dependence("drift").bound_shift
     baseline_noise = model.get_dependence("drift").baseline_noise
-    congruent_ucb_rdiff_tradeoff_h6 = model.get_dependence("drift").congruent_ucb_rdiff_tradeoff_h6
-    incongruent_ucb_rdiff_tradeoff_h6 = model.get_dependence("drift").incongruent_ucb_rdiff_tradeoff_h6
-    h6_rdiff_mod_bias = model.get_dependence("drift").h6_rdiff_mod_bias
-    congruent_ucb_rdiff_tradeoff_h1 = model.get_dependence("drift").congruent_ucb_rdiff_tradeoff_h1
-    incongruent_ucb_rdiff_tradeoff_h1 = model.get_dependence("drift").incongruent_ucb_rdiff_tradeoff_h1
+    congruent_DE = model.get_dependence("drift").congruent_DE
+    incongruent_DE = model.get_dependence("drift").incongruent_DE
+    congruent_baseline_info_bonus = model.get_dependence("drift").congruent_baseline_info_bonus
+    incongruent_baseline_info_bonus = model.get_dependence("drift").incongruent_baseline_info_bonus
     sigma_d = model.get_dependence("drift").sigma_d
     sigma_r = model.get_dependence("drift").sigma_r
     side_bias = model.get_dependence("drift").side_bias
+    baseline_rdiff_mod_bias = model.get_dependence("drift").baseline_rdiff_mod_bias
+    h5_rdiff_mod_bias = model.get_dependence("drift").h5_rdiff_mod_bias
+
     
 
     # Initialize variables to hold output
@@ -105,29 +109,22 @@ def KF_DDM_model(sample,model,fit_or_sim, sim_using_max_pdf=False):
                     # drift_value = reward_diff*(baseline_rdiff_mod_drift/total_uncert + total_uncert*h6_rdiff_mod_drift*(num_trials_left-1)) + relative_uncertainty*(baseline_info_bonus + h6_info_bonus*(num_trials_left-1))
                     # drift_value = reward_diff*baseline_rdiff_mod_drift/num_trials_left
                     
-                    # In H1, the drift value is based on reward difference but not UCB
-                    if trial['gameLength'] == 5:
-                        # If both reward difference and UCB difference push in same direction, use the congruent tradeoff; otherwise, use incongruent.
-                        if reward_diff*UCB_diff > 0:
-                            ucb_rdiff_tradeoff = congruent_ucb_rdiff_tradeoff_h1
-                        else:
-                            ucb_rdiff_tradeoff = incongruent_ucb_rdiff_tradeoff_h1
-                    # In H5, the drift value is based on reward difference and UCB
-                    elif trial['gameLength'] == 9:
-                        # If both reward difference and UCB difference push in same direction, use the congruent tradeoff; otherwise, use incongruent.
-                        if reward_diff*UCB_diff > 0:
-                            ucb_rdiff_tradeoff = congruent_ucb_rdiff_tradeoff_h6
-                        else:
-                            ucb_rdiff_tradeoff = incongruent_ucb_rdiff_tradeoff_h6
-                        
-                    drift_value = (((1-ucb_rdiff_tradeoff)*reward_diff) + (ucb_rdiff_tradeoff*UCB_diff))/(baseline_noise*total_uncert*num_trials_left)
+
+                    # If both reward difference and UCB difference push in same direction, use the congruent tradeoff; otherwise, use incongruent.
+                    if (reward_diff*relative_uncertainty > 0):
+                        rel_uncert_scaler = (np.exp(num_trials_left-1)-1)*incongruent_DE+ incongruent_baseline_info_bonus
+                    else:
+                        rel_uncert_scaler = (np.exp(num_trials_left-1)-1)*congruent_DE+ congruent_baseline_info_bonus
+                    # drift_value = ((reward_diff) + (ucb_rdiff_tradeoff*UCB_diff))/(baseline_noise*total_uncert*num_trials_left)
+                    # drift_value = reward_diff + (ucb_rdiff_tradeoff*UCB_diff)
+                    drift_value = (baseline_rdiff_mod_drift*reward_diff + (rel_uncert_scaler*relative_uncertainty))/(baseline_noise*total_uncert*np.exp((num_trials_left-1)*random_exp))
 
                     # decision_noise = total_uncertainty[game_num,trial_num]*baseline_noise*RE
 
                     # Transform the starting position value so it's between -1 and 1. May want to smooth out function
-                    starting_position_value =  np.tanh(((reward_diff*(baseline_rdiff_mod_bias + h6_rdiff_mod_bias*(num_trials_left-1))) + side_bias)/1)
+                    starting_position_value =  np.tanh(((reward_diff*(baseline_rdiff_mod_bias + h5_rdiff_mod_bias*(num_trials_left-1))) + side_bias)/1)
 
-                    bound_value = bound_intercept + bound_slope_mod * (num_trials_left-1) # Calculate bound value based on current trial number (trial['gameLength'] - num_trials_left -3)
+                    bound_value = bound_intercept + bound_shift * (num_trials_left-1) # Calculate bound value based on current trial number (trial['gameLength'] - num_trials_left -3)
                     # Calculate bound value based on current trial number (trial['gameLength'] - num_trials_left -3) 
                     #bound_value = bound_intercept - bound_slope_mod*np.log(trial['gameLength'] - num_trials_left -3) 
 

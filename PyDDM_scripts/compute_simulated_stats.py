@@ -36,7 +36,7 @@ def compute_stats_for_specific_horizon_and_choice(sim_data: pd.DataFrame,
                     .agg(left_mean=('left_bandit_outcome',  'mean'),
                         right_mean=('right_bandit_outcome', 'mean')))
             # calculate the reward difference between the left and right options, rounding to nearest integer
-            means["reward_diff"] = np.round(means.left_mean - means.right_mean,0)
+            means["reward_diff"] = np.round( means.right_mean - means.left_mean,0)
             # label which option has the higher mean as 1 (right) or 0 (left)
             means["better_side"] = np.where(means.left_mean  > means.right_mean, 0,
                                 np.where(means.right_mean > means.left_mean, 1, np.nan))
@@ -263,7 +263,7 @@ def stats_simulate_parameter_sweep(sample,
             params = base_params.copy()   # keep original intact
             params[param_name] = v        # overwrite the swept key
 
-            model = pyddm.gddm(drift=lambda bound_intercept, baseline_noise, baseline_rdiff_mod_bias, h6_rdiff_mod_bias, congruent_ucb_rdiff_tradeoff_h6, incongruent_ucb_rdiff_tradeoff_h6 ,sigma_d,sigma_r, congruent_ucb_rdiff_tradeoff_h1, incongruent_ucb_rdiff_tradeoff_h1,side_bias, bound_slope_mod, drift_value : drift_value,
+            model = pyddm.gddm(drift=lambda baseline_rdiff_mod_drift, random_exp, bound_intercept, bound_shift, baseline_noise, congruent_DE, incongruent_DE, congruent_baseline_info_bonus, incongruent_baseline_info_bonus, sigma_d, sigma_r, side_bias, baseline_rdiff_mod_bias, h5_rdiff_mod_bias, drift_value : drift_value,
                           starting_position=lambda starting_position_value: starting_position_value, 
                           noise=1.0,     bound=lambda bound_value: max(bound_value, eps),
                           nondecision="nondecision_time",
@@ -302,7 +302,7 @@ def stats_simulate_one_parameter_set(base_params: dict, game_len,trial_idx, sett
     model_free_across_horizons_and_choices = []
     model_free_for_specific_horizon_and_choice = []
     for _ in range(number_samples_to_sim):
-        model = pyddm.gddm(drift=lambda bound_intercept, baseline_noise, baseline_rdiff_mod_bias, h6_rdiff_mod_bias, congruent_ucb_rdiff_tradeoff_h6, incongruent_ucb_rdiff_tradeoff_h6 ,sigma_d,sigma_r, congruent_ucb_rdiff_tradeoff_h1, incongruent_ucb_rdiff_tradeoff_h1,side_bias, bound_slope_mod, drift_value : drift_value,
+        model = pyddm.gddm(drift=lambda baseline_rdiff_mod_drift, random_exp, bound_intercept, bound_shift, baseline_noise, congruent_DE, incongruent_DE, congruent_baseline_info_bonus, incongruent_baseline_info_bonus, sigma_d, sigma_r, side_bias, baseline_rdiff_mod_bias, h5_rdiff_mod_bias, drift_value : drift_value,
                           starting_position=lambda starting_position_value: starting_position_value, 
                           noise=1.0,     bound=lambda bound_value: max(bound_value, eps),
                           nondecision="nondecision_time",

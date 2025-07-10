@@ -66,20 +66,26 @@ else:
     number_samples_to_sim = 1
 
 base_params = dict(
+    baseline_rdiff_mod_drift = .1,
+    random_exp = .1,
+    bound_intercept = 2.5,
+    bound_shift = 0,
     baseline_noise = 1,
-    congruent_ucb_rdiff_tradeoff_h1 = .05, # 
-    incongruent_ucb_rdiff_tradeoff_h1 = .05, # 
-    congruent_ucb_rdiff_tradeoff_h6 = .05, # 
-    incongruent_ucb_rdiff_tradeoff_h6 = .08, # 
-    baseline_rdiff_mod_bias = 0,
-    h6_rdiff_mod_bias = 0, # to get rdiff .01 on the first free choice of H5
+    congruent_DE = .05,
+    incongruent_DE = .05,
+    congruent_baseline_info_bonus = .1,
+    incongruent_baseline_info_bonus = .1,
     sigma_d = 0,
     sigma_r = 8,
     side_bias = 0,
-    bound_intercept = 2.5,
-    bound_slope_mod = -.1, 
-    nondecision_time = .05,
+    baseline_rdiff_mod_bias = 0,
+    h5_rdiff_mod_bias = 0,
+    nondecision_time = 0.05, 
 )
+
+
+ 
+
 
 ###############################
 
