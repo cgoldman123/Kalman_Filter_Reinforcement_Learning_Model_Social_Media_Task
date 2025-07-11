@@ -32,7 +32,6 @@ def KF_DDM_model(sample,model,fit_or_sim, sim_using_max_pdf=False):
     game_numbers = data['game_number'].unique()
 
 
-    baseline_rdiff_mod_drift = model.get_dependence("drift").baseline_rdiff_mod_drift
     random_exp = model.get_dependence("drift").random_exp
     bound_intercept = model.get_dependence("drift").bound_intercept
     bound_shift = model.get_dependence("drift").bound_shift
@@ -111,22 +110,19 @@ def KF_DDM_model(sample,model,fit_or_sim, sim_using_max_pdf=False):
                     
 
                     # If both reward difference and UCB difference push in same direction, use the congruent tradeoff; otherwise, use incongruent.
-                    if (reward_diff*relative_uncertainty > 0):
-                        rel_uncert_scaler = (np.exp(num_trials_left-1)-1)*incongruent_DE+ incongruent_baseline_info_bonus
-                    else:
+                    if (reward_diff*relative_uncertainty >= 0):
                         rel_uncert_scaler = (np.exp(num_trials_left-1)-1)*congruent_DE+ congruent_baseline_info_bonus
-                    # drift_value = ((reward_diff) + (ucb_rdiff_tradeoff*UCB_diff))/(baseline_noise*total_uncert*num_trials_left)
-                    # drift_value = reward_diff + (ucb_rdiff_tradeoff*UCB_diff)
-                    drift_value = (baseline_rdiff_mod_drift*reward_diff + (rel_uncert_scaler*relative_uncertainty))/(baseline_noise*total_uncert*np.exp((num_trials_left-1)*random_exp))
+                    else:
+                        rel_uncert_scaler = (np.exp(num_trials_left-1)-1)*incongruent_DE+ incongruent_baseline_info_bonus
 
-                    # decision_noise = total_uncertainty[game_num,trial_num]*baseline_noise*RE
 
-                    # Transform the starting position value so it's between -1 and 1. May want to smooth out function
-                    starting_position_value =  np.tanh(((reward_diff*(baseline_rdiff_mod_bias + h5_rdiff_mod_bias*(num_trials_left-1))) + side_bias)/1)
+                    drift_value = (reward_diff + (rel_uncert_scaler*relative_uncertainty))/np.log1p(np.exp(baseline_noise + total_uncert*(num_trials_left-1)*random_exp))
+ 
+                    starting_position_value = side_bias
+ 
+                    bound_value = bound_intercept - (bound_shift/total_uncert) # Calculate bound value based on current trial number (trial['gameLength'] - num_trials_left -3)
 
-                    bound_value = bound_intercept + bound_shift * (num_trials_left-1) # Calculate bound value based on current trial number (trial['gameLength'] - num_trials_left -3)
-                    # Calculate bound value based on current trial number (trial['gameLength'] - num_trials_left -3) 
-                    #bound_value = bound_intercept - bound_slope_mod*np.log(trial['gameLength'] - num_trials_left -3) 
+
 
                     if fit_or_sim == "fit":
                         choice = "left" if trial['choice'] == 0 else "right"

@@ -66,26 +66,24 @@ else:
     number_samples_to_sim = 1
 
 base_params = dict(
-    baseline_rdiff_mod_drift = .1,
-    random_exp = .1,
+    random_exp = 0.01,
     bound_intercept = 2.5,
-    bound_shift = 0,
-    baseline_noise = 1,
-    congruent_DE = .05,
-    incongruent_DE = .05,
-    congruent_baseline_info_bonus = .1,
-    incongruent_baseline_info_bonus = .1,
+    bound_shift = 16,
+    baseline_noise = 2,
+    congruent_DE = .01,
+    incongruent_DE = 0.035,
+    congruent_baseline_info_bonus = 0,
+    incongruent_baseline_info_bonus = 0,
     sigma_d = 0,
     sigma_r = 8,
     side_bias = 0,
     baseline_rdiff_mod_bias = 0,
     h5_rdiff_mod_bias = 0,
-    nondecision_time = 0.05, 
+    nondecision_time = 0.05,
 )
-
-
  
-
+ 
+ 
 
 ###############################
 
@@ -96,58 +94,56 @@ if run_param_sweep:
 
 
 settings["plot_jsd"] = plot_jsd # Set the settings for the model to plot JSD or not
+
+
 if run_one_param_set:
-    game_len   = [5, 9]                               # specify the game length to use ([5,9] )
-    trial_idx  = 5                               # specify the trial index to use (5, 6, 7, etc.)
+    game_len   = [9]                               # specify the game length to use in the reward difference plots ([5,9] )
+    trial_idx  = 9                                 # specify the trial index to use (5, 6, 7, etc.)
     # ==================================================================
     results = stats_simulate_one_parameter_set(base_params, game_len,trial_idx,settings, social_media_sample, sim_using_max_pdf, number_samples_to_sim)
 
     ### Plot mean RT by reward difference and horizon ###
     plt.figure()
-    summary_h1 = results['avg_rt_by_reward_diff_game_len_5']
-    # summary_h1['reward_diff'] = summary_h1.index
-
-    plt.errorbar(summary_h1['reward_diff'], summary_h1['mean_RT_reward_diff'], yerr=summary_h1['std_RT_reward_diff'],
-                 fmt='o-', color="blue",capsize=4, label="H1")
-    summary_h5 = results['avg_rt_by_reward_diff_game_len_9']
-    plt.errorbar(summary_h5['reward_diff'], summary_h5['mean_RT_reward_diff'], yerr=summary_h5['std_RT_reward_diff'],
-                 fmt='o-', color="red",capsize=4, label="H5")
+    if 5 in game_len:
+        summary_h1 = results['avg_rt_by_reward_diff_game_len_5']
+        plt.errorbar(summary_h1['reward_diff'], summary_h1['mean_RT_reward_diff'], yerr=summary_h1['std_RT_reward_diff'],
+                    fmt='o-', color="blue",capsize=4, label="H1")
+    if 9 in game_len:
+        summary_h5 = results['avg_rt_by_reward_diff_game_len_9']
+        plt.errorbar(summary_h5['reward_diff'], summary_h5['mean_RT_reward_diff'], yerr=summary_h5['std_RT_reward_diff'],
+                    fmt='o-', color="red",capsize=4, label="H5")
     plt.xlabel('Reward Difference')
     plt.ylabel('Mean RT')
-    plt.title('Mean RT by Reward Difference for the First Free Choice')
+    plt.title(f'Mean RT by Reward Difference for free choice {trial_idx}')
     plt.grid(True)
     plt.legend()  
     plt.show(block=False)
-    # get mean RT for reward differences of absolute value 2 or 4 for each horizon
-    h1_reward_diff_2_or_4 = summary_h1.loc[[2.0, -2.0, 4.0, -4.0], 'mean_RT_reward_diff'].mean()
-    h5_reward_diff_2_or_4 = summary_h5.loc[[2.0, -2.0, 4.0, -4.0], 'mean_RT_reward_diff'].mean()
-    h1_reward_diff_12_or_24 = summary_h1.loc[[12.0, -12.0, 24.0, -24.0], 'mean_RT_reward_diff'].mean()
-    h5_reward_diff_12_or_24 = summary_h5.loc[[12.0, -12.0, 24.0, -24.0], 'mean_RT_reward_diff'].mean()
+
 
 
 
 
     ### Plot mean RT by reward difference for high - low info options and horizon ###
     plt.figure()
-    summary_h1 = results['avg_rt_by_reward_diff_game_len_5']
-    # summary_h1['reward_diff'] = summary_h1.index
-
-    plt.errorbar(summary_h1['reward_diff'], summary_h1['mean_RT_reward_diff_high_info_minus_low_info'], yerr=summary_h1['std_RT_reward_diff_high_info_minus_low_info'],
-                 fmt='o-', color="blue",capsize=4, label="H1")
-    summary_h5 = results['avg_rt_by_reward_diff_game_len_9']
-    plt.errorbar(summary_h5['reward_diff'], summary_h5['mean_RT_reward_diff_high_info_minus_low_info'], yerr=summary_h5['std_RT_reward_diff_high_info_minus_low_info'],
+    if 5 in game_len:
+        summary_h1 = results['avg_rt_by_reward_diff_game_len_5']
+        plt.errorbar(summary_h1['reward_diff'], summary_h1['mean_RT_reward_diff_high_info_minus_low_info'], yerr=summary_h1['std_RT_reward_diff_high_info_minus_low_info'],
+                    fmt='o-', color="blue",capsize=4, label="H1")
+    if 9 in game_len:
+        summary_h5 = results['avg_rt_by_reward_diff_game_len_9']
+        plt.errorbar(summary_h5['reward_diff'], summary_h5['mean_RT_reward_diff_high_info_minus_low_info'], yerr=summary_h5['std_RT_reward_diff_high_info_minus_low_info'],
                  fmt='o-', color="red",capsize=4, label="H5")
     plt.xlabel('Reward Difference')
     plt.ylabel('Mean RT')
-    plt.title('Mean RT by Reward Difference for high - low info option the First Free Choice')
+    plt.title(f'Mean RT by Reward Difference for high - low info option for free choice {trial_idx}')
     plt.grid(True)
     plt.legend()  
     plt.show(block=False)
     # get mean RT for reward differences of absolute value 2 or 4 for each horizon
-    h1_reward_diff_2_or_4 = summary_h1.loc[[2.0, -2.0, 4.0, -4.0], 'mean_RT_reward_diff_high_info_minus_low_info'].mean()
-    h5_reward_diff_2_or_4 = summary_h5.loc[[2.0, -2.0, 4.0, -4.0], 'mean_RT_reward_diff_high_info_minus_low_info'].mean()
-    h1_reward_diff_12_or_24 = summary_h1.loc[[12.0, -12.0, 24.0, -24.0], 'mean_RT_reward_diff_high_info_minus_low_info'].mean()
-    h5_reward_diff_12_or_24 = summary_h5.loc[[12.0, -12.0, 24.0, -24.0], 'mean_RT_reward_diff_high_info_minus_low_info'].mean()
+    # h1_reward_diff_2_or_4 = summary_h1.loc[[2.0, -2.0, 4.0, -4.0], 'mean_RT_reward_diff_high_info_minus_low_info'].mean()
+    # h5_reward_diff_2_or_4 = summary_h5.loc[[2.0, -2.0, 4.0, -4.0], 'mean_RT_reward_diff_high_info_minus_low_info'].mean()
+    # h1_reward_diff_12_or_24 = summary_h1.loc[[12.0, -12.0, 24.0, -24.0], 'mean_RT_reward_diff_high_info_minus_low_info'].mean()
+    # h5_reward_diff_12_or_24 = summary_h5.loc[[12.0, -12.0, 24.0, -24.0], 'mean_RT_reward_diff_high_info_minus_low_info'].mean()
 
 
 

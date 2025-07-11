@@ -263,7 +263,7 @@ def stats_simulate_parameter_sweep(sample,
             params = base_params.copy()   # keep original intact
             params[param_name] = v        # overwrite the swept key
 
-            model = pyddm.gddm(drift=lambda baseline_rdiff_mod_drift, random_exp, bound_intercept, bound_shift, baseline_noise, congruent_DE, incongruent_DE, congruent_baseline_info_bonus, incongruent_baseline_info_bonus, sigma_d, sigma_r, side_bias, baseline_rdiff_mod_bias, h5_rdiff_mod_bias, drift_value : drift_value,
+            model = pyddm.gddm(drift=lambda random_exp, bound_intercept, bound_shift, baseline_noise, congruent_DE, incongruent_DE, congruent_baseline_info_bonus, incongruent_baseline_info_bonus, sigma_d, sigma_r, side_bias, baseline_rdiff_mod_bias, h5_rdiff_mod_bias, drift_value : drift_value,
                           starting_position=lambda starting_position_value: starting_position_value, 
                           noise=1.0,     bound=lambda bound_value: max(bound_value, eps),
                           nondecision="nondecision_time",
@@ -302,7 +302,7 @@ def stats_simulate_one_parameter_set(base_params: dict, game_len,trial_idx, sett
     model_free_across_horizons_and_choices = []
     model_free_for_specific_horizon_and_choice = []
     for _ in range(number_samples_to_sim):
-        model = pyddm.gddm(drift=lambda baseline_rdiff_mod_drift, random_exp, bound_intercept, bound_shift, baseline_noise, congruent_DE, incongruent_DE, congruent_baseline_info_bonus, incongruent_baseline_info_bonus, sigma_d, sigma_r, side_bias, baseline_rdiff_mod_bias, h5_rdiff_mod_bias, drift_value : drift_value,
+        model = pyddm.gddm(drift=lambda random_exp, bound_intercept, bound_shift, baseline_noise, congruent_DE, incongruent_DE, congruent_baseline_info_bonus, incongruent_baseline_info_bonus, sigma_d, sigma_r, side_bias, baseline_rdiff_mod_bias, h5_rdiff_mod_bias, drift_value : drift_value,
                           starting_position=lambda starting_position_value: starting_position_value, 
                           noise=1.0,     bound=lambda bound_value: max(bound_value, eps),
                           nondecision="nondecision_time",
@@ -324,54 +324,60 @@ def stats_simulate_one_parameter_set(base_params: dict, game_len,trial_idx, sett
         model_free_for_specific_horizon_and_choice.append(compute_stats_for_specific_horizon_and_choice(sim_data,game_len,trial_idx))
         ###### H1 ######
         #### Extract each RT-by-reward-difference DataFrame from mvals
-        dfs_rt_by_reward_diff_game_len_5 = [
-            d["avg_rt_by_reward_diff_game_len_5"].rename("RT_reward_diff")
-            for d in model_free_for_specific_horizon_and_choice
-        ]
-        #### Extract each RT-by-reward-difference for high-low info option DataFrame from mvals
-        dfs_rt_by_reward_diff_for_high_info_minus_low_info_game_len_5 = [
-            d["avg_rt_by_reward_diff_for_high_info_minus_low_info_game_len_5"].rename("RT_reward_diff_high_info_minus_low_info")
-            for d in model_free_for_specific_horizon_and_choice
-        ]
+        if 5 in game_len:
+            dfs_rt_by_reward_diff_game_len_5 = [
+                d["avg_rt_by_reward_diff_game_len_5"].rename("RT_reward_diff")
+                for d in model_free_for_specific_horizon_and_choice
+            ]
+            #### Extract each RT-by-reward-difference for high-low info option DataFrame from mvals
+            dfs_rt_by_reward_diff_for_high_info_minus_low_info_game_len_5 = [
+                d["avg_rt_by_reward_diff_for_high_info_minus_low_info_game_len_5"].rename("RT_reward_diff_high_info_minus_low_info")
+                for d in model_free_for_specific_horizon_and_choice
+            ]
 
-        # Combine the Series into two DataFrames
-        df_rt_diff = pd.concat(dfs_rt_by_reward_diff_game_len_5, axis=1)
-        df_hi_minus_li = pd.concat(dfs_rt_by_reward_diff_for_high_info_minus_low_info_game_len_5, axis=1)
+            # Combine the Series into two DataFrames
+            df_rt_diff = pd.concat(dfs_rt_by_reward_diff_game_len_5, axis=1)
+            df_hi_minus_li = pd.concat(dfs_rt_by_reward_diff_for_high_info_minus_low_info_game_len_5, axis=1)
 
-        # Compute summary stats
-        rt_by_reward_diff_summary_game_len_5 = pd.DataFrame({
-            "reward_diff": df_rt_diff.index,
-            "mean_RT_reward_diff": df_rt_diff.mean(axis=1),
-            "std_RT_reward_diff": df_rt_diff.std(axis=1),
-            "mean_RT_reward_diff_high_info_minus_low_info": df_hi_minus_li.mean(axis=1),
-            "std_RT_reward_diff_high_info_minus_low_info": df_hi_minus_li.std(axis=1)
-        })
+            # Compute summary stats
+            rt_by_reward_diff_summary_game_len_5 = pd.DataFrame({
+                "reward_diff": df_rt_diff.index,
+                "mean_RT_reward_diff": df_rt_diff.mean(axis=1),
+                "std_RT_reward_diff": df_rt_diff.std(axis=1),
+                "mean_RT_reward_diff_high_info_minus_low_info": df_hi_minus_li.mean(axis=1),
+                "std_RT_reward_diff_high_info_minus_low_info": df_hi_minus_li.std(axis=1)
+            })
+        else:
+            rt_by_reward_diff_summary_game_len_5 = np.nan
 
 
         ###### H5 ######
         #### Extract each RT-by-reward-difference DataFrame from mvals
-        dfs_rt_by_reward_diff_game_len_9 = [
-            d["avg_rt_by_reward_diff_game_len_9"].rename("RT_reward_diff")
-            for d in model_free_for_specific_horizon_and_choice
-        ]
-        #### Extract each RT-by-reward-difference for high-low info option DataFrame from mvals
-        dfs_rt_by_reward_diff_for_high_info_minus_low_info_game_len_9 = [
-            d["avg_rt_by_reward_diff_for_high_info_minus_low_info_game_len_9"].rename("RT_reward_diff_high_info_minus_low_info")
-            for d in model_free_for_specific_horizon_and_choice
-        ]
+        if 9 in game_len:
+            dfs_rt_by_reward_diff_game_len_9 = [
+                d["avg_rt_by_reward_diff_game_len_9"].rename("RT_reward_diff")
+                for d in model_free_for_specific_horizon_and_choice
+            ]
+            #### Extract each RT-by-reward-difference for high-low info option DataFrame from mvals
+            dfs_rt_by_reward_diff_for_high_info_minus_low_info_game_len_9 = [
+                d["avg_rt_by_reward_diff_for_high_info_minus_low_info_game_len_9"].rename("RT_reward_diff_high_info_minus_low_info")
+                for d in model_free_for_specific_horizon_and_choice
+            ]
 
-        # Combine the Series into two DataFrames
-        df_rt_diff = pd.concat(dfs_rt_by_reward_diff_game_len_9, axis=1)
-        df_hi_minus_li = pd.concat(dfs_rt_by_reward_diff_for_high_info_minus_low_info_game_len_9, axis=1)
+            # Combine the Series into two DataFrames
+            df_rt_diff = pd.concat(dfs_rt_by_reward_diff_game_len_9, axis=1)
+            df_hi_minus_li = pd.concat(dfs_rt_by_reward_diff_for_high_info_minus_low_info_game_len_9, axis=1)
 
-        # Compute summary stats
-        rt_by_reward_diff_summary_game_len_9 = pd.DataFrame({
-            "reward_diff": df_rt_diff.index,
-            "mean_RT_reward_diff": df_rt_diff.mean(axis=1),
-            "std_RT_reward_diff": df_rt_diff.std(axis=1),
-            "mean_RT_reward_diff_high_info_minus_low_info": df_hi_minus_li.mean(axis=1),
-            "std_RT_reward_diff_high_info_minus_low_info": df_hi_minus_li.std(axis=1)
-        })
+            # Compute summary stats
+            rt_by_reward_diff_summary_game_len_9 = pd.DataFrame({
+                "reward_diff": df_rt_diff.index,
+                "mean_RT_reward_diff": df_rt_diff.mean(axis=1),
+                "std_RT_reward_diff": df_rt_diff.std(axis=1),
+                "mean_RT_reward_diff_high_info_minus_low_info": df_hi_minus_li.mean(axis=1),
+                "std_RT_reward_diff_high_info_minus_low_info": df_hi_minus_li.std(axis=1)
+            })
+        else:
+            rt_by_reward_diff_summary_game_len_9 = np.nan
 
 
 
