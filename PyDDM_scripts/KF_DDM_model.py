@@ -35,15 +35,15 @@ def KF_DDM_model(sample,model,fit_or_sim, sim_using_max_pdf=False):
     random_exp = model.get_dependence("drift").random_exp
     bound_intercept = model.get_dependence("drift").bound_intercept
     bound_shift = model.get_dependence("drift").bound_shift
-    baseline_noise = model.get_dependence("drift").baseline_noise
-    congruent_DE = model.get_dependence("drift").congruent_DE
-    incongruent_DE = model.get_dependence("drift").incongruent_DE
-    congruent_baseline_info_bonus = model.get_dependence("drift").congruent_baseline_info_bonus
-    incongruent_baseline_info_bonus = model.get_dependence("drift").incongruent_baseline_info_bonus
+    base_noise = model.get_dependence("drift").base_noise
+    cong_DE = model.get_dependence("drift").cong_DE
+    incong_DE = model.get_dependence("drift").incong_DE
+    cong_base_info_bonus = model.get_dependence("drift").cong_base_info_bonus
+    incong_base_info_bonus = model.get_dependence("drift").incong_base_info_bonus
     sigma_d = model.get_dependence("drift").sigma_d
     sigma_r = model.get_dependence("drift").sigma_r
     side_bias = model.get_dependence("drift").side_bias
-    baseline_rdiff_mod_bias = model.get_dependence("drift").baseline_rdiff_mod_bias
+    base_rdiff_mod_bias = model.get_dependence("drift").base_rdiff_mod_bias
     h5_rdiff_mod_bias = model.get_dependence("drift").h5_rdiff_mod_bias
 
     
@@ -105,18 +105,18 @@ def KF_DDM_model(sample,model,fit_or_sim, sim_using_max_pdf=False):
                     # Define relative uncertainty. Note that another variable will be used to save relative uncertainty for each trial and game.
                     relative_uncertainty = (sigma2[game_num,trial_num] - sigma1[game_num,trial_num])
                     # Get the drift_value 
-                    # drift_value = reward_diff*(baseline_rdiff_mod_drift/total_uncert + total_uncert*h6_rdiff_mod_drift*(num_trials_left-1)) + relative_uncertainty*(baseline_info_bonus + h6_info_bonus*(num_trials_left-1))
-                    # drift_value = reward_diff*baseline_rdiff_mod_drift/num_trials_left
+                    # drift_value = reward_diff*(base_rdiff_mod_drift/total_uncert + total_uncert*h6_rdiff_mod_drift*(num_trials_left-1)) + relative_uncertainty*(base_info_bonus + h6_info_bonus*(num_trials_left-1))
+                    # drift_value = reward_diff*base_rdiff_mod_drift/num_trials_left
                     
 
-                    # If both reward difference and UCB difference push in same direction, use the congruent tradeoff; otherwise, use incongruent.
+                    # If both reward difference and UCB difference push in same direction, use the cong tradeoff; otherwise, use incong.
                     if (reward_diff*relative_uncertainty >= 0):
-                        rel_uncert_scaler = (np.exp(num_trials_left-1)-1)*congruent_DE+ congruent_baseline_info_bonus
+                        rel_uncert_scaler = (np.exp(num_trials_left-1)-1)*cong_DE+ cong_base_info_bonus
                     else:
-                        rel_uncert_scaler = (np.exp(num_trials_left-1)-1)*incongruent_DE+ incongruent_baseline_info_bonus
+                        rel_uncert_scaler = (np.exp(num_trials_left-1)-1)*incong_DE+ incong_base_info_bonus
 
 
-                    drift_value = (reward_diff + (rel_uncert_scaler*relative_uncertainty))/np.log1p(np.exp(baseline_noise + total_uncert*(num_trials_left-1)*random_exp))
+                    drift_value = (reward_diff + (rel_uncert_scaler*relative_uncertainty))/np.log1p(np.exp(base_noise + total_uncert*(num_trials_left-1)*random_exp))
  
                     starting_position_value = side_bias
  

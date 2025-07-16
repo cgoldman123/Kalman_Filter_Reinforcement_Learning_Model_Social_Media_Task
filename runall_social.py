@@ -109,7 +109,7 @@ elif model_class=="KF_SIGMA":
 
 elif model_class=="PYDDM":
     models = [
-        {'field': 'Use_JSD_fit_all_RTs'}, # Use the field to convey settings
+        {'field': 'fit_all_RTs'}, # Use the field to convey settings
         # {'field': 'Use_JSD_fit_3_RTs'}, # Use the field to convey settings
         # {'field': 'Use_reward_differences_fit_all_RTs'}, # Use the field to convey settings
         # {'field': 'Use_reward_differences_fit_3_RTs'}, # Use the field to convey settings

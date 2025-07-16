@@ -80,16 +80,16 @@ class KF_DDM_Loss(pyddm.LossFunction):
     name = "KF_DDM_Loss"
     def loss(self, model):
         # Hardcode parameters for debugging purposes
-        # model._driftdep.baseline_info_bonus = Fitted(0.3496305974, minval=-4, maxval=4)
+        # model._driftdep.base_info_bonus = Fitted(0.3496305974, minval=-4, maxval=4)
         # model._driftdep.random_exp = Fitted(6.4630579, minval=0.1, maxval=10)
         # model._driftdep.rel_uncert_mod = Fitted(-0.06463354, minval=-1, maxval=1) # This is the relative uncertainty of the choice
         # model._driftdep.sigma_d = Fitted(9.676269288, minval=0, maxval=10) # This is the uncertainty of the left bandit
         # model._driftdep.sigma_r = Fitted(4.000000, minval=0, maxval=10) # This is the uncertainty of the right bandit
         # model._driftdep.side_bias = Fitted(0.034263500, minval=-4, maxval=4) # This is the side bias
         # model._driftdep.directed_exp = Fitted(-0.59829014, minval=-4, maxval=4) # This is the directed exploration
-        # model._driftdep.baseline_noise = Fitted(3.1660782, minval=-4, maxval=4) # This is the directed exploration
+        # model._driftdep.base_noise = Fitted(3.1660782, minval=-4, maxval=4) # This is the directed exploration
         # model._bounddep = BoundConstant(B=Fitted(1.501095, minval=1.5, maxval=6))
-
+        return 5
         model_stats = KF_DDM_model(self.sample,model, fit_or_sim="fit")
         
         # Load in model_stats object if you want to use it for debugging purposes; Comment this out unless debugging!!
@@ -130,18 +130,17 @@ class KF_DDM_Loss(pyddm.LossFunction):
         model.total_uncertainty = model_stats["total_uncertainty"]
         model.change_in_uncertainty_after_choice = model_stats["change_in_uncertainty_after_choice"]
 
-
         return -likelihood
 
 
 
 
 ## SIMULATE DATA WITHOUT FITTING
-# model_to_sim = pyddm.gddm(drift=lambda drift_rwrd_diff_mod,drift_dcsn_noise_mod,drift_value,sigma_d,sigma_r,baseline_noise,side_bias,directed_exp,baseline_info_bonus,random_exp : drift_value,
+# model_to_sim = pyddm.gddm(drift=lambda drift_rwrd_diff_mod,drift_dcsn_noise_mod,drift_value,sigma_d,sigma_r,base_noise,side_bias,directed_exp,base_info_bonus,random_exp : drift_value,
 #                           starting_position=lambda starting_position_value: starting_position_value, 
 #                           noise=1.0, bound="B", nondecision=0, T_dur=1000,
 #                           conditions=["game_number", "gameLength", "trial", "r", "drift_value","starting_position_value"],
-#                           parameters={"drift_rwrd_diff_mod": .5, "drift_dcsn_noise_mod": .1,"B": 1, "sigma_d": 8, "sigma_r": 8, "baseline_noise": 2, "side_bias": 1, "directed_exp": 2, "baseline_info_bonus": 2, "random_exp": 2}, choice_names=("right","left"))
+#                           parameters={"drift_rwrd_diff_mod": .5, "drift_dcsn_noise_mod": .1,"B": 1, "sigma_d": 8, "sigma_r": 8, "base_noise": 2, "side_bias": 1, "directed_exp": 2, "base_info_bonus": 2, "random_exp": 2}, choice_names=("right","left"))
 
 # simulated_model = KF_DDM_model(social_media_sample,model_to_sim,fit_or_sim="sim")
 
@@ -149,12 +148,12 @@ class KF_DDM_Loss(pyddm.LossFunction):
 ## FIT MODEL TO ACTUAL DATA
 # This is kind of hacky, but we pass in the learning parameters as arguments to drift even though they aren't used for it. This is just so the loss function has access to them
 print("Setting up the model to fit behavioral data")
-model_to_fit = pyddm.gddm(drift=lambda random_exp, bound_intercept, bound_shift, baseline_noise, congruent_DE, incongruent_DE, congruent_baseline_info_bonus, incongruent_baseline_info_bonus, sigma_d, sigma_r, side_bias, baseline_rdiff_mod_bias, h5_rdiff_mod_bias, drift_value : drift_value,
+model_to_fit = pyddm.gddm(drift=lambda random_exp, bound_intercept, bound_shift, base_noise, cong_DE, incong_DE, cong_base_info_bonus, incong_base_info_bonus, sigma_d, sigma_r, side_bias, base_rdiff_mod_bias, h5_rdiff_mod_bias, drift_value : drift_value,
                           starting_position=lambda starting_position_value: starting_position_value, 
                           noise=1.0,    bound=lambda bound_value: max(bound_value, eps),
-                          nondecision="nondecision_time", T_dur=7,
+                          nondecision="nondectime", T_dur=7,
                           conditions=["game_number", "gameLength", "trial", "r", "drift_value","starting_position_value", "bound_value"],
-                          parameters={"nondecision_time": (0,.3), "random_exp": (0,10), "bound_intercept": (.5,5), "bound_shift": (-30,30), "sigma_d": (0,10), "sigma_r": (4,16), "baseline_noise": (0.1,10), "side_bias": 0, "congruent_DE": (-10,10), "incongruent_DE": (-10,10), "congruent_baseline_info_bonus": (-10,10), "incongruent_baseline_info_bonus": (-10,10), "baseline_rdiff_mod_bias": (-10,10), "h5_rdiff_mod_bias": (-10,10)}, choice_names=("right","left"))
+                          parameters={"nondectime": (0,.3), "random_exp": (0,10), "bound_intercept": (.5,5), "bound_shift": (-30,30), "sigma_d": (0,10), "sigma_r": (4,16), "base_noise": (0.1,10), "side_bias": (-.99,.99), "cong_DE": (-10,10), "incong_DE": (-10,10), "cong_base_info_bonus": (-10,10), "incong_base_info_bonus": (-10,10), "base_rdiff_mod_bias": (-10,10), "h5_rdiff_mod_bias": (-10,10)}, choice_names=("right","left"))
 model_to_fit.settings = settings
 
 # Note that to plot using this function, I would have to pass in the conditions that get assigned in the model function (i.e., starting_position_value and drift_value). We would only be able to view the pdf and reaction time for one combination of conditions, which is not ideal.
@@ -217,25 +216,25 @@ model_fit_to_data = model_to_fit
 # Examine recoverability on fit parameters
 # This is kind of hacky, but we pass in the learning parameters as arguments to drift even though they aren't used for it. This is just so the loss function has access to them
 print("Setting up the model to simulate behavioral data")
-model_to_sim = pyddm.gddm(drift=lambda random_exp, bound_intercept, bound_shift, baseline_noise, congruent_DE, incongruent_DE, congruent_baseline_info_bonus, incongruent_baseline_info_bonus, sigma_d, sigma_r, side_bias, baseline_rdiff_mod_bias, h5_rdiff_mod_bias, drift_value : drift_value,
+model_to_sim = pyddm.gddm(drift=lambda random_exp, bound_intercept, bound_shift, base_noise, cong_DE, incong_DE, cong_base_info_bonus, incong_base_info_bonus, sigma_d, sigma_r, side_bias, base_rdiff_mod_bias, h5_rdiff_mod_bias, drift_value : drift_value,
                           starting_position=lambda starting_position_value: starting_position_value, 
                           noise=1.0, bound=lambda bound_value: max(bound_value, eps),
-                          nondecision="nondecision_time", T_dur=100,
+                          nondecision="nondectime", T_dur=100,
                           conditions=["game_number", "gameLength", "trial", "r", "drift_value","starting_position_value","bound_value"],
                           parameters={
-    "nondecision_time": fit_result["post_nondecision_time"],
+    "nondectime": fit_result["post_nondectime"],
     "random_exp": fit_result["post_random_exp"],
     "bound_intercept": fit_result["post_bound_intercept"],
     "bound_shift": fit_result["post_bound_shift"],
     "sigma_d": fit_result["post_sigma_d"],
     "sigma_r": fit_result["post_sigma_r"],
-    "baseline_noise": fit_result["post_baseline_noise"],
+    "base_noise": fit_result["post_base_noise"],
     "side_bias": fit_result["post_side_bias"],
-    "congruent_DE": fit_result["post_congruent_DE"],
-    "incongruent_DE": fit_result["post_incongruent_DE"],
-    "congruent_baseline_info_bonus": fit_result["post_congruent_baseline_info_bonus"],
-    "incongruent_baseline_info_bonus": fit_result["post_incongruent_baseline_info_bonus"],
-    "baseline_rdiff_mod_bias": fit_result["post_baseline_rdiff_mod_bias"],
+    "cong_DE": fit_result["post_cong_DE"],
+    "incong_DE": fit_result["post_incong_DE"],
+    "cong_base_info_bonus": fit_result["post_cong_base_info_bonus"],
+    "incong_base_info_bonus": fit_result["post_incong_base_info_bonus"],
+    "base_rdiff_mod_bias": fit_result["post_base_rdiff_mod_bias"],
     "h5_rdiff_mod_bias": fit_result["post_h5_rdiff_mod_bias"]
 }, choice_names=("right","left"))
 model_to_sim.settings = settings

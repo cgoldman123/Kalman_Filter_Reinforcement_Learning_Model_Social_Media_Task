@@ -263,7 +263,7 @@ def stats_simulate_parameter_sweep(sample,
             params = base_params.copy()   # keep original intact
             params[param_name] = v        # overwrite the swept key
 
-            model = pyddm.gddm(drift=lambda random_exp, bound_intercept, bound_shift, baseline_noise, congruent_DE, incongruent_DE, congruent_baseline_info_bonus, incongruent_baseline_info_bonus, sigma_d, sigma_r, side_bias, baseline_rdiff_mod_bias, h5_rdiff_mod_bias, drift_value : drift_value,
+            model = pyddm.gddm(drift=lambda random_exp, bound_intercept, bound_shift, base_noise, cong_DE, incong_DE, cong_base_info_bonus, incong_base_info_bonus, sigma_d, sigma_r, side_bias, base_rdiff_mod_bias, h5_rdiff_mod_bias, drift_value : drift_value,
                           starting_position=lambda starting_position_value: starting_position_value, 
                           noise=1.0,     bound=lambda bound_value: max(bound_value, eps),
                           nondecision="nondecision_time",
@@ -302,7 +302,7 @@ def stats_simulate_one_parameter_set(base_params: dict, game_len,trial_idx, sett
     model_free_across_horizons_and_choices = []
     model_free_for_specific_horizon_and_choice = []
     for _ in range(number_samples_to_sim):
-        model = pyddm.gddm(drift=lambda random_exp, bound_intercept, bound_shift, baseline_noise, congruent_DE, incongruent_DE, congruent_baseline_info_bonus, incongruent_baseline_info_bonus, sigma_d, sigma_r, side_bias, baseline_rdiff_mod_bias, h5_rdiff_mod_bias, drift_value : drift_value,
+        model = pyddm.gddm(drift=lambda random_exp, bound_intercept, bound_shift, base_noise, cong_DE, incong_DE, cong_base_info_bonus, incong_base_info_bonus, sigma_d, sigma_r, side_bias, base_rdiff_mod_bias, h5_rdiff_mod_bias, drift_value : drift_value,
                           starting_position=lambda starting_position_value: starting_position_value, 
                           noise=1.0,     bound=lambda bound_value: max(bound_value, eps),
                           nondecision="nondecision_time",
