@@ -144,8 +144,8 @@ for room in room_type:
         subjects_sorted = sorted(subjects, key=lambda x: (x not in priority, subjects.index(x)))
 
         for subject in subjects_sorted: # do subjects[3] to just fit one subject
-            if subject != "6652b039261ef03ecb978b4b" and subject != "6032aa14166df72d4c8a331f" and subject != "565bff58c121fe0005fc390d":
-                continue
+            # if subject != "6652b039261ef03ecb978b4b" and subject != "6032aa14166df72d4c8a331f" and subject != "565bff58c121fe0005fc390d":
+            #     continue
             
             stdout_name = f"{combined_results_dir}/logs/SM-{model_class}-model_{index}-{room}_room-{subject}-%J.stdout"
             stderr_name = f"{combined_results_dir}/logs/SM-{model_class}-model_{index}-{room}_room-{subject}-%J.stderr"

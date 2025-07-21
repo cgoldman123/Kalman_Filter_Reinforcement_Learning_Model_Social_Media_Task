@@ -31,10 +31,9 @@ def KF_DDM_model(sample,model,fit_or_sim, sim_using_max_pdf=False):
 
     game_numbers = data['game_number'].unique()
 
-
+    rdiff_bias_mod = model.get_dependence("drift").rdiff_bias_mod
     random_exp = model.get_dependence("drift").random_exp
     bound_intercept = model.get_dependence("drift").bound_intercept
-    bound_shift = model.get_dependence("drift").bound_shift
     base_noise = model.get_dependence("drift").base_noise
     cong_DE = model.get_dependence("drift").cong_DE
     incong_DE = model.get_dependence("drift").incong_DE
@@ -43,8 +42,7 @@ def KF_DDM_model(sample,model,fit_or_sim, sim_using_max_pdf=False):
     sigma_d = model.get_dependence("drift").sigma_d
     sigma_r = model.get_dependence("drift").sigma_r
     side_bias = model.get_dependence("drift").side_bias
-    base_rdiff_mod_bias = model.get_dependence("drift").base_rdiff_mod_bias
-    h5_rdiff_mod_bias = model.get_dependence("drift").h5_rdiff_mod_bias
+
 
     
 
@@ -115,12 +113,12 @@ def KF_DDM_model(sample,model,fit_or_sim, sim_using_max_pdf=False):
                     else:
                         rel_uncert_scaler = (np.exp(num_trials_left-1)-1)*incong_DE+ incong_base_info_bonus
 
-
-                    drift_value = (reward_diff + (rel_uncert_scaler*relative_uncertainty))/np.log1p(np.exp(base_noise + total_uncert*(num_trials_left-1)*random_exp))
+                    # Use softplus function in the denominator for a positive transformation; use min(x,700) to prevent overflow error
+                    drift_value = (reward_diff + (rel_uncert_scaler*relative_uncertainty))/np.log1p(np.exp(min(base_noise + total_uncert*(num_trials_left-1)*random_exp,700)))
  
-                    starting_position_value = side_bias
+                    starting_position_value = np.tanh(side_bias + rdiff_bias_mod*reward_diff/total_uncert)
  
-                    bound_value = bound_intercept - (bound_shift/total_uncert) # Calculate bound value based on current trial number (trial['gameLength'] - num_trials_left -3)
+                    bound_value = bound_intercept
 
 
 
@@ -238,8 +236,17 @@ def KF_DDM_model(sample,model,fit_or_sim, sim_using_max_pdf=False):
                         trial = simulated_trial.squeeze() # Convert the dataframe to a series
 
                     # Record the entropy of the reaction time and choice pdf for the trial
-                    # Add a small value to avoid log(0)
-                    rt_pdf_entropy[game_num, trial_num] = (-np.sum(sol.pdf("left") * np.log(sol.pdf("left") + eps)) * sol.dt ) + (-np.sum(sol.pdf("right") * np.log(sol.pdf("right") + eps)) * sol.dt) + (-sol.prob_undecided() * np.log(sol.prob_undecided() + eps))
+                    # Compute discrete probability mass
+                    left_mass = sol.pdf("left") * sol.dt
+                    right_mass = sol.pdf("right") * sol.dt
+                    undecided_mass = sol.prob_undecided()
+                    # Combine entropy terms using safe log
+                    left_entropy = -np.sum(left_mass * np.log(left_mass + eps))
+                    right_entropy = -np.sum(right_mass * np.log(right_mass + eps))
+                    undecided_entropy = -undecided_mass * np.log(undecided_mass + eps)
+                    # Store total entropy
+                    rt_pdf_entropy[game_num, trial_num] = left_entropy + right_entropy + undecided_entropy
+
 
                 # left option chosen so mu1 updates
                 if trial['choice'] == 0:

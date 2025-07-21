@@ -89,7 +89,6 @@ class KF_DDM_Loss(pyddm.LossFunction):
         # model._driftdep.directed_exp = Fitted(-0.59829014, minval=-4, maxval=4) # This is the directed exploration
         # model._driftdep.base_noise = Fitted(3.1660782, minval=-4, maxval=4) # This is the directed exploration
         # model._bounddep = BoundConstant(B=Fitted(1.501095, minval=1.5, maxval=6))
-        return 5
         model_stats = KF_DDM_model(self.sample,model, fit_or_sim="fit")
         
         # Load in model_stats object if you want to use it for debugging purposes; Comment this out unless debugging!!
@@ -148,12 +147,12 @@ class KF_DDM_Loss(pyddm.LossFunction):
 ## FIT MODEL TO ACTUAL DATA
 # This is kind of hacky, but we pass in the learning parameters as arguments to drift even though they aren't used for it. This is just so the loss function has access to them
 print("Setting up the model to fit behavioral data")
-model_to_fit = pyddm.gddm(drift=lambda random_exp, bound_intercept, bound_shift, base_noise, cong_DE, incong_DE, cong_base_info_bonus, incong_base_info_bonus, sigma_d, sigma_r, side_bias, base_rdiff_mod_bias, h5_rdiff_mod_bias, drift_value : drift_value,
+model_to_fit = pyddm.gddm(drift=lambda rdiff_bias_mod, random_exp, bound_intercept, bound_shift, base_noise, cong_DE, incong_DE, cong_base_info_bonus, incong_base_info_bonus, sigma_d, sigma_r, side_bias, drift_value : drift_value,
                           starting_position=lambda starting_position_value: starting_position_value, 
                           noise=1.0,    bound=lambda bound_value: max(bound_value, eps),
                           nondecision="nondectime", T_dur=7,
                           conditions=["game_number", "gameLength", "trial", "r", "drift_value","starting_position_value", "bound_value"],
-                          parameters={"nondectime": (0,.3), "random_exp": (0,10), "bound_intercept": (.5,5), "bound_shift": (-30,30), "sigma_d": (0,10), "sigma_r": (4,16), "base_noise": (0.1,10), "side_bias": (-.99,.99), "cong_DE": (-10,10), "incong_DE": (-10,10), "cong_base_info_bonus": (-10,10), "incong_base_info_bonus": (-10,10), "base_rdiff_mod_bias": (-10,10), "h5_rdiff_mod_bias": (-10,10)}, choice_names=("right","left"))
+                          parameters={"rdiff_bias_mod": (-10, 10), "nondectime": (0,.3), "random_exp": (0,10), "bound_intercept": (.5,5), "bound_shift": (-30,30), "sigma_d": (0,10), "sigma_r": (4,16), "base_noise": (0.1,10), "side_bias": (-.99,.99), "cong_DE": (-10,10), "incong_DE": (-10,10), "cong_base_info_bonus": (-10,10), "incong_base_info_bonus": (-10,10)}, choice_names=("right","left"))
 model_to_fit.settings = settings
 
 # Note that to plot using this function, I would have to pass in the conditions that get assigned in the model function (i.e., starting_position_value and drift_value). We would only be able to view the pdf and reaction time for one combination of conditions, which is not ideal.
@@ -195,6 +194,11 @@ fit_result["avg_abs_error_RT"] = model_to_fit.avg_abs_error_RT
 # Store the model output
 model_output = {
     "action_probs": model_to_fit.action_probs,
+    "rt_pdf": model_to_fit.rt_pdf,
+    "abs_error_RT": model_to_fit.abs_error_RT,
+    "predicted_RT": model_to_fit.predicted_RT,
+    "rdiff_chosen_opt":model_to_fit.rdiff_chosen_opt,
+    "rt_pdf_entropy": model_to_fit.rt_pdf_entropy,
     "model_acc": model_to_fit.model_acc,
     "exp_vals": model_to_fit.exp_vals,
     "pred_errors": model_to_fit.pred_errors,
@@ -216,13 +220,14 @@ model_fit_to_data = model_to_fit
 # Examine recoverability on fit parameters
 # This is kind of hacky, but we pass in the learning parameters as arguments to drift even though they aren't used for it. This is just so the loss function has access to them
 print("Setting up the model to simulate behavioral data")
-model_to_sim = pyddm.gddm(drift=lambda random_exp, bound_intercept, bound_shift, base_noise, cong_DE, incong_DE, cong_base_info_bonus, incong_base_info_bonus, sigma_d, sigma_r, side_bias, base_rdiff_mod_bias, h5_rdiff_mod_bias, drift_value : drift_value,
+model_to_sim = pyddm.gddm(drift=lambda rdiff_bias_mod, random_exp, bound_intercept, bound_shift, base_noise, cong_DE, incong_DE, cong_base_info_bonus, incong_base_info_bonus, sigma_d, sigma_r, side_bias, drift_value : drift_value,
                           starting_position=lambda starting_position_value: starting_position_value, 
                           noise=1.0, bound=lambda bound_value: max(bound_value, eps),
                           nondecision="nondectime", T_dur=100,
                           conditions=["game_number", "gameLength", "trial", "r", "drift_value","starting_position_value","bound_value"],
                           parameters={
     "nondectime": fit_result["post_nondectime"],
+    "rdiff_bias_mod": fit_result["post_rdiff_bias_mod"],
     "random_exp": fit_result["post_random_exp"],
     "bound_intercept": fit_result["post_bound_intercept"],
     "bound_shift": fit_result["post_bound_shift"],
@@ -233,9 +238,7 @@ model_to_sim = pyddm.gddm(drift=lambda random_exp, bound_intercept, bound_shift,
     "cong_DE": fit_result["post_cong_DE"],
     "incong_DE": fit_result["post_incong_DE"],
     "cong_base_info_bonus": fit_result["post_cong_base_info_bonus"],
-    "incong_base_info_bonus": fit_result["post_incong_base_info_bonus"],
-    "base_rdiff_mod_bias": fit_result["post_base_rdiff_mod_bias"],
-    "h5_rdiff_mod_bias": fit_result["post_h5_rdiff_mod_bias"]
+    "incong_base_info_bonus": fit_result["post_incong_base_info_bonus"]
 }, choice_names=("right","left"))
 model_to_sim.settings = settings
 

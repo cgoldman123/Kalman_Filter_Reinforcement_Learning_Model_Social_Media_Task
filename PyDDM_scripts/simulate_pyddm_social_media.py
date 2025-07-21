@@ -61,14 +61,14 @@ sim_using_max_pdf = True # If True, the model will simulate a choice/RT based on
 plot_latent_states_separated_by_rdiff = True # If True, the latent states will be plotted separately for each reward difference. If False, they will be averaged across all reward differences.
 plot_jsd = False # If True, the JSD will be plotted in the latent states plot. If False, it will not be plotted.
 if not sim_using_max_pdf:
-    number_samples_to_sim = 3
+    number_samples_to_sim = 5
 else:
     number_samples_to_sim = 1
 
 base_params = dict(
+    rdiff_bias_mod = 1,
     random_exp = 0.01,
-    bound_intercept = 2.5,
-    bound_shift = 16,
+    bound_intercept = 5, #2.5 works
     base_noise = 2,
     cong_DE = .01,
     incong_DE = 0.035,
@@ -77,8 +77,6 @@ base_params = dict(
     sigma_d = 0,
     sigma_r = 8,
     side_bias = 0,
-    base_rdiff_mod_bias = 0,
-    h5_rdiff_mod_bias = 0,
     nondecision_time = 0.05,
 )
  
@@ -89,7 +87,7 @@ base_params = dict(
 
 if run_param_sweep:
     param_name   = "sigma_r"            # specify the parameter to sweep while holding others constant
-    param_vals   = np.linspace(4, 16, 2)            # set the range of parameters to sweep for the parameter param_name
+    param_vals   = np.linspace(4, 16, 3)            # set the range of parameters to sweep for the parameter param_name
     trial_idx  = 5 # Choice number (5 to 9)
 
 
@@ -97,45 +95,51 @@ settings["plot_jsd"] = plot_jsd # Set the settings for the model to plot JSD or 
 
 
 if run_one_param_set:
-    game_len   = [9]                               # specify the game length to use in the reward difference plots ([5,9] )
-    trial_idx  = 9                                 # specify the trial index to use (5, 6, 7, etc.)
+    game_lens   = [5, 9]                               # specify the game length to use in the reward difference plots ([5,9] or [9])
+    trial_indices  = [5,6,7,8,9]                          # specify the trial indices to plot [5,6,7,8,9] or [5] etc.
+    plot_error_bars = False
     # ==================================================================
-    results = stats_simulate_one_parameter_set(base_params, game_len,trial_idx,settings, social_media_sample, sim_using_max_pdf, number_samples_to_sim)
+    results = stats_simulate_one_parameter_set(base_params, game_lens,settings, social_media_sample, sim_using_max_pdf, number_samples_to_sim)
 
     ### Plot mean RT by reward difference and horizon ###
     plt.figure()
-    if 5 in game_len:
-        summary_h1 = results['avg_rt_by_reward_diff_game_len_5']
-        plt.errorbar(summary_h1['reward_diff'], summary_h1['mean_RT_reward_diff'], yerr=summary_h1['std_RT_reward_diff'],
-                    fmt='o-', color="blue",capsize=4, label="H1")
-    if 9 in game_len:
-        summary_h5 = results['avg_rt_by_reward_diff_game_len_9']
-        plt.errorbar(summary_h5['reward_diff'], summary_h5['mean_RT_reward_diff'], yerr=summary_h5['std_RT_reward_diff'],
-                    fmt='o-', color="red",capsize=4, label="H5")
+
+    for game_len in game_lens:
+        for trial_idx in trial_indices:
+            if game_len == 9 or (game_len == 5 and trial_idx == 5):
+                summary = results['rt_by_reward_diff_summary'][f'game_len_{game_len}_choice_{trial_idx}']
+                if plot_error_bars:
+                    plt.errorbar(summary['reward_diff'], summary['mean_RT_reward_diff'], yerr=summary['std_RT_reward_diff'],
+                                fmt='o-',capsize=4, label=f"H: {game_len-4}, Choice: {trial_idx}")
+                else:
+                    plt.plot(summary['reward_diff'], summary['mean_RT_reward_diff'],
+                     marker='o', linestyle='-', label=f"H: {game_len-4}, Choice: {trial_idx}")
+
     plt.xlabel('Reward Difference')
     plt.ylabel('Mean RT')
-    plt.title(f'Mean RT by Reward Difference for free choice {trial_idx}')
+    plt.title(f'Mean RT by Reward Difference')
     plt.grid(True)
     plt.legend()  
     plt.show(block=False)
 
 
 
-
-
     ### Plot mean RT by reward difference for high - low info options and horizon ###
     plt.figure()
-    if 5 in game_len:
-        summary_h1 = results['avg_rt_by_reward_diff_game_len_5']
-        plt.errorbar(summary_h1['reward_diff'], summary_h1['mean_RT_reward_diff_high_info_minus_low_info'], yerr=summary_h1['std_RT_reward_diff_high_info_minus_low_info'],
-                    fmt='o-', color="blue",capsize=4, label="H1")
-    if 9 in game_len:
-        summary_h5 = results['avg_rt_by_reward_diff_game_len_9']
-        plt.errorbar(summary_h5['reward_diff'], summary_h5['mean_RT_reward_diff_high_info_minus_low_info'], yerr=summary_h5['std_RT_reward_diff_high_info_minus_low_info'],
-                 fmt='o-', color="red",capsize=4, label="H5")
+    for game_len in game_lens:
+        for trial_idx in trial_indices:
+            if game_len == 9 or (game_len == 5 and trial_idx == 5):
+                summary = results['rt_by_reward_diff_summary'][f'game_len_{game_len}_choice_{trial_idx}']
+                if plot_error_bars:
+                    plt.errorbar(summary['reward_diff'], summary['mean_RT_reward_diff_high_info_minus_low_info'], yerr=summary['std_RT_reward_diff_high_info_minus_low_info'],
+                                fmt='o-',capsize=4, label=f"H: {game_len-4}, Choice: {trial_idx}")
+                else:
+                    plt.plot(summary['reward_diff'], summary['mean_RT_reward_diff_high_info_minus_low_info'],
+                     marker='o', linestyle='-', label=f"H: {game_len-4}, Choice: {trial_idx}")
+
     plt.xlabel('Reward Difference')
     plt.ylabel('Mean RT')
-    plt.title(f'Mean RT by Reward Difference for high - low info option for free choice {trial_idx}')
+    plt.title(f'Mean RT by Reward Difference for high - low info option ')
     plt.grid(True)
     plt.legend()  
     plt.show(block=False)
@@ -152,10 +156,12 @@ if run_one_param_set:
     ### Plot mean RT by choice number and horizon ###
     # Assume results['model_free_across_horizons_and_choices_df'] contains both mean and std columns
     model_free_results = results['model_free_across_horizons_and_choices_df']
-    # Melt mean RT
-    df_mean = model_free_results.filter(like='mean_rt').melt(var_name="label", value_name="mean_rt")
+    # Filter to RT cols and melt
+    cols = [col for col in model_free_results.columns if "mean_rt" in col and "choice" in col]
+    df_mean = model_free_results[cols].melt(var_name="label", value_name="mean_rt")
     # Melt std
-    df_std = model_free_results.filter(like='std_rt').melt(var_name="label", value_name="std_rt")
+    cols = [col for col in model_free_results.columns if "std_rt" in col and "choice" in col]
+    df_std = model_free_results[cols].melt(var_name="label", value_name="std_rt")
     # Align by stripping 'std_' and 'mean_' prefixes
     df_std["label"] = df_std["label"].str.replace("std_", "mean_", regex=False)
     # Merge both long-format DataFrames
@@ -185,9 +191,12 @@ if run_one_param_set:
     # Assume results['model_free_across_horizons_and_choices_df'] contains both mean and std columns
     model_free_results = results['model_free_across_horizons_and_choices_df']
     # Melt mean RT
-    df_mean = model_free_results.filter(like='mean_prob_choose_high_mean').melt(var_name="label", value_name="mean_prob_choose_high_mean")
+    cols = [col for col in model_free_results.columns if "mean_prob_choose_high_mean" in col and "choice" in col]
+    df_mean = model_free_results[cols].melt(var_name="label", value_name="mean_prob_choose_high_mean")
     # Melt std
-    df_std = model_free_results.filter(like='std_prob_choose_high_mean').melt(var_name="label", value_name="std_prob_choose_high_mean")
+    cols = [col for col in model_free_results.columns if "std_prob_choose_high_mean" in col and "choice" in col]
+    df_std = model_free_results[cols].melt(var_name="label", value_name="std_prob_choose_high_mean")
+
     # Align by stripping 'std_' and 'mean_' prefixes
     df_std["label"] = df_std["label"].str.replace("std_", "mean_", regex=False)
     # Merge both long-format DataFrames
@@ -216,9 +225,11 @@ if run_one_param_set:
     # Assume results['model_free_across_horizons_and_choices_df'] contains both mean and std columns
     model_free_results = results['model_free_across_horizons_and_choices_df']
     # Melt mean RT
-    df_mean = model_free_results.filter(like='mean_prob_choose_high_info').melt(var_name="label", value_name="mean_prob_choose_high_info")
+    cols = [col for col in model_free_results.columns if "mean_prob_choose_high_info" in col and "choice" in col]
+    df_mean = model_free_results[cols].melt(var_name="label", value_name="mean_prob_choose_high_info")
     # Melt std
-    df_std = model_free_results.filter(like='std_prob_choose_high_info').melt(var_name="label", value_name="std_prob_choose_high_info")
+    cols = [col for col in model_free_results.columns if "std_prob_choose_high_info" in col and "choice" in col]
+    df_std = model_free_results[cols].melt(var_name="label", value_name="std_prob_choose_high_info")
     # Align by stripping 'std_' and 'mean_' prefixes
     df_std["label"] = df_std["label"].str.replace("std_", "mean_", regex=False)
     # Merge both long-format DataFrames
@@ -561,12 +572,12 @@ if run_one_param_set:
 if run_param_sweep:
     n_runs       = 1                               # specify number of simulations to run for each set of parameters. Can leave at 1 if we are using the max pdf method (simulates a choice/rt based on the max pdf) instead of sampling from the distribution of choices/RTs.
     game_len   =  [5,9] #[5,9] or [9]                              # specify the game length; use brackets
-    metric_fn    = lambda df: compute_stats_for_specific_horizon_and_choice(df, game_len=game_len, trial_idx=trial_idx)  # Use game_len to control whether plotting H1 (5) or H5 (9) games. Use trial_idx to control which which free choice to consider (5 = first free choice)
+    metric_fn    = "hi" # lambda df: compute_stats_for_specific_horizon_and_choice(df, game_len=game_len, trial_idx=trial_idx)  # Use game_len to control whether plotting H1 (5) or H5 (9) games. Use trial_idx to control which which free choice to consider (5 = first free choice)
     # ==================================================================
     results = stats_simulate_parameter_sweep(social_media_sample, settings, param_name, param_vals, base_params, n_runs, metric_fn, sim_using_max_pdf, number_samples_to_sim)
 
     # ------------------------------------------------------------------
-    # Plot: Probability of choosing the option with the higher observed mean for each horizon across the parameter sweep.
+    # Plot: Probability of choosing the option with the higher generative mean for each horizon across the parameter sweep.
     # ------------------------------------------------------------------
     # Make subtitle
     free_choice_label = f"Free Choice {trial_idx - 4}"  # since 5 => 1, 6 => 2, etc.
@@ -574,16 +585,16 @@ if run_param_sweep:
     plt.figure()
     # If every value in the stderr_prob_choose_high_mean column is NaN, skip the error bars. This happens when n_runs=1 since the standard error of a single value is NaN.
     if 5 in game_len:
-        choose_high_observed_mean_h1_standard_error = None if results["stderr_prob_choose_high_mean_game_len_5"].isna().all() else results["stderr_prob_choose_high_mean_game_len_5"]
-        plt.errorbar(results[param_name], results["mean_prob_choose_high_mean_game_len_5"],
-                yerr=choose_high_observed_mean_h1_standard_error, marker="o", linestyle="-", capsize=4, label="H1")
+        choose_high_generative_mean_h1_standard_error = None if results["std_prob_choose_high_mean_horizon_5"].isna().all() else results["std_prob_choose_high_mean_horizon_5"]
+        plt.errorbar(results[param_name], results["mean_prob_choose_high_mean_horizon_5"],
+                yerr=choose_high_generative_mean_h1_standard_error, marker="o", linestyle="-", capsize=4, label="H1")
     if 9 in game_len:
-        choose_high_observed_mean_h5_standard_error = None if results["stderr_prob_choose_high_mean_game_len_9"].isna().all() else results["stderr_prob_choose_high_mean_game_len_9"] 
-        plt.errorbar(results[param_name], results["mean_prob_choose_high_mean_game_len_9"],
-                    yerr=choose_high_observed_mean_h5_standard_error, marker="o", linestyle="-", capsize=4, label="H5")
+        choose_high_generative_mean_h5_standard_error = None if results["std_prob_choose_high_mean_horizon_9"].isna().all() else results["std_prob_choose_high_mean_horizon_9"]
+        plt.errorbar(results[param_name], results["mean_prob_choose_high_mean_horizon_9"],
+                    yerr=choose_high_generative_mean_h5_standard_error, marker="o", linestyle="-", capsize=4, label="H5")
     plt.xlabel(param_name)
-    plt.ylabel("P(choose higher observed mean)")
-    plt.title(f"{param_name} sweep: P(choose higher observed mean)")
+    plt.ylabel("P(choose higher generative mean)")
+    plt.title(f"{param_name} sweep: P(choose higher generative mean)")
     plt.suptitle(free_choice_label, fontsize=10, y=0.95)
     plt.grid(alpha=.3)
     plt.legend()  
@@ -600,12 +611,12 @@ if run_param_sweep:
     plt.figure()
     # If every value in the stderr_prob_choose_high_mean column is NaN, skip the error bars. This happens when n_runs=1 since the standard error of a single value is NaN.
     if 5 in game_len:
-        choose_high_info_h1_standard_error = None if results["stderr_prob_choose_high_info_game_len_5"].isna().all() else results["stderr_prob_choose_high_info_game_len_5"]
-        plt.errorbar(results[param_name], results["mean_prob_choose_high_info_game_len_5"],
+        choose_high_info_h1_standard_error = None if results["std_prob_choose_high_info_horizon_5"].isna().all() else results["std_prob_choose_high_info_horizon_5"]
+        plt.errorbar(results[param_name], results["mean_prob_choose_high_info_horizon_5"],
                     yerr=choose_high_info_h1_standard_error, marker="o", linestyle="-", capsize=4, label="H1")
     if 9 in game_len:
-        choose_high_info_h5_standard_error = None if results["stderr_prob_choose_high_info_game_len_9"].isna().all() else results["stderr_prob_choose_high_info_game_len_9"]
-        plt.errorbar(results[param_name], results["mean_prob_choose_high_info_game_len_9"],
+        choose_high_info_h5_standard_error = None if results["std_prob_choose_high_info_horizon_9"].isna().all() else results["std_prob_choose_high_info_horizon_9"]
+        plt.errorbar(results[param_name], results["mean_prob_choose_high_info_horizon_9"],
                     yerr=choose_high_info_h5_standard_error, marker="o", linestyle="-", capsize=4, label="H5")
     plt.xlabel(param_name)
     plt.ylabel("P(choose higher info side)")
@@ -619,17 +630,17 @@ if run_param_sweep:
 
 
     # ------------------------------------------------------------------
-    # Plot: Average RT for each horizon across the parameter sweep. Note I could also separate by RTs for high and low observed means.
+    # Plot: Average RT for each horizon across the parameter sweep. Note I could also separate by RTs for high and low generative means.
     # ------------------------------------------------------------------
     plt.figure()
     # Handle missing stderr separately for both lines
     if 5 in game_len:
-        avg_rt_h1_standard_error = None if results["stderr_avg_rt_game_len_5"].isna().all() else results["stderr_avg_rt_game_len_5"]
-        plt.errorbar(results[param_name], results["mean_avg_rt_game_len_5"],
+        avg_rt_h1_standard_error = None if results["std_rt_horizon_5"].isna().all() else results["std_rt_horizon_5"]
+        plt.errorbar(results[param_name], results["mean_rt_horizon_5"],
                 yerr=avg_rt_h1_standard_error, label="H1", marker="o", linestyle="-", capsize=4)
     if 9 in game_len:
-        avg_rt_h5_standard_error  = None if results["stderr_avg_rt_game_len_9"].isna().all()  else results["stderr_avg_rt_game_len_9"]
-        plt.errorbar(results[param_name], results["mean_avg_rt_game_len_9"],
+        avg_rt_h5_standard_error  = None if results["std_rt_horizon_9"].isna().all()  else results["std_rt_horizon_9"]
+        plt.errorbar(results[param_name], results["mean_rt_horizon_9"],
                     yerr=avg_rt_h5_standard_error, label="H5", marker="s", linestyle="--", capsize=4)
     plt.xlabel(param_name)
     plt.ylabel("Average RT")
