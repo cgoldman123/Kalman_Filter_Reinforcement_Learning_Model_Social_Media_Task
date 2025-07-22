@@ -45,12 +45,12 @@ function [output_table] = Social_wrapper(varargin)
         if strcmp(fitting_procedure, "PYDDM")
             MDP.settings = 'fit all choices and rts'; %(e.g., "fit all choices and rts", "fit first free choice and rt")
         elseif ~strcmp(fitting_procedure, "PYDDM")
-            model = "KF_SIGMA_logistic"; % indicate if 'KF_UCB', 'RL', 'KF_UCB_DDM', 'KF_SIGMA_DDM', 'KF_SIGMA'
-            MDP.field = {'h1_dec_noise','h5_dec_noise','side_bias_h1','side_bias_h5','h5_info_bonus','h1_info_bonus','sigma_d', 'sigma_r'};
+            model = "KF_SIGMA_logistic_DDM"; % indicate if 'KF_UCB', 'RL', 'KF_UCB_DDM', 'KF_SIGMA_DDM', 'KF_SIGMA'
+            MDP.field = {'h1_dec_noise','h5_dec_noise','side_bias_h1','side_bias_h5','h5_info_bonus','h1_info_bonus','sigma_d', 'sigma_r', 'starting_bias_baseline', 'drift_baseline', 'decision_thresh_baseline', 'drift_reward_diff_mod'};
             if strcmp(fitting_procedure, "VBA")
                 MDP.observation_params = MDP.field; % When there is no latent state learning, all params are observation params
             end
-            if ismember(model, {'KF_UCB_DDM', 'KF_SIGMA_DDM'})
+            if ismember(model, {'KF_UCB_DDM', 'KF_SIGMA_DDM', 'KF_SIGMA_logistic_DDM'})
                 % possible mappings are action_prob, reward_diff, UCB,
                 % side_bias, decsision_noise
                 MDP.settings.drift_mapping = {'reward_diff','decision_noise'};
@@ -132,8 +132,8 @@ function [output_table] = Social_wrapper(varargin)
     % in the fitting file.
     if ~strcmp(fitting_procedure,'PYDDM')
         model_functions = containers.Map(...
-            {'KF_SIGMA_logistic','KF_UCB', 'RL', 'KF_UCB_DDM', 'KF_SIGMA_DDM', 'KF_SIGMA'}, ...
-            {@model_SM_KF_SIGMA_logistic, @model_SM_KF_all_choices, @model_SM_RL_all_choices, @model_SM_KF_DDM_all_choices, @model_SM_KF_SIGMA_DDM_all_choices, @model_SM_KF_SIGMA_all_choices} ...
+            {'KF_SIGMA_logistic','KF_SIGMA_logistic_DDM','KF_UCB', 'RL', 'KF_UCB_DDM', 'KF_SIGMA_DDM', 'KF_SIGMA'}, ...
+            {@model_SM_KF_SIGMA_logistic, @model_SM_KF_SIGMA_logistic_DDM,@model_SM_KF_all_choices, @model_SM_RL_all_choices, @model_SM_KF_DDM_all_choices, @model_SM_KF_SIGMA_DDM_all_choices, @model_SM_KF_SIGMA_all_choices} ...
         );
         if isKey(model_functions, model)
             MDP.model = model_functions(model);
@@ -163,7 +163,7 @@ function [output_table] = Social_wrapper(varargin)
         end
 
         % Parameters fixed or fit in Kalman Filter (KF) models
-        if ismember(model, {'KF_SIGMA_logistic', 'KF_UCB', 'KF_UCB_DDM', 'KF_SIGMA_DDM', 'KF_SIGMA'})
+        if ismember(model, {'KF_SIGMA_logistic', 'KF_SIGMA_logistic_DDM','KF_UCB', 'KF_UCB_DDM', 'KF_SIGMA_DDM', 'KF_SIGMA'})
             if any(strcmp('sigma_d', MDP.field))
                 MDP.params.sigma_d = 6;
             else
@@ -233,7 +233,7 @@ function [output_table] = Social_wrapper(varargin)
         end
         
         % Parameters fixed or fit in Kalman Filter (KF) SIGMA DDM Model
-        if ismember(model, {'KF_SIGMA_DDM'})
+        if ismember(model, {'KF_SIGMA_DDM','KF_SIGMA_logistic_DDM'})
             MDP.params.starting_bias_baseline = .5;
             MDP.params.drift_baseline = 0;
             MDP.params.decision_thresh_baseline = 2; 
@@ -246,7 +246,7 @@ function [output_table] = Social_wrapper(varargin)
         end
        
         % Parameters fixed or fit in Kalman Filter (KF) logistic model
-        if ismember(model, {'KF_SIGMA_logistic'})
+        if ismember(model, {'KF_SIGMA_logistic','KF_SIGMA_logistic_DDM'})
             MDP.params.h1_info_bonus = 0;
             MDP.params.h5_info_bonus = 0;
             MDP.params.h1_dec_noise = 1;

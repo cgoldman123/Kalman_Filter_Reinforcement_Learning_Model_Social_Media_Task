@@ -206,12 +206,18 @@ function L = spm_mdp_L(P,M,U,Y)
 
     % Fit to reaction time pdfs if DDM, fit to action probabilities if
     % choice model
-    if ismember(func2str(M.model), {'model_SM_KF_DDM_all_choices', 'model_SM_KF_SIGMA_DDM_all_choices'})
+    if ismember(func2str(M.model), {'model_SM_KF_DDM_all_choices', 'model_SM_KF_SIGMA_DDM_all_choices', 'model_SM_KF_SIGMA_logistic_DDM'})
         log_probs = log(model_output.rt_pdf+eps);
         summed_log_probs = sum(log_probs(~isnan(log_probs)));
-        % if any log probs were NaN that should not be, consider the action
-        % prob to be realmin so the max penalty is given
-        number_nan_log_probs = 120 - model_output.num_invalid_rts - sum(~isnan(log_probs(:)));
+        % if any log probs were NaN that should not be, throw an error or consider the action
+        % prob to be realmin so the max penalty is given. Note that we
+        % expect a different number of nan values for the all choices
+        % models vs the first free choice models
+        if ismember(func2str(M.model), {'model_SM_KF_DDM_all_choices', 'model_SM_KF_SIGMA_DDM_all_choices'})
+            number_nan_log_probs = 120 - model_output.num_invalid_rts - sum(~isnan(log_probs(:)));
+        elseif ismember(func2str(M.model), {'model_SM_KF_SIGMA_logistic_DDM'})
+            number_nan_log_probs = 40 - model_output.num_invalid_rts - sum(~isnan(log_probs(:)));
+        end
         if number_nan_log_probs > 0
             error("Error! NaNs encountered in the log likelihood!")
         end

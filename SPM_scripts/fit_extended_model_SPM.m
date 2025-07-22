@@ -143,7 +143,7 @@ function [fits, model_output] = fit_extended_model_SPM(formatted_file, result_di
     fits.model_acc = sum(model_output.action_probs(~isnan(model_output.action_probs)) > 0.5) / numel(model_output.action_probs(~isnan(model_output.action_probs)));
     fits.F = DCM.F;
 
-    if ismember(func2str(MDP.model), {'model_SM_KF_DDM_all_choices', 'model_SM_KF_SIGMA_DDM_all_choices'})
+    if ismember(func2str(MDP.model), {'model_SM_KF_DDM_all_choices', 'model_SM_KF_SIGMA_DDM_all_choices', 'model_SM_KF_SIGMA_logistic_DDM'})
         fits.num_invalid_rts = model_output.num_invalid_rts;
     end
 
@@ -154,7 +154,7 @@ function [fits, model_output] = fit_extended_model_SPM(formatted_file, result_di
 
     datastruct.actions = simmed_model_output.actions;
     datastruct.rewards = simmed_model_output.rewards;
-    if ismember(func2str(MDP.model), {'model_SM_KF_DDM_all_choices', 'model_SM_KF_SIGMA_DDM_all_choices'})
+    if ismember(func2str(MDP.model), {'model_SM_KF_DDM_all_choices', 'model_SM_KF_SIGMA_DDM_all_choices', 'model_SM_KF_SIGMA_logistic_DDM'})
         datastruct.RTs = simmed_model_output.rts;
     else
         datastruct.RTs = nan(40,9);
