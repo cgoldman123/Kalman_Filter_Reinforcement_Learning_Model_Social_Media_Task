@@ -69,6 +69,8 @@ function [fits, model_output] = fit_extended_model_SPM(formatted_file, result_di
         'dI', dI, 'actions',  sub.a,  'RTs', sub.RT, 'rewards', sub.r, 'bandit1_schedule', sub.bandit1_schedule,...
         'bandit2_schedule', sub.bandit2_schedule, 'settings', MDP.settings, 'result_dir', result_dir);
     
+    % mdp = datastruct;
+    % save('./SPM_scripts/social_media_local_mdp_cb1.mat', 'mdp');
 
 
     if ispc
@@ -92,7 +94,7 @@ function [fits, model_output] = fit_extended_model_SPM(formatted_file, result_di
     fits = DCM.params;
     for i = 1:length(field)
         if ismember(field{i},{'learning_rate', 'learning_rate_pos', 'learning_rate_neg', 'noise_learning_rate', 'alpha_start', 'alpha_inf', 'associability_weight', ...
-                'starting_bias_baseline'})
+                'starting_bias_baseline', 'ws', 'wd'})
             fits.(field{i}) = 1/(1+exp(-DCM.Ep.(field{i})));
         elseif ismember(field{i},{'h1_dec_noise', 'h5_dec_noise', 'h5_baseline_dec_noise', 'h5_slope_dec_noise', ...
                 'initial_sigma', 'initial_sigma_r', 'initial_mu', 'initial_associability', ...
@@ -104,7 +106,7 @@ function [fits, model_output] = fit_extended_model_SPM(formatted_file, result_di
             fits.(field{i}) = exp(DCM.Ep.(field{i}));
         elseif ismember(field{i},{'h5_baseline_info_bonus', 'h5_slope_info_bonus', 'h1_info_bonus', 'baseline_info_bonus', ...
                 'side_bias', 'side_bias_h1', 'side_bias_h5', 'info_bonus', 'h5_info_bonus', ...
-                'drift_baseline', 'drift','directed_exp'})
+                'drift_baseline', 'drift','directed_exp', 'V0'})
             fits.(field{i}) = DCM.Ep.(field{i});
         elseif any(strcmp(field{i},{'nondecision_time'}))
             fits.(field{i}) = 0.1 + (0.3 - 0.1) ./ (1 + exp(-DCM.Ep.(field{i})));  
@@ -143,7 +145,7 @@ function [fits, model_output] = fit_extended_model_SPM(formatted_file, result_di
     fits.model_acc = sum(model_output.action_probs(~isnan(model_output.action_probs)) > 0.5) / numel(model_output.action_probs(~isnan(model_output.action_probs)));
     fits.F = DCM.F;
 
-    if ismember(func2str(MDP.model), {'model_SM_KF_DDM_all_choices', 'model_SM_KF_SIGMA_DDM_all_choices', 'model_SM_KF_SIGMA_logistic_DDM'})
+    if ismember(func2str(MDP.model), {'model_SM_KF_DDM_all_choices', 'model_SM_KF_SIGMA_DDM_all_choices', 'model_SM_KF_SIGMA_logistic_DDM', 'model_SM_KF_SIGMA_logistic_RACING'})
         fits.num_invalid_rts = model_output.num_invalid_rts;
     end
 
@@ -154,7 +156,7 @@ function [fits, model_output] = fit_extended_model_SPM(formatted_file, result_di
 
     datastruct.actions = simmed_model_output.actions;
     datastruct.rewards = simmed_model_output.rewards;
-    if ismember(func2str(MDP.model), {'model_SM_KF_DDM_all_choices', 'model_SM_KF_SIGMA_DDM_all_choices', 'model_SM_KF_SIGMA_logistic_DDM'})
+    if ismember(func2str(MDP.model), {'model_SM_KF_DDM_all_choices', 'model_SM_KF_SIGMA_DDM_all_choices', 'model_SM_KF_SIGMA_logistic_DDM', 'model_SM_KF_SIGMA_logistic_RACING'})
         datastruct.RTs = simmed_model_output.rts;
     else
         datastruct.RTs = nan(40,9);
@@ -170,7 +172,7 @@ function [fits, model_output] = fit_extended_model_SPM(formatted_file, result_di
 
     for i = 1:length(field)
         if ismember(field{i},{'learning_rate', 'learning_rate_pos', 'learning_rate_neg', 'noise_learning_rate', 'alpha_start', 'alpha_inf', 'associability_weight', ...
-                'starting_bias_baseline'})
+                'starting_bias_baseline', 'ws', 'wd'})
             fits.(['simfit_' field{i}]) = 1/(1+exp(-simfit_DCM.Ep.(field{i})));
         elseif ismember(field{i},{'h1_dec_noise', 'h5_dec_noise', 'h5_baseline_dec_noise', 'h5_slope_dec_noise', ...
                 'initial_sigma', 'initial_sigma_r', 'initial_mu', 'initial_associability', ...
@@ -182,7 +184,7 @@ function [fits, model_output] = fit_extended_model_SPM(formatted_file, result_di
             fits.(['simfit_' field{i}]) = exp(simfit_DCM.Ep.(field{i}));
         elseif ismember(field{i},{'h5_baseline_info_bonus', 'h5_slope_info_bonus', 'h1_info_bonus', 'baseline_info_bonus',...
                 'side_bias', 'side_bias_h1', 'side_bias_h5', 'info_bonus', 'h5_info_bonus',...
-                'drift_baseline', 'drift', 'directed_exp'})
+                'drift_baseline', 'drift', 'directed_exp', 'V0'})
             fits.(['simfit_' field{i}]) = simfit_DCM.Ep.(field{i});
         elseif any(strcmp(field{i},{'nondecision_time'}))
             fits.(['simfit_' field{i}]) = 0.1 + (0.3 - 0.1) ./ (1 + exp(-simfit_DCM.Ep.(field{i})));     

@@ -3,12 +3,7 @@ function output_struct = get_simulated_model_free(root, experiment, room_type, c
 
     % File to do model free analyses on simulated data
     % Load the mdp variable to get bandit schedule
-    if cb==1
-        load('./SPM_scripts/social_media_mdp.mat'); 
-    else
-        load('./SPM_scripts/social_media_mdp_cb.mat'); 
-    end
-
+    load(['./SPM_scripts/social_media_' experiment '_mdp_cb' num2str(cb) '.mat']); 
 
     mdp_fieldnames = fieldnames(mdp);
     for (i=1:length(mdp_fieldnames))
@@ -28,11 +23,23 @@ function output_struct = get_simulated_model_free(root, experiment, room_type, c
     end
 
     % Load in example file to get schedule
-    if cb==1
-        file = [root '\NPC\DataSink\StimTool_Online\WB_Social_Media\social_media_667fb298629d2b1d2c7ac461_T1_2024-07-31_16h28.13.853.csv'];
+    if strcmp(experiment, 'prolific')
+        if cb==1
+            file = [root '\NPC\DataSink\StimTool_Online\WB_Social_Media\social_media_667fb298629d2b1d2c7ac461_T1_2024-07-31_16h28.13.853.csv'];
+        else
+            file = [root '\NPC\DataSink\StimTool_Online\WB_Social_Media_CB\social_media_666878a27888fdd27f529c64_T1_CB_2024-08-06_09h14.52.614.csv'];
+        end
     else
-        file = [root '\NPC\DataSink\StimTool_Online\WB_Social_Media_CB\social_media_666878a27888fdd27f529c64_T1_CB_2024-08-06_09h14.52.614.csv'];
+        % Local data
+        if cb==1
+            file = [root '\rsmith\wellbeing\data\raw\sub-AV841\AV841-T1-__SM_R1-_BEH.csv'];
+        else
+            file = [root '\rsmith\wellbeing\data\raw\sub-AA003\AA003-T1-__SM_R3-_BEH.csv'];
+        end
     end
+
+
+
     output_struct.id_label = id_label;
     param_fields = fieldnames(MDP.params);
     for i = 1:length(param_fields)

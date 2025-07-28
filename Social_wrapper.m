@@ -29,13 +29,13 @@ function [output_table] = Social_wrapper(varargin)
     if ispc
         fitting_procedure = "SPM"; % Specify fitting procedure as "SPM", "VBA", or "PYDDM"
         root = 'L:/';
-        experiment = 'prolific'; % indicate local or prolific
+        experiment = 'local'; % indicate local or prolific
         results_dir = sprintf([root 'rsmith/lab-members/cgoldman/Wellbeing/social_media/output/test/']);
         if nargin > 0
             id = varargin{1};
             room = varargin{2};
         else
-            if strcmp(experiment,'prolific'); id = '568d0641b5a2c2000cb657d0'; elseif strcmp(experiment,'local'); id = 'CA336';end   % CA336 BO224 562eb896733ea000051638c6 666878a27888fdd27f529c64 
+            if strcmp(experiment,'prolific'); id = '568d0641b5a2c2000cb657d0'; elseif strcmp(experiment,'local'); id = 'AV841';end   % CA336 BO224 562eb896733ea000051638c6 666878a27888fdd27f529c64 
             room = 'Like';
         end
         % Only set the anonymous function for the model and assign the
@@ -45,12 +45,12 @@ function [output_table] = Social_wrapper(varargin)
         if strcmp(fitting_procedure, "PYDDM")
             MDP.settings = 'fit all choices and rts'; %(e.g., "fit all choices and rts", "fit first free choice and rt")
         elseif ~strcmp(fitting_procedure, "PYDDM")
-            model = "KF_SIGMA_logistic_DDM"; % indicate if 'KF_UCB', 'RL', 'KF_UCB_DDM', 'KF_SIGMA_DDM', 'KF_SIGMA'
-            MDP.field = {'h1_dec_noise','h5_dec_noise','side_bias_h1','side_bias_h5','h5_info_bonus','h1_info_bonus','sigma_d', 'sigma_r', 'starting_bias_baseline', 'drift_baseline', 'decision_thresh_baseline', 'drift_reward_diff_mod'};
+            model = "KF_SIGMA_logistic_RACING"; % indicate if 'KF_UCB', 'RL', 'KF_UCB_DDM', 'KF_SIGMA_DDM', 'KF_SIGMA'
+            MDP.field = {'h1_dec_noise','h5_dec_noise','side_bias_h1','side_bias_h5','h5_info_bonus','h1_info_bonus','sigma_d', 'sigma_r', 'starting_bias_baseline', 'drift_baseline', 'decision_thresh_baseline', 'drift_reward_diff_mod', 'wd', 'ws', 'V0'};
             if strcmp(fitting_procedure, "VBA")
                 MDP.observation_params = MDP.field; % When there is no latent state learning, all params are observation params
             end
-            if ismember(model, {'KF_UCB_DDM', 'KF_SIGMA_DDM', 'KF_SIGMA_logistic_DDM'})
+            if ismember(model, {'KF_UCB_DDM', 'KF_SIGMA_DDM', 'KF_SIGMA_logistic_DDM', 'KF_SIGMA_logistic_RACING'})
                 % possible mappings are action_prob, reward_diff, UCB,
                 % side_bias, decsision_noise
                 MDP.settings.drift_mapping = {'reward_diff','decision_noise'};
@@ -112,8 +112,9 @@ function [output_table] = Social_wrapper(varargin)
     
     % Add libraries. Some of these are for the VBA example code and may not
     % be needed.
-    addpath([root '/rsmith/lab-members/cgoldman/Wellbeing/social_media/scripts/SPM_scripts/'])
-    addpath([root '/rsmith/lab-members/cgoldman/Wellbeing/social_media/scripts/VBA_scripts/'])
+    addpath(['./SPM_scripts/'])
+    addpath(['./VBA_scripts/'])
+    addpath(['./racing_accumulator/'])
     addpath([root '/rsmith/all-studies/util/spm12/']);
     addpath([root '/rsmith/all-studies/util/spm12/toolbox/DEM/']);
     addpath([root '/rsmith/all-studies/util/VBA-toolbox-master/']);
@@ -132,8 +133,8 @@ function [output_table] = Social_wrapper(varargin)
     % in the fitting file.
     if ~strcmp(fitting_procedure,'PYDDM')
         model_functions = containers.Map(...
-            {'KF_SIGMA_logistic','KF_SIGMA_logistic_DDM','KF_UCB', 'RL', 'KF_UCB_DDM', 'KF_SIGMA_DDM', 'KF_SIGMA'}, ...
-            {@model_SM_KF_SIGMA_logistic, @model_SM_KF_SIGMA_logistic_DDM,@model_SM_KF_all_choices, @model_SM_RL_all_choices, @model_SM_KF_DDM_all_choices, @model_SM_KF_SIGMA_DDM_all_choices, @model_SM_KF_SIGMA_all_choices} ...
+            {'KF_SIGMA_logistic','KF_SIGMA_logistic_DDM','KF_UCB', 'RL', 'KF_UCB_DDM', 'KF_SIGMA_DDM', 'KF_SIGMA' 'KF_SIGMA_logistic_RACING'}, ...
+            {@model_SM_KF_SIGMA_logistic, @model_SM_KF_SIGMA_logistic_DDM,@model_SM_KF_all_choices, @model_SM_RL_all_choices, @model_SM_KF_DDM_all_choices, @model_SM_KF_SIGMA_DDM_all_choices, @model_SM_KF_SIGMA_all_choices @model_SM_KF_SIGMA_logistic_RACING} ...
         );
         if isKey(model_functions, model)
             MDP.model = model_functions(model);
@@ -163,7 +164,7 @@ function [output_table] = Social_wrapper(varargin)
         end
 
         % Parameters fixed or fit in Kalman Filter (KF) models
-        if ismember(model, {'KF_SIGMA_logistic', 'KF_SIGMA_logistic_DDM','KF_UCB', 'KF_UCB_DDM', 'KF_SIGMA_DDM', 'KF_SIGMA'})
+        if ismember(model, {'KF_SIGMA_logistic', 'KF_SIGMA_logistic_DDM','KF_UCB', 'KF_UCB_DDM', 'KF_SIGMA_DDM', 'KF_SIGMA', 'KF_SIGMA_logistic_RACING'})
             if any(strcmp('sigma_d', MDP.field))
                 MDP.params.sigma_d = 6;
             else
@@ -233,7 +234,7 @@ function [output_table] = Social_wrapper(varargin)
         end
         
         % Parameters fixed or fit in Kalman Filter (KF) SIGMA DDM Model
-        if ismember(model, {'KF_SIGMA_DDM','KF_SIGMA_logistic_DDM'})
+        if ismember(model, {'KF_SIGMA_DDM','KF_SIGMA_logistic_DDM', 'KF_SIGMA_logistic_RACING'})
             MDP.params.starting_bias_baseline = .5;
             MDP.params.drift_baseline = 0;
             MDP.params.decision_thresh_baseline = 2; 
@@ -243,10 +244,16 @@ function [output_table] = Social_wrapper(varargin)
             if any(contains(MDP.settings.bias_mapping,'reward_diff'))
                 MDP.params.starting_bias_reward_diff_mod = .1;
             end
+            %% Racing Accumulator Params %%
+            if ismember(model, {'KF_SIGMA_logistic_RACING'})
+                MDP.params.wd = 0.05;
+                MDP.params.ws = 0.05;
+                MDP.params.V0 = 0;
+            end
         end
        
         % Parameters fixed or fit in Kalman Filter (KF) logistic model
-        if ismember(model, {'KF_SIGMA_logistic','KF_SIGMA_logistic_DDM'})
+        if ismember(model, {'KF_SIGMA_logistic','KF_SIGMA_logistic_DDM', 'KF_SIGMA_logistic_RACING'})
             MDP.params.h1_info_bonus = 0;
             MDP.params.h5_info_bonus = 0;
             MDP.params.h1_dec_noise = 1;

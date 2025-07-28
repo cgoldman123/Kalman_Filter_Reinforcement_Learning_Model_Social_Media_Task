@@ -103,6 +103,15 @@ for i = 1:length(DCM.field)
         elseif any(strcmp(field,{'random_exp'})) % bound between 0 and 40
             pE.(field) = log(DCM.params.(field));               % in log-space (to keep positive)
             pC{i,i}    = 1/4;                 
+        elseif any(strcmp(field,{'ws'})) 
+            pE.(field) = log(DCM.params.(field)/(1-DCM.params.(field)));    
+            pC{i,i}    = 1/4;   
+        elseif any(strcmp(field,{'wd'})) %
+            pE.(field) = log(DCM.params.(field)/(1-DCM.params.(field))); 
+            pC{i,i}    = 1/4;   
+        elseif any(strcmp(field,{'V0'})) 
+            pE.(field) = DCM.params.(field);               % in log-space (to keep positive)
+            pC{i,i}    = 1; 
         else   
             disp(field);
             error("Param not properly transformed");
@@ -148,7 +157,7 @@ function L = spm_mdp_L(P,M,U,Y)
     field = fieldnames(M.pE);
     for i = 1:length(field)
         if ismember(field{i},{'learning_rate', 'learning_rate_pos', 'learning_rate_neg', 'noise_learning_rate', 'alpha_start', 'alpha_inf', 'associability_weight', ...
-                'starting_bias_baseline'})
+                'starting_bias_baseline', 'wd', 'ws'})
             params.(field{i}) = 1/(1+exp(-P.(field{i})));
         elseif ismember(field{i},{'h1_dec_noise', 'h5_dec_noise','h5_baseline_dec_noise', 'h5_slope_dec_noise', ...
                 'initial_sigma', 'initial_sigma_r', 'initial_mu', 'initial_associability', ...
@@ -160,7 +169,7 @@ function L = spm_mdp_L(P,M,U,Y)
             params.(field{i}) = exp(P.(field{i}));
         elseif ismember(field{i},{'h5_baseline_info_bonus', 'h5_slope_info_bonus', 'h1_info_bonus', 'baseline_info_bonus',...
                 'side_bias', 'side_bias_h1', 'side_bias_h5', 'info_bonus', 'h5_info_bonus',...
-                'drift_baseline', 'drift', 'directed_exp'})
+                'drift_baseline', 'drift', 'directed_exp', 'V0'})
             params.(field{i}) = P.(field{i});
         elseif ismember(field{i},{'decision_thresh_baseline'})
             params.(field{i}) = .5 + (1000 - .5) ./ (1 + exp(-P.(field{i})));     
@@ -206,16 +215,17 @@ function L = spm_mdp_L(P,M,U,Y)
 
     % Fit to reaction time pdfs if DDM, fit to action probabilities if
     % choice model
-    if ismember(func2str(M.model), {'model_SM_KF_DDM_all_choices', 'model_SM_KF_SIGMA_DDM_all_choices', 'model_SM_KF_SIGMA_logistic_DDM'})
+    if ismember(func2str(M.model), {'model_SM_KF_DDM_all_choices', 'model_SM_KF_SIGMA_DDM_all_choices', 'model_SM_KF_SIGMA_logistic_DDM', 'model_SM_KF_SIGMA_logistic_RACING'})
         log_probs = log(model_output.rt_pdf+eps);
         summed_log_probs = sum(log_probs(~isnan(log_probs)));
-        % if any log probs were NaN that should not be, throw an error or consider the action
-        % prob to be realmin so the max penalty is given. Note that we
-        % expect a different number of nan values for the all choices
-        % models vs the first free choice models
+        % if any log probs were NaN that should not be, throw an error.
+        % Note that we expect a different number of nan values for the
+        % models fitting all free choices vs first free choice.
+        % Models fitting all choices:
         if ismember(func2str(M.model), {'model_SM_KF_DDM_all_choices', 'model_SM_KF_SIGMA_DDM_all_choices'})
             number_nan_log_probs = 120 - model_output.num_invalid_rts - sum(~isnan(log_probs(:)));
-        elseif ismember(func2str(M.model), {'model_SM_KF_SIGMA_logistic_DDM'})
+        % Models fitting first choice
+        elseif ismember(func2str(M.model), {'model_SM_KF_SIGMA_logistic_DDM', 'model_SM_KF_SIGMA_logistic_RACING'})
             number_nan_log_probs = 40 - model_output.num_invalid_rts - sum(~isnan(log_probs(:)));
         end
         if number_nan_log_probs > 0
