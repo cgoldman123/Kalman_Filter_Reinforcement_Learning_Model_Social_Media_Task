@@ -4,8 +4,10 @@ function [output_table] = Social_wrapper(varargin)
     
     %% Clear workspace
     clearvars -except varargin
-    SIM = 0; % Simulate the model
-    FIT = 1; % Fit the model
+    % Simulate (and plot) data under the model OR fit the model to actual
+    % data. Only toggle one of these on.
+    SIM = 1; % Simulate the model
+    FIT = 0; % Fit the model
     if FIT
         MDP.get_rts_and_dont_fit_model = 0; % Toggle on to extract the rts and not fit the model
         MDP.do_model_free = 1; % Toggle on to do model-free analyses on actual data
@@ -45,8 +47,10 @@ function [output_table] = Social_wrapper(varargin)
         if strcmp(fitting_procedure, "PYDDM")
             MDP.settings = 'fit all choices and rts'; %(e.g., "fit all choices and rts", "fit first free choice and rt")
         elseif ~strcmp(fitting_procedure, "PYDDM")
-            model = "KF_SIGMA_logistic_RACING"; % indicate if 'KF_UCB', 'RL', 'KF_UCB_DDM', 'KF_SIGMA_DDM', 'KF_SIGMA'
-            MDP.field = {'h1_dec_noise','h5_dec_noise','side_bias_h1','side_bias_h5','h5_info_bonus','h1_info_bonus','sigma_d', 'sigma_r', 'starting_bias_baseline', 'drift_baseline', 'decision_thresh_baseline', 'drift_reward_diff_mod', 'wd', 'ws', 'V0'};
+            model = "KF_SIGMA_DDM"; % indicate if 'KF_UCB', 'RL', 'KF_UCB_DDM', 'KF_SIGMA_DDM', 'KF_SIGMA'
+            %MDP.field = {'h1_dec_noise','h5_dec_noise','side_bias_h1','side_bias_h5','h5_info_bonus','h1_info_bonus','sigma_d', 'sigma_r', 'starting_bias_baseline', 'drift_baseline', 'decision_thresh_baseline', 'drift_reward_diff_mod', 'wd', 'ws', 'V0'};
+            MDP.field = {'h1_dec_noise','h5_dec_noise','side_bias_h1','side_bias_h5','h5_info_bonus','h1_info_bonus','sigma_d', 'sigma_r', 'starting_bias_baseline', 'drift_baseline', 'decision_thresh_baseline', 'drift_reward_diff_mod'};
+            
             if strcmp(fitting_procedure, "VBA")
                 MDP.observation_params = MDP.field; % When there is no latent state learning, all params are observation params
             end
@@ -115,6 +119,7 @@ function [output_table] = Social_wrapper(varargin)
     addpath(['./SPM_scripts/'])
     addpath(['./VBA_scripts/'])
     addpath(['./racing_accumulator/'])
+    addpath(['./plotting/'])
     addpath([root '/rsmith/all-studies/util/spm12/']);
     addpath([root '/rsmith/all-studies/util/spm12/toolbox/DEM/']);
     addpath([root '/rsmith/all-studies/util/VBA-toolbox-master/']);
@@ -267,17 +272,26 @@ function [output_table] = Social_wrapper(varargin)
         
         
         if SIM
+            cb = 2; % choose if simulating data using CB1 or CB2 schedule
             if MDP.plot_simulated_data
-                % choose generative mean difference of 2, 4, 8, 12, 24
-                gen_mean_difference = 4; %
-                % choose horizon of 1 or 5
-                horizon = 5;
-                % if truncate_h5 is true, use the H5 bandit schedule but truncate so that all games are H1
-                truncate_h5 = 1;
-                plot_simulated_behavior(MDP, gen_mean_difference, horizon, truncate_h5);
+                do_plot_choice_given_gen_mean = 1; % Toggle on to plot choice for a given generative mean
+                do_plot_model_statistics = 1; % Toggle on to plot statistics under the current parameter set
+                MDP.num_samples_to_draw_from_pdf = 0;   %If 0, the model will simulate a choice/RT based on the maximum of the simulated pdf. If >0, it will sample from the distribution of choices/RTs this many times.
+                MDP.param_to_sweep = 'V0'; % leave empty if don't want to sweep over param
+                MDP.param_values_to_sweep_over = linspace(0, 7, 4); 
+                if do_plot_choice_given_gen_mean
+                    gen_mean_difference = 4; % choose generative mean difference of 2, 4, 8, 12, 24
+                    horizon = 5; % choose horizon of 1 or 5
+                    truncate_h5 = 1; % if truncate_h5 is true, use the H5 bandit schedule but truncate so that all games are H1
+                    plot_choice_given_gen_mean(MDP, gen_mean_difference, horizon, truncate_h5);
+                end
+                if do_plot_model_statistics
+                    plot_model_statistics(experiment, room, cb,MDP);
+                end
             end
+            % Indicate if you would like to do model-free analyses on
+            % simulated data
             if MDP.do_simulated_model_free
-                cb = 2; % choose if simulating CB1 or CB2
                 output_table = get_simulated_model_free(root, experiment, room, cb, results_dir,MDP,id_label);
             end
         end

@@ -43,6 +43,7 @@ function model_output = model_SM_KF_SIGMA_logistic_RACING(params, actions_and_rt
     sigma1 = [initial_sigma * ones(G,1), zeros(G,8)];
     sigma2 = [initial_sigma * ones(G,1), zeros(G,8)];
     total_uncertainty = nan(G,9);
+    estimated_mean_diff = nan(G,9);
     relative_uncertainty_of_choice = nan(G,9);
     change_in_uncertainty_after_choice = nan(G,9);
 
@@ -132,19 +133,41 @@ function model_output = model_SM_KF_SIGMA_logistic_RACING(params, actions_and_rt
                 %SIMULATION OR FITTING
                 if sim
                     % call the race model for 1 trial
-                    out = rWaldRace(1, ...      % simulate 1 trial
-                                    v_cell, ... % 1×2 cell of drifts
-                                    B_cell, ... % 1×2 cell of thresholds
-                                    A_cell, ... % 1×2 cell of threshold variabilities
-                                    t0_i,   ... % scalar non‑decision time
-                                    s_cell);    % 1×2 cell of noise scales
-                
-                    % extract simulated RT and choice
-                    simmed_rt   = out.RT;
-                    chose_right = out.R;        % 1 or 2
-                
-                    actions(g,t) = chose_right + 0;  % match your existing coding
-                    if chose_right == 2
+                    % Simulate a choice/RT based on random sampling
+                    if mdp.num_samples_to_draw_from_pdf > 0
+                        out = rWaldRace(1, ...      % simulate 1 trial
+                                        v_cell, ... % 1×2 cell of drifts
+                                        B_cell, ... % 1×2 cell of thresholds
+                                        A_cell, ... % 1×2 cell of threshold variabilities
+                                        t0_i,   ... % scalar non‑decision time
+                                        s_cell);    % 1×2 cell of noise scales
+                    
+                        % extract simulated RT and choice
+                        simmed_rt   = out.RT;
+                        simmed_choice = out.R;        % 1 or 2
+                    else
+                        % Simulate a choice/RT based on the maximum of the pdf
+                        % Get the max pdf for the left choice
+                        fun = @(rt) dWaldRace(rt, 1, A_cell, B_cell, t0_i, v_cell, s_cell );
+                        % This function gets min so we use a negative fun
+                        [rt_max_left, neg_max_pdf_left] = fminbnd(@(rt) -fun(rt), 0, max_rt); 
+                        % Get the max pdf of the right choice
+                        fun = @(rt) dWaldRace(rt, 2, A_cell, B_cell, t0_i, v_cell, s_cell );
+                        % This function gets min so we use a negative fun
+                        [rt_max_right, neg_max_pdf_right] = fminbnd(@(rt) -fun(rt), 0, max_rt); 
+                        % Take the choice/RT associated with the biggest pdf
+                        % (remember it's negative)
+                        if neg_max_pdf_left < neg_max_pdf_right
+                            simmed_rt = rt_max_left;
+                            simmed_choice = 1;
+                        else
+                            simmed_rt = rt_max_right;
+                            simmed_choice = 2;
+                        end
+
+                    end
+                    actions(g,t) = simmed_choice;
+                    if simmed_choice == 2
                         rewards(g,t) = mdp.bandit2_schedule(g,t);
                     else
                         rewards(g,t) = mdp.bandit1_schedule(g,t);
@@ -205,6 +228,9 @@ function model_output = model_SM_KF_SIGMA_logistic_RACING(params, actions_and_rt
                 mu2(t+1)            = mu2(t) + pred_errors_alpha(g,t);
                 mu1(t+1)            = mu1(t);
             end
+            % save total uncertainty and reward difference
+            total_uncertainty(g,t) = ((sigma1(g,t)^2)+(sigma2(g,t)^2))^.5;
+            estimated_mean_diff(g,t) = mu2(t) - mu1(t);
     
             if ~sim
                 if rts(g,t) <= 0 || rts(g,t) >= max_rt
@@ -232,6 +258,7 @@ function model_output = model_SM_KF_SIGMA_logistic_RACING(params, actions_and_rt
     model_output.rts = rts;
     model_output.relative_uncertainty_of_choice = relative_uncertainty_of_choice;
     model_output.total_uncertainty = total_uncertainty;
+    model_output.estimated_mean_diff = estimated_mean_diff;
     model_output.change_in_uncertainty_after_choice = change_in_uncertainty_after_choice;
 
 end

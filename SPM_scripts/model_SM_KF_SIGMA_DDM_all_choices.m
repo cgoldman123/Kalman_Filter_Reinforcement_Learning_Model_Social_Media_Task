@@ -34,6 +34,7 @@ function model_output = model_SM_KF_SIGMA_DDM_all_choices(params, actions_and_rt
     sigma1 = [initial_sigma * ones(G,1), zeros(G,8)];
     sigma2 = [initial_sigma * ones(G,1), zeros(G,8)];
     total_uncertainty = nan(G,9);
+    estimated_mean_diff = nan(G,9);
     relative_uncertainty_of_choice = nan(G,9);
     change_in_uncertainty_after_choice = nan(G,9);
 
@@ -80,7 +81,7 @@ function model_output = model_SM_KF_SIGMA_DDM_all_choices(params, actions_and_rt
 
 
                 % total uncertainty is variance of both arms
-                total_uncertainty(g,t) = (sigma1(g,t)^2 + sigma2(g,t)^2)^.5;
+                total_uncert = (sigma1(g,t)^2 + sigma2(g,t)^2)^.5;
                 
                  % % Exponential descent
                  RE = Y + ((1 - Y) * (1 - exp(-z * (t - 5))) / (1 - exp(-4 * z)));
@@ -88,7 +89,7 @@ function model_output = model_SM_KF_SIGMA_DDM_all_choices(params, actions_and_rt
                  % Linear descent
                  % RE = Y * ((9 - t)/4);
                 
-                decision_noise = total_uncertainty(g,t)*baseline_noise*RE;
+                decision_noise = total_uncert*baseline_noise*RE;
 
 
                 % probability of choosing bandit 1
@@ -206,6 +207,9 @@ function model_output = model_SM_KF_SIGMA_DDM_all_choices(params, actions_and_rt
                 mu2(t+1) = mu2(t) + pred_errors_alpha(g,t);
                 mu1(t+1) = mu1(t); 
             end
+            % save total uncertainty and reward difference
+            total_uncertainty(g,t) = ((sigma1(g,t)^2)+(sigma2(g,t)^2))^.5;
+            estimated_mean_diff(g,t) = mu2(t) - mu1(t);
 
             if ~sim
                 if rts(g,t) >= max_rt || rts(g,t) <= 0
@@ -233,6 +237,7 @@ function model_output = model_SM_KF_SIGMA_DDM_all_choices(params, actions_and_rt
     model_output.rts = rts;
     model_output.relative_uncertainty_of_choice = relative_uncertainty_of_choice;
     model_output.total_uncertainty = total_uncertainty;
+    model_output.estimated_mean_diff = estimated_mean_diff;
     model_output.change_in_uncertainty_after_choice = change_in_uncertainty_after_choice;
 
 end

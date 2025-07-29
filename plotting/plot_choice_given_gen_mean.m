@@ -1,7 +1,7 @@
-function plot_simulated_behavior(MDP, gen_mean_difference, horizon, truncate_h5)
+function plot_choice_given_gen_mean(MDP, gen_mean_difference, horizon, truncate_h5)
     % File to plot social media simulated data
     % Load the mdp variable to get bandit schedule
-
+    % for prolific CB1
     load('./SPM_scripts/social_media_prolific_mdp_cb1.mat'); 
     mdp_fieldnames = fieldnames(mdp);
     for (i=1:length(mdp_fieldnames))
