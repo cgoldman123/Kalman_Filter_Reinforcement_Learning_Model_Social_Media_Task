@@ -10,17 +10,7 @@ function [fits, model_output] = fit_extended_model_SPM(formatted_file, result_di
     addpath([root 'rsmith/lab-members/cgoldman/general/']);
 
 
-    sub = load_TMS_v1(formatted_file);
-
-    % If we are just getting the rts and not fitting the model, return
-    if MDP.get_rts_and_dont_fit_model
-        fits = sub.RT; % return RT as fits as a placeholder
-        model_output.results.RT = sub.RT; % store RTs in model output
-        model_output.results.choices = sub.a; % store choices in model output
-        return;
-    end
-
-
+    sub = process_behavioral_data_SM(formatted_file);
 
     disp(sub);
     
@@ -71,7 +61,15 @@ function [fits, model_output] = fit_extended_model_SPM(formatted_file, result_di
     
     % mdp = datastruct;
     % save('./SPM_scripts/social_media_local_mdp_cb1.mat', 'mdp');
-
+    
+    % If we are just getting the rts/datastruct and not fitting the model, return
+    if MDP.get_processed_behavior_and_dont_fit_model
+        fits = sub.RT; % return RT as fits as a placeholder
+        model_output.results.RT = sub.RT; % store RTs in model output
+        model_output.results.choices = sub.a; % store choices in model output
+        model_output.datastruct = datastruct; % store full datastruct for simulating behavior
+        return;
+    end
 
     if ispc
         root = 'L:/';

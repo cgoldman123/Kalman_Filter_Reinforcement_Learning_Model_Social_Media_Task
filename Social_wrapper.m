@@ -1,7 +1,7 @@
 function [output_table] = Social_wrapper(varargin)
     %% If running the pyddm scripts for the first time, make sure the correct python virtual environment is called. Run this code to activate the correct virtual environment
     % pyenv('Version', 'C:\Users\CGoldman\AppData\Local\anaconda3\envs\pyddm\python.exe')
-    
+    close all;
     %% Clear workspace
     clearvars -except varargin
     % Simulate (and plot) data under the model OR fit the model to actual
@@ -9,7 +9,7 @@ function [output_table] = Social_wrapper(varargin)
     SIM = 1; % Simulate the model
     FIT = 0; % Fit the model
     if FIT
-        MDP.get_rts_and_dont_fit_model = 0; % Toggle on to extract the rts and not fit the model
+        MDP.get_processed_behavior_and_dont_fit_model = 1; % Toggle on to extract the rts and other processed behavioral data but not fit the model
         MDP.do_model_free = 1; % Toggle on to do model-free analyses on actual data
         MDP.fit_model = 1; % Toggle on to fit the model
         if MDP.fit_model
@@ -18,7 +18,6 @@ function [output_table] = Social_wrapper(varargin)
     elseif SIM
         MDP.plot_simulated_data = 1; %Toggle on to plot data simulated by model
         MDP.do_simulated_model_free = 1; % Toggle on to do model-free analyses on data simulated from prior parameters initialized in this main file.
-        id_label = '562c2ff0733ea000111630df_Iteration_5'; % Use this to give a name to the simulated data
     end
     rng(23);
     
@@ -277,22 +276,22 @@ function [output_table] = Social_wrapper(varargin)
                 do_plot_choice_given_gen_mean = 1; % Toggle on to plot choice for a given generative mean
                 do_plot_model_statistics = 1; % Toggle on to plot statistics under the current parameter set
                 MDP.num_samples_to_draw_from_pdf = 0;   %If 0, the model will simulate a choice/RT based on the maximum of the simulated pdf. If >0, it will sample from the distribution of choices/RTs this many times.
-                MDP.param_to_sweep = 'V0'; % leave empty if don't want to sweep over param
+                MDP.param_to_sweep = ''; % leave empty if don't want to sweep over param
                 MDP.param_values_to_sweep_over = linspace(0, 7, 4); 
                 if do_plot_choice_given_gen_mean
                     gen_mean_difference = 4; % choose generative mean difference of 2, 4, 8, 12, 24
                     horizon = 5; % choose horizon of 1 or 5
                     truncate_h5 = 1; % if truncate_h5 is true, use the H5 bandit schedule but truncate so that all games are H1
-                    plot_choice_given_gen_mean(MDP, gen_mean_difference, horizon, truncate_h5);
+                    plot_choice_given_gen_mean(root, fitting_procedure, experiment,room, results_dir, MDP, id, gen_mean_difference, horizon, truncate_h5);
                 end
                 if do_plot_model_statistics
-                    plot_model_statistics(experiment, room, cb,MDP);
+                    main_plot_model_statistics(root, fitting_procedure, experiment, room, results_dir,MDP, id);
                 end
             end
             % Indicate if you would like to do model-free analyses on
             % simulated data
             if MDP.do_simulated_model_free
-                output_table = get_simulated_model_free(root, experiment, room, cb, results_dir,MDP,id_label);
+                output_table = get_simulated_model_free(root, fitting_procedure, experiment, room, cb, results_dir,MDP,id);
             end
         end
     end

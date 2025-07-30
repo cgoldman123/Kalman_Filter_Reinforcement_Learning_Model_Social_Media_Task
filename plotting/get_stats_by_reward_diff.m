@@ -92,10 +92,12 @@ function summary_table = get_stats_by_reward_diff(MDP, simmed_model_output)
                 summary.(['mean_prob_choose_right_hor' num2str(h_val) '_choice' num2str(c)])(i,1) = mean(prob_right_vals);
                 summary.(['std_prob_choose_right_hor' num2str(h_val) '_choice' num2str(c)])(i,1)  = std(prob_right_vals);
                         
-                % Probability of choosing high info option
-                prob_high_info_vals = prob_choose_high_info(rows_rdiff_hor, c);
-                summary.(['mean_prob_high_info_hor' num2str(h_val) '_choice' num2str(c)])(i,1) = mean(prob_high_info_vals);
-                summary.(['std_prob_high_info_hor' num2str(h_val) '_choice' num2str(c)])(i,1)  = std(prob_high_info_vals);
+                % Probability of choosing high info option for high - low
+                % info rdiff
+                prob_high_info_vals_for_choice_num = prob_choose_high_info(horizon == h_val, c);
+                prob_high_info_vals_for_choice_num_and_rdiff = prob_high_info_vals_for_choice_num(gen_mean_diff_high_info_minus_low_info(horizon == h_val,c)==rdiff);
+                summary.(['mean_prob_high_info_hor' num2str(h_val) '_choice' num2str(c)])(i,1) = mean(prob_high_info_vals_for_choice_num_and_rdiff);
+                summary.(['std_prob_high_info_hor' num2str(h_val) '_choice' num2str(c)])(i,1)  = std(prob_high_info_vals_for_choice_num_and_rdiff);
 
                 % Reaction time
                 rt_vals = simmed_model_output.rts(rows_rdiff_hor, c);
@@ -103,9 +105,9 @@ function summary_table = get_stats_by_reward_diff(MDP, simmed_model_output)
                 summary.(['std_rt_hor' num2str(h_val) '_choice' num2str(c)])(i,1)  = std(rt_vals);          
 
                 % Reaction time for generative mean difference of high info
-                % minus low info
-                rt_vals_for_choice_num = simmed_model_output.rts(:, c);
-                rt_vals_for_choice_num_and_rdiff = rt_vals_for_choice_num(gen_mean_diff_high_info_minus_low_info(:,c)==rdiff);
+                % minus low info rdiff
+                rt_vals_for_choice_num = simmed_model_output.rts(horizon == h_val, c);
+                rt_vals_for_choice_num_and_rdiff = rt_vals_for_choice_num(gen_mean_diff_high_info_minus_low_info(horizon == h_val,c)==rdiff);
                 summary.(['mean_rt_high_minus_low_info_hor' num2str(h_val) '_choice' num2str(c)])(i,1) = mean(rt_vals_for_choice_num_and_rdiff);
                 summary.(['std_rt_high_minus_low_info_hor' num2str(h_val) '_choice' num2str(c)])(i,1)  = std(rt_vals_for_choice_num_and_rdiff);  
             end

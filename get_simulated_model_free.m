@@ -1,9 +1,11 @@
-function output_struct = get_simulated_model_free(root, experiment, room_type, cb, results_dir,MDP,id_label)
+function output_struct = get_simulated_model_free(root, fitting_procedure, experiment, room_type, cb, results_dir,MDP,id)
     timestamp = datestr(datetime('now'), 'mm_dd_yy_THH-MM-SS');
 
-    % File to do model free analyses on simulated data
-    % Load the mdp variable to get bandit schedule
-    load(['./SPM_scripts/social_media_' experiment '_mdp_cb' num2str(cb) '.mat']); 
+    % First call get_fits to get the schedule/forced choices before
+    MDP.get_processed_behavior_and_dont_fit_model = 1; % Toggle on to extract the rts and other processed behavioral data but not fit the model
+    MDP.fit_model = 1; % Toggle on even though the model won't fit
+    [rt_data, mdp] = get_fits(root, fitting_procedure, experiment,room_type, results_dir, MDP, id);
+    
 
     mdp_fieldnames = fieldnames(mdp);
     for (i=1:length(mdp_fieldnames))
@@ -40,7 +42,7 @@ function output_struct = get_simulated_model_free(root, experiment, room_type, c
 
 
 
-    output_struct.id_label = id_label;
+    output_struct.id = id;
     param_fields = fieldnames(MDP.params);
     for i = 1:length(param_fields)
         output_struct.(param_fields{i}) = MDP.params.(param_fields{i});
@@ -58,7 +60,7 @@ function output_struct = get_simulated_model_free(root, experiment, room_type, c
     end
 
 
-    outpath = sprintf([results_dir 'simulated_model_free_%s_%s_%s.csv'], id_label, room_type, timestamp);
+    outpath = sprintf([results_dir 'simulated_model_free_%s_%s_%s.csv'], id, room_type, timestamp);
     writetable(struct2table(output_struct,'AsArray', true), outpath);
     
 end

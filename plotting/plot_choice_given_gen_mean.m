@@ -1,8 +1,10 @@
-function plot_choice_given_gen_mean(MDP, gen_mean_difference, horizon, truncate_h5)
-    % File to plot social media simulated data
-    % Load the mdp variable to get bandit schedule
-    % for prolific CB1
-    load('./SPM_scripts/social_media_prolific_mdp_cb1.mat'); 
+function plot_choice_given_gen_mean(root, fitting_procedure, experiment,room_type, results_dir, MDP, id, gen_mean_difference, horizon, truncate_h5)
+    % First call get_fits to get the schedule/forced choices before
+    MDP.get_processed_behavior_and_dont_fit_model = 1; % Toggle on to extract the rts and other processed behavioral data but not fit the model
+    MDP.fit_model = 1; % Toggle on even though the model won't fit
+    [rt_data, mdp] = get_fits(root, fitting_procedure, experiment,room_type, results_dir, MDP, id);
+    
+    %load('./SPM_scripts/social_media_prolific_mdp_cb1.mat'); 
     mdp_fieldnames = fieldnames(mdp);
     for (i=1:length(mdp_fieldnames))
         MDP.(mdp_fieldnames{i}) = mdp.(mdp_fieldnames{i});

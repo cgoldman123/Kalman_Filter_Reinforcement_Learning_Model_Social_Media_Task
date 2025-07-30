@@ -1,7 +1,11 @@
-function plot_model_statistics(experiment, room, cb,MDP)
-    % File to do model free analyses on simulated data
+function main_plot_model_statistics(root, fitting_procedure, experiment, room_type, results_dir,MDP, id)
+    % First call get_fits to get the schedule/forced choices before
+    MDP.get_processed_behavior_and_dont_fit_model = 1; % Toggle on to extract the rts and other processed behavioral data but not fit the model
+    MDP.fit_model = 1; % Toggle on even though the model won't fit
+    [rt_data, mdp] = get_fits(root, fitting_procedure, experiment,room_type, results_dir, MDP, id);
+    
     % Load the mdp variable to get bandit schedule
-    load(['./SPM_scripts/social_media_' experiment '_mdp_cb' num2str(cb) '.mat']); 
+    % load(['./SPM_scripts/social_media_' experiment '_mdp_cb' num2str(cb) '.mat']); 
 
     mdp_fieldnames = fieldnames(mdp);
     for (i=1:length(mdp_fieldnames))
