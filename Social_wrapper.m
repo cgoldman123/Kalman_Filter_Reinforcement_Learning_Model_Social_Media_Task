@@ -115,10 +115,11 @@ function [output_table] = Social_wrapper(varargin)
     
     % Add libraries. Some of these are for the VBA example code and may not
     % be needed.
-    addpath(['./SPM_scripts/'])
-    addpath(['./VBA_scripts/'])
-    addpath(['./racing_accumulator/'])
-    addpath(['./plotting/'])
+    addpath(['./SPM_scripts/']);
+    addpath(['./VBA_scripts/']);
+    addpath(['./racing_accumulator/']);
+    addpath(['./plotting/']);
+    addpath(['./data_processing/']);
     addpath([root '/rsmith/all-studies/util/spm12/']);
     addpath([root '/rsmith/all-studies/util/spm12/toolbox/DEM/']);
     addpath([root '/rsmith/all-studies/util/VBA-toolbox-master/']);
