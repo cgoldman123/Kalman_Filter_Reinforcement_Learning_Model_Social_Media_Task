@@ -276,9 +276,9 @@ function [output_table] = Social_wrapper(varargin)
             if MDP.plot_simulated_data
                 do_plot_choice_given_gen_mean = 1; % Toggle on to plot choice for a given generative mean
                 do_plot_model_statistics = 1; % Toggle on to plot statistics under the current parameter set
-                MDP.num_samples_to_draw_from_pdf = 0;   %If 0, the model will simulate a choice/RT based on the maximum of the simulated pdf. If >0, it will sample from the distribution of choices/RTs this many times.
-                MDP.param_to_sweep = ''; % leave empty if don't want to sweep over param
-                MDP.param_values_to_sweep_over = linspace(0, 7, 4); 
+                MDP.num_samples_to_draw_from_pdf = 3;   %If 0, the model will simulate a choice/RT based on the maximum of the simulated pdf. If >0, it will sample from the distribution of choices/RTs this many times.
+                MDP.param_to_sweep = 'side_bias_h1'; % e.g., side_bias_h1 leave empty if don't want to sweep over param
+                MDP.param_values_to_sweep_over = linspace(-2, 2, 5); 
                 if do_plot_choice_given_gen_mean
                     gen_mean_difference = 4; % choose generative mean difference of 2, 4, 8, 12, 24
                     horizon = 5; % choose horizon of 1 or 5

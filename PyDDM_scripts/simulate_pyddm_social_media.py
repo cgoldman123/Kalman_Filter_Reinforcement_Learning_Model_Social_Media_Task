@@ -56,7 +56,7 @@ social_media_sample = pyddm.Sample.from_pandas_dataframe(social_media_df_clean, 
 ########### SETTINGS ##############
 
 run_one_param_set = True # adjust this to True if you want to run the RT by reward difference simulation
-run_param_sweep = False # adjust this to True if you want to run the parameter sweep simulation
+run_param_sweep = True # adjust this to True if you want to run the parameter sweep simulation
 sim_using_max_pdf = True # If True, the model will simulate a choice/RT based on the maximum of the simulated pdf. If False, it will sample from the distribution of choices/RTs.
 plot_latent_states_separated_by_rdiff = True # If True, the latent states will be plotted separately for each reward difference. If False, they will be averaged across all reward differences.
 plot_jsd = False # If True, the JSD will be plotted in the latent states plot. If False, it will not be plotted.
