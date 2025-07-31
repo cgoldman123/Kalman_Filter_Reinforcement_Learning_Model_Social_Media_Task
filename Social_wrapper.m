@@ -46,15 +46,15 @@ function [output_table] = Social_wrapper(varargin)
         if strcmp(fitting_procedure, "PYDDM")
             MDP.settings = 'fit all choices and rts'; %(e.g., "fit all choices and rts", "fit first free choice and rt")
         elseif ~strcmp(fitting_procedure, "PYDDM")
-            model = "KF_SIGMA_DDM"; % indicate if 'KF_UCB', 'RL', 'KF_UCB_DDM', 'KF_SIGMA_DDM', 'KF_SIGMA'
+            model = "KF_SIGMA_RACING"; % indicate if 'KF_UCB', 'RL', 'KF_UCB_DDM', 'KF_SIGMA_DDM', 'KF_SIGMA', 'KF_SIGMA_RACING
             %MDP.field = {'h1_dec_noise','h5_dec_noise','side_bias_h1','side_bias_h5','h5_info_bonus','h1_info_bonus','sigma_d', 'sigma_r', 'starting_bias_baseline', 'drift_baseline', 'decision_thresh_baseline', 'drift_reward_diff_mod', 'wd', 'ws', 'V0'};
-            MDP.field = {'cong_base_info_bonus','incong_base_info_bonus','cong_directed_exp','incong_directed_exp', 'side_bias','random_exp','sigma_d', 'sigma_r', 'baseline_noise', 'rdiff_bias_mod', 'decision_thresh_baseline'};
+            MDP.field = {'cong_base_info_bonus','incong_base_info_bonus','cong_directed_exp','incong_directed_exp', 'side_bias','random_exp','sigma_d', 'sigma_r', 'baseline_noise', 'rdiff_bias_mod', 'decision_thresh_baseline','wd', 'ws', 'V0'};
             
             if strcmp(fitting_procedure, "VBA")
                 MDP.observation_params = MDP.field; % When there is no latent state learning, all params are observation params
             end
-            MDP.settings.num_choices_to_fit = 1; % Specify the number of choices to fit as first free choice (1) or all choices (5)
-            if ismember(model, {'KF_UCB_DDM', 'KF_SIGMA_DDM', 'KF_SIGMA_logistic_DDM', 'KF_SIGMA_logistic_RACING'})
+            MDP.settings.num_choices_to_fit = 5; % Specify the number of choices to fit as first free choice (1) or all choices (5)
+            if ismember(model, { 'KF_SIGMA_DDM', 'KF_SIGMA_logistic_DDM', 'KF_SIGMA_logistic_RACING','KF_SIGMA_RACING'})
                 % possible mappings are action_prob, reward_diff, UCB,
                 % side_bias, decsision_noise
                 MDP.settings.drift_mapping = {''};
@@ -86,7 +86,7 @@ function [output_table] = Social_wrapper(varargin)
                 MDP.observation_params = MDP.field;
             end
     
-            if ismember(model, {'KF_UCB_DDM', 'KF_SIGMA_DDM'})
+            if ismember(model, {'KF_SIGMA_DDM'})
                 % Set up drift mapping
                 MDP.settings.drift_mapping = strsplit(getenv('DRIFT_MAPPING'), ',');
                 if  strcmp(MDP.settings.drift_mapping{1}, 'none')
@@ -137,8 +137,8 @@ function [output_table] = Social_wrapper(varargin)
     % in the fitting file.
     if ~strcmp(fitting_procedure,'PYDDM')
         model_functions = containers.Map(...
-            {'KF_SIGMA_logistic','KF_SIGMA_logistic_DDM','KF_UCB', 'RL', 'KF_UCB_DDM', 'KF_SIGMA_DDM', 'KF_SIGMA' 'KF_SIGMA_logistic_RACING'}, ...
-            {@model_SM_KF_SIGMA_logistic, @model_SM_KF_SIGMA_logistic_DDM,@model_SM_KF_all_choices, @model_SM_RL_all_choices, @model_SM_KF_DDM_all_choices, @model_SM_KF_SIGMA_DDM, @model_SM_KF_SIGMA, @model_SM_KF_SIGMA_logistic_RACING} ...
+            {'KF_SIGMA_logistic','KF_SIGMA_logistic_DDM','KF_UCB', 'RL', 'KF_UCB_DDM', 'KF_SIGMA_DDM', 'KF_SIGMA' 'KF_SIGMA_logistic_RACING', 'KF_SIGMA_RACING'}, ...
+            {@model_SM_KF_SIGMA_logistic, @model_SM_KF_SIGMA_logistic_DDM,@model_SM_KF_all_choices, @model_SM_RL_all_choices, @model_SM_KF_DDM_all_choices, @model_SM_KF_SIGMA_DDM, @model_SM_KF_SIGMA, @model_SM_KF_SIGMA_logistic_RACING, @model_SM_KF_SIGMA_RACING} ...
         );
         if isKey(model_functions, model)
             MDP.model = model_functions(model);
@@ -152,7 +152,7 @@ function [output_table] = Social_wrapper(varargin)
     
 
         % Parameters fixed or fit in certain models
-        if ismember(model, {'KF_UCB', 'KF_UCB_DDM', 'KF_SIGMA_DDM', 'KF_SIGMA', 'RL'})
+        if ismember(model, {'KF_UCB', 'KF_UCB_DDM', 'KF_SIGMA_DDM', 'KF_SIGMA', 'RL', 'KF_SIGMA_RACING'})
             MDP.params.side_bias =  0; 
             MDP.params.baseline_noise = 5; 
             
@@ -166,7 +166,7 @@ function [output_table] = Social_wrapper(varargin)
                     MDP.params.directed_exp =  0; 
                     MDP.params.random_exp = 1;
                 end
-            elseif ismember(model, {'KF_SIGMA_DDM', 'KF_SIGMA'})
+            elseif ismember(model, {'KF_SIGMA_DDM', 'KF_SIGMA', 'KF_SIGMA_RACING'})
                     MDP.params.cong_base_info_bonus = -.01;
                     MDP.params.incong_base_info_bonus = -.02;
                     MDP.params.cong_directed_exp = .03;
@@ -176,7 +176,7 @@ function [output_table] = Social_wrapper(varargin)
         end
 
         % Parameters fixed or fit in Kalman Filter (KF) models
-        if ismember(model, {'KF_SIGMA_logistic', 'KF_SIGMA_logistic_DDM','KF_UCB', 'KF_UCB_DDM', 'KF_SIGMA_DDM', 'KF_SIGMA', 'KF_SIGMA_logistic_RACING'})
+        if ismember(model, {'KF_SIGMA_logistic', 'KF_SIGMA_logistic_DDM','KF_UCB', 'KF_UCB_DDM', 'KF_SIGMA_DDM', 'KF_SIGMA', 'KF_SIGMA_logistic_RACING','KF_SIGMA_RACING'})
             if any(strcmp('sigma_d', MDP.field))
                 MDP.params.sigma_d = 6;
             else
@@ -203,52 +203,11 @@ function [output_table] = Social_wrapper(varargin)
             end
         end
         
-        % Parameters fixed or fit in Kalman Filter (KF) UCB DDM Model
-        if ismember(model, {'KF_UCB_DDM'})
-            % set drift params
-            MDP.params.drift_baseline = 0;
-            if any(contains(MDP.settings.drift_mapping,'action_prob'))
-                MDP.params.drift_action_prob_mod = .1;  
-            end
-            if any(contains(MDP.settings.drift_mapping,'reward_diff'))
-                MDP.params.drift_reward_diff_mod =.1;
-            end
-            if any(contains(MDP.settings.drift_mapping,'UCB_diff'))
-                MDP.params.drift_UCB_diff_mod = .1;
-            end
-            
-            % set starting bias params
-            MDP.params.starting_bias_baseline = .5;
-            if any(contains(MDP.settings.bias_mapping,'action_prob'))
-                MDP.params.starting_bias_action_prob_mod = .1;  
-            end
-            if any(contains(MDP.settings.bias_mapping,'reward_diff'))
-                MDP.params.starting_bias_reward_diff_mod = .1;
-            end
-            if any(contains(MDP.settings.bias_mapping,'UCB_diff'))
-                MDP.params.starting_bias_UCB_diff_mod = .1;
-            end
-        
-            % set decision threshold params
-            MDP.params.decision_thresh_baseline = .5;
-            if any(contains(MDP.settings.thresh_mapping,'action_prob'))
-                MDP.params.decision_thresh_action_prob_mod = .1;  
-            end
-            if any(contains(MDP.settings.thresh_mapping,'reward_diff'))
-                MDP.params.decision_thresh_reward_diff_mod = .1;
-            end
-            if any(contains(MDP.settings.thresh_mapping,'UCB_diff'))
-                MDP.params.decision_thresh_UCB_diff_mod = .1;
-            end    
-            if any(contains(MDP.settings.thresh_mapping,'decision_noise'))
-                MDP.params.decision_thresh_decision_noise_mod = 1;
-            end
-        end
         
         % Parameters fixed or fit in Kalman Filter (KF) SIGMA DDM Model
-        if ismember(model, {'KF_SIGMA_DDM','KF_SIGMA_logistic_DDM', 'KF_SIGMA_logistic_RACING'})
+        if ismember(model, {'KF_SIGMA_DDM','KF_SIGMA_logistic_DDM', 'KF_SIGMA_logistic_RACING','KF_SIGMA_RACING'})
             MDP.params.decision_thresh_baseline = 2; 
-            if ismember(model, {'KF_SIGMA_logistic_DDM', 'KF_SIGMA_logistic_RACING'})
+            if ismember(model, {'KF_SIGMA_logistic_DDM', 'KF_SIGMA_logistic_RACING','KF_SIGMA_RACING'})
                 MDP.params.starting_bias_baseline = .5;
                 MDP.params.drift_baseline = 0;
                 if any(contains(MDP.settings.drift_mapping,'reward_diff'))
@@ -258,7 +217,7 @@ function [output_table] = Social_wrapper(varargin)
                     MDP.params.starting_bias_reward_diff_mod = .1;
                 end
                 %% Racing Accumulator Params %%
-                if ismember(model, {'KF_SIGMA_logistic_RACING'})
+                if ismember(model, {'KF_SIGMA_logistic_RACING','KF_SIGMA_RACING'})
                     MDP.params.wd = 0.05;
                     MDP.params.ws = 0.05;
                     MDP.params.V0 = 0;
