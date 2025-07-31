@@ -1,8 +1,10 @@
-function model_output = model_SM_KF_SIGMA_DDM_all_choices(params, actions_and_rts, rewards, mdp, sim)
+function model_output = model_SM_KF_SIGMA_DDM(params, actions_and_rts, rewards, mdp, sim)
     dbstop if error;
     % note that mu2 == right bandit ==  c=2 == free choice = 1
     G = mdp.G; % num of games
-    
+    num_choices_to_fit = mdp.settings.num_choices_to_fit;
+    num_forced_choices = 4;
+
     max_rt = mdp.settings.max_rt;
     
     % initialize params
@@ -55,12 +57,14 @@ function model_output = model_SM_KF_SIGMA_DDM_all_choices(params, actions_and_rt
         alpha1 = nan(1,9); 
         alpha2 = nan(1,9); 
         
-        num_choices = sum(~isnan(rewards(g,:))); 
+        num_choices_in_this_game = sum(~isnan(rewards(g,:))); 
+        % Get the number of choices to loop over depending on how many free
+        % choices we're fititng and the number of choices in this game
+        num_choices_to_loop_over = min(num_choices_in_this_game, num_choices_to_fit + num_forced_choices);
 
-
-        for t=1:num_choices  % loop over forced-choice trials
+        for t=1:num_choices_to_loop_over  % loop over forced-choice trials
             if t >= 5
-                num_trials_left = num_choices - t + 1;
+                num_trials_left = num_choices_to_loop_over - t + 1;
                 reward_diff = mu2(t) - mu1(t);
                 % relative uncertainty is the difference in uncertainty
                 relative_uncert = sigma2(g,t) - sigma1(g,t);

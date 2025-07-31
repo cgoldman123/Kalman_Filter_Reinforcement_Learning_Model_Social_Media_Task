@@ -53,6 +53,7 @@ function [output_table] = Social_wrapper(varargin)
             if strcmp(fitting_procedure, "VBA")
                 MDP.observation_params = MDP.field; % When there is no latent state learning, all params are observation params
             end
+            MDP.settings.num_choices_to_fit = 1; % Specify the number of choices to fit as first free choice (1) or all choices (5)
             if ismember(model, {'KF_UCB_DDM', 'KF_SIGMA_DDM', 'KF_SIGMA_logistic_DDM', 'KF_SIGMA_logistic_RACING'})
                 % possible mappings are action_prob, reward_diff, UCB,
                 % side_bias, decsision_noise
@@ -60,8 +61,6 @@ function [output_table] = Social_wrapper(varargin)
                 MDP.settings.bias_mapping = {''};
                 MDP.settings.thresh_mapping = {''};
                 MDP.settings.max_rt = 7;
-            else
-                MDP.settings = '';
             end
         end
         
@@ -139,7 +138,7 @@ function [output_table] = Social_wrapper(varargin)
     if ~strcmp(fitting_procedure,'PYDDM')
         model_functions = containers.Map(...
             {'KF_SIGMA_logistic','KF_SIGMA_logistic_DDM','KF_UCB', 'RL', 'KF_UCB_DDM', 'KF_SIGMA_DDM', 'KF_SIGMA' 'KF_SIGMA_logistic_RACING'}, ...
-            {@model_SM_KF_SIGMA_logistic, @model_SM_KF_SIGMA_logistic_DDM,@model_SM_KF_all_choices, @model_SM_RL_all_choices, @model_SM_KF_DDM_all_choices, @model_SM_KF_SIGMA_DDM_all_choices, @model_SM_KF_SIGMA_all_choices @model_SM_KF_SIGMA_logistic_RACING} ...
+            {@model_SM_KF_SIGMA_logistic, @model_SM_KF_SIGMA_logistic_DDM,@model_SM_KF_all_choices, @model_SM_RL_all_choices, @model_SM_KF_DDM_all_choices, @model_SM_KF_SIGMA_DDM, @model_SM_KF_SIGMA, @model_SM_KF_SIGMA_logistic_RACING} ...
         );
         if isKey(model_functions, model)
             MDP.model = model_functions(model);
