@@ -39,7 +39,8 @@ function model_output = model_SM_KF_SIGMA_logistic_DDM(params, actions_and_rts, 
     sigma1 = [initial_sigma * ones(G,1), zeros(G,8)];
     sigma2 = [initial_sigma * ones(G,1), zeros(G,8)];
     total_uncertainty = nan(G,9);
-    relative_uncertainty_of_choice = nan(G,9);
+    relative_uncertainty_of_choice = nan(G,9);    
+    estimated_mean_diff = nan(G,9);
     change_in_uncertainty_after_choice = nan(G,9);
 
     num_invalid_rts = 0;
@@ -126,7 +127,33 @@ function model_output = model_SM_KF_SIGMA_logistic_DDM(params, actions_and_rts, 
                 if sim
                     % higher drift rate / bias entails greater prob of
                     % choosing bandit 2
-                    [simmed_rt, chose_right] = simulate_DDM(drift, decision_thresh(g,t), 0, starting_bias, 1, .001, realmax);
+
+                    % Simulate a choice/RT based on random sampling
+                    if mdp.num_samples_to_draw_from_pdf > 0
+                        [simmed_rt, chose_right] = simulate_DDM(drift, decision_thresh(g,t), 0, starting_bias, 1, .001, realmax);
+                    else
+                        % Simulate a choice/RT based on the maximum of the pdf
+                        % Get the max pdf for the left choice
+                        fun = @(rt) wfpt(rt, drift, decision_thresh(g,t), starting_bias);
+                        % This function gets min so we use a negative fun
+                        [rt_max_left, neg_max_pdf_left] = fminbnd(@(rt) -fun(rt), 0, max_rt); 
+                        % Get the max pdf of the right choice (remember we
+                        % have to invert drift and starting bias because
+                        % wfpt gives the pdf for bottom boundary and we've
+                        % decided bottom boundary is left choice
+                        fun = @(rt) wfpt(rt, -drift, decision_thresh(g,t), 1-starting_bias);
+                        % This function gets min so we use a negative fun
+                        [rt_max_right, neg_max_pdf_right] = fminbnd(@(rt) -fun(rt), 0, max_rt); 
+                        % Take the choice/RT associated with the biggest pdf
+                        % (remember it's negative)
+                        if neg_max_pdf_left < neg_max_pdf_right
+                            simmed_rt = rt_max_left;
+                            chose_right = 0;
+                        else
+                            simmed_rt = rt_max_right;
+                            chose_right = 1;
+                        end
+                    end
                     if chose_right
                         actions(g,t) = 2;
                         rewards(g,t) = mdp.bandit2_schedule(g,t);
@@ -195,6 +222,9 @@ function model_output = model_SM_KF_SIGMA_logistic_DDM(params, actions_and_rts, 
                 mu2(t+1) = mu2(t) + pred_errors_alpha(g,t);
                 mu1(t+1) = mu1(t); 
             end
+            % save total uncertainty and reward difference
+            total_uncertainty(g,t) = ((sigma1(g,t)^2)+(sigma2(g,t)^2))^.5;
+            estimated_mean_diff(g,t) = mu2(t) - mu1(t);
 
             if ~sim
                 if rts(g,t) >= max_rt || rts(g,t) <= 0
@@ -222,6 +252,7 @@ function model_output = model_SM_KF_SIGMA_logistic_DDM(params, actions_and_rts, 
     model_output.rts = rts;
     model_output.relative_uncertainty_of_choice = relative_uncertainty_of_choice;
     model_output.total_uncertainty = total_uncertainty;
+    model_output.estimated_mean_diff = estimated_mean_diff;
     model_output.change_in_uncertainty_after_choice = change_in_uncertainty_after_choice;
 
 end

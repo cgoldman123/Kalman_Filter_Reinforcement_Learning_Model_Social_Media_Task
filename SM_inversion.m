@@ -74,9 +74,9 @@ for i = 1:length(DCM.field)
                 'reward_sensitivity', 'DE_RE_horizon'})
             pE.(field) = log(DCM.params.(field));               % in log-space (to keep positive)
             pC{i,i}    = prior_variance;  
-        elseif ismember(field, {'h5_baseline_info_bonus', 'h5_slope_info_bonus', 'h1_info_bonus', ...
-                'side_bias', 'side_bias_h1', 'side_bias_h5', 'info_bonus', 'h5_info_bonus',...
-                'drift_baseline', 'drift'})
+        elseif ismember(field, {'h5_baseline_info_bonus', 'h5_slope_info_bonus', 'h1_info_bonus', 'rdiff_bias_mod',...
+                'side_bias', 'side_bias_h1', 'side_bias_h5', 'info_bonus', 'h5_info_bonus', 'random_exp',...
+                'drift_baseline', 'drift','cong_base_info_bonus','incong_base_info_bonus','cong_directed_exp','incong_directed_exp'})
             pE.(field) = DCM.params.(field); 
             pC{i,i}    = prior_variance;
         elseif any(strcmp(field,{'nondecision_time'})) % bound between .1 and .3
@@ -99,10 +99,7 @@ for i = 1:length(DCM.field)
             pC{i,i}    = 1/4;                
         elseif any(strcmp(field,{'baseline_noise'})) 
             pE.(field) = log(DCM.params.(field));               % in log-space (to keep positive)
-            pC{i,i}    = 1/4;                
-        elseif any(strcmp(field,{'random_exp'})) % bound between 0 and 40
-            pE.(field) = log(DCM.params.(field));               % in log-space (to keep positive)
-            pC{i,i}    = 1/4;                 
+            pC{i,i}    = 1/4;                              
         elseif any(strcmp(field,{'ws'})) 
             pE.(field) = log(DCM.params.(field)/(1-DCM.params.(field)));    
             pC{i,i}    = 1/4;   
@@ -164,12 +161,12 @@ function L = spm_mdp_L(P,M,U,Y)
                 'drift_action_prob_mod', 'drift_reward_diff_mod', 'drift_UCB_diff_mod',...
                 'starting_bias_action_prob_mod', 'starting_bias_reward_diff_mod', 'starting_bias_UCB_diff_mod',...
                 'decision_thresh_action_prob_mod', 'decision_thresh_reward_diff_mod', 'decision_thresh_UCB_diff_mod', 'decision_thresh_decision_noise_mod'...
-                'outcome_informativeness', 'random_exp', 'baseline_noise', ...
+                'outcome_informativeness', 'baseline_noise', ...
                 'reward_sensitivity', 'DE_RE_horizon'})
             params.(field{i}) = exp(P.(field{i}));
         elseif ismember(field{i},{'h5_baseline_info_bonus', 'h5_slope_info_bonus', 'h1_info_bonus', 'baseline_info_bonus',...
-                'side_bias', 'side_bias_h1', 'side_bias_h5', 'info_bonus', 'h5_info_bonus',...
-                'drift_baseline', 'drift', 'directed_exp', 'V0'})
+                'side_bias', 'side_bias_h1', 'side_bias_h5', 'info_bonus', 'h5_info_bonus', 'random_exp', 'rdiff_bias_mod',...
+                'drift_baseline', 'drift', 'directed_exp', 'V0','cong_base_info_bonus','incong_base_info_bonus','cong_directed_exp','incong_directed_exp'})
             params.(field{i}) = P.(field{i});
         elseif ismember(field{i},{'decision_thresh_baseline'})
             params.(field{i}) = .5 + (1000 - .5) ./ (1 + exp(-P.(field{i})));     

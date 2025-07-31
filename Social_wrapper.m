@@ -13,11 +13,11 @@ function [output_table] = Social_wrapper(varargin)
         MDP.do_model_free = 1; % Toggle on to do model-free analyses on actual data
         MDP.fit_model = 1; % Toggle on to fit the model
         if MDP.fit_model
-            MDP.do_simulated_model_free = 1; % Toggle on to do model-free analyses on data simulated from posterior parameter estimates of model.
+            MDP.do_simulated_model_free = 1; % Toggle on to do model-free analyses on data simulated using posterior parameter estimates of model.
         end
     elseif SIM
-        MDP.plot_simulated_data = 1; %Toggle on to plot data simulated by model
-        MDP.do_simulated_model_free = 1; % Toggle on to do model-free analyses on data simulated from prior parameters initialized in this main file.
+        MDP.plot_simulated_data = 1; %Toggle on to plot data simulated by model using parameters set in this main file.
+        MDP.do_simulated_model_free = 1; % Toggle on to do model-free analyses on data simulated using parameters set in this main file.
     end
     rng(23);
     
@@ -30,7 +30,7 @@ function [output_table] = Social_wrapper(varargin)
     if ispc
         fitting_procedure = "SPM"; % Specify fitting procedure as "SPM", "VBA", or "PYDDM"
         root = 'L:/';
-        experiment = 'local'; % indicate local or prolific
+        experiment = 'prolific'; % indicate local or prolific
         results_dir = sprintf([root 'rsmith/lab-members/cgoldman/Wellbeing/social_media/output/test/']);
         if nargin > 0
             id = varargin{1};
@@ -48,7 +48,7 @@ function [output_table] = Social_wrapper(varargin)
         elseif ~strcmp(fitting_procedure, "PYDDM")
             model = "KF_SIGMA_DDM"; % indicate if 'KF_UCB', 'RL', 'KF_UCB_DDM', 'KF_SIGMA_DDM', 'KF_SIGMA'
             %MDP.field = {'h1_dec_noise','h5_dec_noise','side_bias_h1','side_bias_h5','h5_info_bonus','h1_info_bonus','sigma_d', 'sigma_r', 'starting_bias_baseline', 'drift_baseline', 'decision_thresh_baseline', 'drift_reward_diff_mod', 'wd', 'ws', 'V0'};
-            MDP.field = {'h1_dec_noise','h5_dec_noise','side_bias_h1','side_bias_h5','h5_info_bonus','h1_info_bonus','sigma_d', 'sigma_r', 'starting_bias_baseline', 'drift_baseline', 'decision_thresh_baseline', 'drift_reward_diff_mod'};
+            MDP.field = {'cong_base_info_bonus','incong_base_info_bonus','cong_directed_exp','incong_directed_exp', 'side_bias','random_exp','sigma_d', 'sigma_r', 'baseline_noise', 'rdiff_bias_mod', 'decision_thresh_baseline'};
             
             if strcmp(fitting_procedure, "VBA")
                 MDP.observation_params = MDP.field; % When there is no latent state learning, all params are observation params
@@ -56,8 +56,8 @@ function [output_table] = Social_wrapper(varargin)
             if ismember(model, {'KF_UCB_DDM', 'KF_SIGMA_DDM', 'KF_SIGMA_logistic_DDM', 'KF_SIGMA_logistic_RACING'})
                 % possible mappings are action_prob, reward_diff, UCB,
                 % side_bias, decsision_noise
-                MDP.settings.drift_mapping = {'reward_diff','decision_noise'};
-                MDP.settings.bias_mapping = {'info_diff,side_bias'};
+                MDP.settings.drift_mapping = {''};
+                MDP.settings.bias_mapping = {''};
                 MDP.settings.thresh_mapping = {''};
                 MDP.settings.max_rt = 7;
             else
@@ -115,7 +115,7 @@ function [output_table] = Social_wrapper(varargin)
     
     % Add libraries. Some of these are for the VBA example code and may not
     % be needed.
-    addpath(['./SPM_scripts/']);
+    addpath(['./SPM_models/']);
     addpath(['./VBA_scripts/']);
     addpath(['./racing_accumulator/']);
     addpath(['./plotting/']);
@@ -155,16 +155,24 @@ function [output_table] = Social_wrapper(varargin)
         % Parameters fixed or fit in certain models
         if ismember(model, {'KF_UCB', 'KF_UCB_DDM', 'KF_SIGMA_DDM', 'KF_SIGMA', 'RL'})
             MDP.params.side_bias =  0; 
-            MDP.params.baseline_info_bonus =  0; 
             MDP.params.baseline_noise = 1/12; 
             
-            % make directed exploration and random exploration same param or keep
-            % together
-            if any(strcmp('DE_RE_horizon', MDP.field))
-                MDP.params.DE_RE_horizon = 2.5; % prior on this value
-            else
-                MDP.params.directed_exp =  0; 
-                MDP.params.random_exp = 1;
+            if ismember(model, {'KF_UCB', 'KF_UCB_DDM', 'RL'})
+                MDP.params.baseline_info_bonus =  0; 
+                % make directed exploration and random exploration same param or keep
+                % together
+                if any(strcmp('DE_RE_horizon', MDP.field))
+                    MDP.params.DE_RE_horizon = 2.5; % prior on this value
+                else
+                    MDP.params.directed_exp =  0; 
+                    MDP.params.random_exp = 1;
+                end
+            elseif ismember(model, {'KF_SIGMA_DDM', 'KF_SIGMA'})
+                    MDP.params.cong_base_info_bonus = 1;
+                    MDP.params.incong_base_info_bonus = 2;
+                    MDP.params.cong_directed_exp = -3;
+                    MDP.params.incong_directed_exp = -4;
+                    MDP.params.random_exp = 5;
             end
         end
 
@@ -240,20 +248,25 @@ function [output_table] = Social_wrapper(varargin)
         
         % Parameters fixed or fit in Kalman Filter (KF) SIGMA DDM Model
         if ismember(model, {'KF_SIGMA_DDM','KF_SIGMA_logistic_DDM', 'KF_SIGMA_logistic_RACING'})
-            MDP.params.starting_bias_baseline = .5;
-            MDP.params.drift_baseline = 0;
             MDP.params.decision_thresh_baseline = 2; 
-            if any(contains(MDP.settings.drift_mapping,'reward_diff'))
-                MDP.params.drift_reward_diff_mod =  .1;
-            end
-            if any(contains(MDP.settings.bias_mapping,'reward_diff'))
-                MDP.params.starting_bias_reward_diff_mod = .1;
-            end
-            %% Racing Accumulator Params %%
-            if ismember(model, {'KF_SIGMA_logistic_RACING'})
-                MDP.params.wd = 0.05;
-                MDP.params.ws = 0.05;
-                MDP.params.V0 = 0;
+            if ismember(model, {'KF_SIGMA_logistic_DDM', 'KF_SIGMA_logistic_RACING'})
+                MDP.params.starting_bias_baseline = .5;
+                MDP.params.drift_baseline = 0;
+                if any(contains(MDP.settings.drift_mapping,'reward_diff'))
+                    MDP.params.drift_reward_diff_mod =  .1;
+                end
+                if any(contains(MDP.settings.bias_mapping,'reward_diff'))
+                    MDP.params.starting_bias_reward_diff_mod = .1;
+                end
+                %% Racing Accumulator Params %%
+                if ismember(model, {'KF_SIGMA_logistic_RACING'})
+                    MDP.params.wd = 0.05;
+                    MDP.params.ws = 0.05;
+                    MDP.params.V0 = 0;
+                end
+            elseif ismember(model, {'KF_SIGMA_DDM'})
+                    MDP.params.rdiff_bias_mod = -.05;
+                    MDP.params.decision_thresh_baseline = 3;
             end
         end
        
@@ -276,7 +289,7 @@ function [output_table] = Social_wrapper(varargin)
             if MDP.plot_simulated_data
                 do_plot_choice_given_gen_mean = 1; % Toggle on to plot choice for a given generative mean
                 do_plot_model_statistics = 1; % Toggle on to plot statistics under the current parameter set
-                MDP.num_samples_to_draw_from_pdf = 3;   %If 0, the model will simulate a choice/RT based on the maximum of the simulated pdf. If >0, it will sample from the distribution of choices/RTs this many times.
+                MDP.num_samples_to_draw_from_pdf = 3;   %If 0, the model will simulate a choice/RT based on the maximum of the simulated pdf. If >0, it will sample from the distribution of choices/RTs this many times. Note this only matters for models that generate RTs.
                 MDP.param_to_sweep = 'side_bias_h1'; % e.g., side_bias_h1 leave empty if don't want to sweep over param
                 MDP.param_values_to_sweep_over = linspace(-2, 2, 5); 
                 if do_plot_choice_given_gen_mean

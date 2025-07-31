@@ -66,15 +66,15 @@ else:
     number_samples_to_sim = 1
 
 base_params = dict(
-    rdiff_bias_mod = 1,
-    random_exp = 0.01,
-    bound_intercept = 5, #2.5 works
-    base_noise = 2,
-    cong_DE = .01,
-    incong_DE = 0.035,
-    cong_base_info_bonus = 0,
-    incong_base_info_bonus = 0,
-    sigma_d = 0,
+    rdiff_bias_mod = -.05,
+    random_exp = 5,
+    bound_intercept = 3, #2.5 works
+    base_noise = .0833,
+    cong_DE = -3,
+    incong_DE = -4,
+    cong_base_info_bonus = 1,
+    incong_base_info_bonus = 2,
+    sigma_d = 6,
     sigma_r = 8,
     side_bias = 0,
     nondecision_time = 0.05,

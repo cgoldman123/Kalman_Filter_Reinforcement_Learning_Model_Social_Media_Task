@@ -6,18 +6,21 @@ function model_output = model_SM_KF_SIGMA_DDM_all_choices(params, actions_and_rt
     max_rt = mdp.settings.max_rt;
     
     % initialize params
-    sigma_d = params.sigma_d;
-    side_bias = params.side_bias;
-    sigma_r = params.sigma_r;
     initial_sigma = params.initial_sigma;
     initial_mu = params.initial_mu;
     reward_sensitivity = params.reward_sensitivity;   
-    baseline_info_bonus = params.baseline_info_bonus;
-    directed_exp = params.directed_exp;
+
+    sigma_d = params.sigma_d;
+    side_bias = params.side_bias;
+    sigma_r = params.sigma_r;
+    cong_base_info_bonus = params.cong_base_info_bonus;
+    incong_base_info_bonus = params.incong_base_info_bonus;
+    cong_directed_exp = params.cong_directed_exp;
+    incong_directed_exp = params.incong_directed_exp;
     random_exp = params.random_exp;
     baseline_noise = params.baseline_noise;
-    
-   
+    rdiff_bias_mod = params.rdiff_bias_mod;
+    decision_thresh_baseline = params.decision_thresh_baseline;
     
     % initialize variables
 
@@ -57,107 +60,73 @@ function model_output = model_SM_KF_SIGMA_DDM_all_choices(params, actions_and_rt
 
         for t=1:num_choices  % loop over forced-choice trials
             if t >= 5
-                if mdp.C1(g)==1 % horizon is 1
-                    T = 0;
-                    Y = 1;
-                else % horizon is 5
-                    T = directed_exp;
-                    Y = random_exp;                    
-                end
-                
-                reward_diff = mu1(t) - mu2(t);
-                z = .5; % hyperparam controlling steepness of curve
-                
-                 % % Exponential descent
-                 info_bonus_bandit1 = sigma1(g,t)*baseline_info_bonus + sigma1(g,t)*T*(exp(-z*(t-5))-exp(-4*z))/(1-exp(-4*z));
-                 info_bonus_bandit2 = sigma2(g,t)*baseline_info_bonus + sigma2(g,t)*T*(exp(-z*(t-5))-exp(-4*z))/(1-exp(-4*z));
-
-                 % Linear descent
-                 % info_bonus_bandit1 = sigma1(g,t)*baseline_info_bonus + sigma1(g,t)*T*((9 - t)/4);
-                 % info_bonus_bandit2 = sigma2(g,t)*baseline_info_bonus + sigma2(g,t)*T*((9 - t)/4);
-
-                 info_diff = info_bonus_bandit1 - info_bonus_bandit2;
-                
-
-
+                num_trials_left = num_choices - t + 1;
+                reward_diff = mu2(t) - mu1(t);
+                % relative uncertainty is the difference in uncertainty
+                relative_uncert = sigma2(g,t) - sigma1(g,t);
                 % total uncertainty is variance of both arms
                 total_uncert = (sigma1(g,t)^2 + sigma2(g,t)^2)^.5;
-                
-                 % % Exponential descent
-                 RE = Y + ((1 - Y) * (1 - exp(-z * (t - 5))) / (1 - exp(-4 * z)));
+                % If both reward difference and UCB difference push in same direction, use the cong tradeoff; otherwise, use incong.
+                 if (reward_diff*relative_uncert >= 0)
+                    rel_uncert_scaler = (exp(num_trials_left-1)-1)*cong_directed_exp+ cong_base_info_bonus;
+                 else
+                    rel_uncert_scaler = (exp(num_trials_left-1)-1)*incong_directed_exp+ incong_base_info_bonus;
+                 end
 
-                 % Linear descent
-                 % RE = Y * ((9 - t)/4);
-                
-                decision_noise = total_uncert*baseline_noise*RE;
-
-
-                % probability of choosing bandit 1
-                p = 1 / (1 + exp(-(reward_diff+info_diff+side_bias)/(decision_noise)));
-                
-                % Set DDM params
-                % DRIFT
-                % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                    drift = params.drift_baseline;
-                    if any(contains(mdp.settings.drift_mapping, 'reward_diff'))
-                        drift = drift + params.drift_reward_diff_mod*reward_diff;
-                    end
-                    if any(contains(mdp.settings.drift_mapping, 'info_diff'))
-                        drift = drift + info_diff;
-                    end
-                    if any(contains(mdp.settings.drift_mapping, 'side_bias'))
-                        drift = drift + side_bias;
-                    end    
-                    if any(contains(mdp.settings.drift_mapping, 'decision_noise'))
-                        drift = drift/decision_noise;
-                    end 
-                    
-                % STARTING BIAS
-                % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                    % Transform baseline starting bias so in sigmoid space
-                    % (must be between 0 and 1)
-                    starting_bias = log(params.starting_bias_baseline/(1-params.starting_bias_baseline));
-                    if any(contains(mdp.settings.bias_mapping, 'reward_diff'))
-                        starting_bias = starting_bias + params.starting_bias_reward_diff_mod*reward_diff;
-                    end
-                    if any(contains(mdp.settings.bias_mapping, 'info_diff'))
-                        starting_bias = starting_bias + info_diff;
-                    end
-                    if any(contains(mdp.settings.bias_mapping, 'side_bias'))
-                        starting_bias = starting_bias + side_bias;
-                    end    
-                    % Transform starting_bias to be between 0 and 1 using sigmoid
-                    starting_bias = 1 / (1 + exp(-starting_bias));
-                    
-                % DECISION THRESHOLD
-                % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                    % bounded to be less than 500
-                    decision_thresh(g,t) = params.decision_thresh_baseline;
-                    if any(contains(mdp.settings.thresh_mapping, 'decision_noise'))
-                        decision_thresh(g,t) = decision_noise;
-                    end
+                 % SET DDM Parameters
+                 drift = (rel_uncert_scaler*relative_uncert) + (reward_diff/log(1 + exp(min(baseline_noise + total_uncert*(num_trials_left-1)*random_exp,700))));
+                 starting_bias = tanh(side_bias + rdiff_bias_mod*reward_diff/total_uncert);
+                 decision_thresh(g,t) = decision_thresh_baseline;
                 
                 if sim
                     % higher drift rate / bias entails greater prob of
-                    % choosing bandit 1
-                    [simmed_rt, chose_left] = simulate_DDM(drift, decision_thresh(g,t), 0, starting_bias, 1, .001, realmax);
-                    if chose_left
-                        actions(g,t) = 1;
-                        rewards(g,t) = mdp.bandit1_schedule(g,t);
+                    % choosing bandit 2
+
+                    % Simulate a choice/RT based on random sampling
+                    if mdp.num_samples_to_draw_from_pdf > 0
+                        [simmed_rt, chose_right] = simulate_DDM(drift, decision_thresh(g,t), 0, starting_bias, 1, .001, realmax);
                     else
+                        % Simulate a choice/RT based on the maximum of the pdf
+                        % Get the max pdf for the left choice
+                        fun = @(rt) wfpt(rt, drift, decision_thresh(g,t), starting_bias);
+                        % This function gets min so we use a negative fun
+                        [rt_max_left, neg_max_pdf_left] = fminbnd(@(rt) -fun(rt), 0, max_rt); 
+                        % Get the max pdf of the right choice (remember we
+                        % have to invert drift and starting bias because
+                        % wfpt gives the pdf for bottom boundary and we've
+                        % decided bottom boundary is left choice
+                        fun = @(rt) wfpt(rt, -drift, decision_thresh(g,t), 1-starting_bias);
+                        % This function gets min so we use a negative fun
+                        [rt_max_right, neg_max_pdf_right] = fminbnd(@(rt) -fun(rt), 0, max_rt); 
+                        % Take the choice/RT associated with the biggest pdf
+                        % (remember it's negative)
+                        if neg_max_pdf_left < neg_max_pdf_right
+                            simmed_rt = rt_max_left;
+                            chose_right = 0;
+                        else
+                            simmed_rt = rt_max_right;
+                            chose_right = 1;
+                        end
+                    end
+                    if chose_right
                         actions(g,t) = 2;
                         rewards(g,t) = mdp.bandit2_schedule(g,t);
+                    else
+                        actions(g,t) = 1;
+                        rewards(g,t) = mdp.bandit1_schedule(g,t);
                     end
                     rts(g,t) = simmed_rt;
                 end
                 % if RT is less than max and greater than 0, consider in log likelihood
                 if rts(g,t) < max_rt && rts(g,t) > 0
-                    if  actions(g,t) == 1 % chose left
-                        % negative drift and lower bias entail greater
-                        % probability of choosing left bandit
+                    if  actions(g,t) == 2 % invert the drift rate if they chose right since the bottom boundary corresponds to left. 
                         drift = drift * -1;
                         starting_bias = 1 - starting_bias;
                     end
+                    % We've decided that the bottom boundary will
+                    % correspond to the left choice, so 
+                    % negative drift and lower bias entail greater
+                    % probability of choosing left bandit
                     rt_pdf(g,t) = wfpt(rts(g,t), drift, decision_thresh(g,t), starting_bias);
                     % plot_ddm_pdf(drift,starting_bias,decision_thresh);
                     action_probs(g,t) = integral(@(y) wfpt(y,drift,decision_thresh(g,t),starting_bias),0,max_rt);
