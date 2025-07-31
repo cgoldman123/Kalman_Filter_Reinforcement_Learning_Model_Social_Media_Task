@@ -71,14 +71,14 @@ function summary_table = get_stats_by_reward_diff(MDP, simmed_model_output)
                 if (rdiff > 0)
                     % Uncertainty
                     uncert_vals = simmed_model_output.total_uncertainty(rows_abs_rdiff_hor, c);
-                    summary.(['mean_total_uncert_hor' num2str(h_val) '_choice' num2str(c)])(i,1) = mean(uncert_vals);
-                    summary.(['std_total_uncert_hor' num2str(h_val) '_choice' num2str(c)])(i,1)  = std(uncert_vals);
+                    summary.(['mean_total_uncert_hor' num2str(h_val) '_choice' num2str(c)])(i,1) = mean(uncert_vals,'omitnan');
+                    summary.(['std_total_uncert_hor' num2str(h_val) '_choice' num2str(c)])(i,1)  = std(uncert_vals,'omitnan');
         
                     % Estimated mean difference
                     est_vals = simmed_model_output.estimated_mean_diff(rows_abs_rdiff_hor, c);
                     abs_est_vals = abs(est_vals);
-                    summary.(['mean_est_mean_diff_hor' num2str(h_val) '_choice' num2str(c)])(i,1) = mean(abs_est_vals);
-                    summary.(['std_est_mean_diff_hor' num2str(h_val) '_choice' num2str(c)])(i,1)  = std(abs_est_vals);
+                    summary.(['mean_est_mean_diff_hor' num2str(h_val) '_choice' num2str(c)])(i,1) = mean(abs_est_vals,'omitnan');
+                    summary.(['std_est_mean_diff_hor' num2str(h_val) '_choice' num2str(c)])(i,1)  = std(abs_est_vals,'omitnan');
                 else
                     % Put NaN values in negative reward differences
                     summary.(['mean_total_uncert_hor' num2str(h_val) '_choice' num2str(c)])(i,1) = nan;
@@ -89,27 +89,27 @@ function summary_table = get_stats_by_reward_diff(MDP, simmed_model_output)
 
                 % Probability of choosing right
                 prob_right_vals = prob_choose_right(rows_rdiff_hor, c);
-                summary.(['mean_prob_choose_right_hor' num2str(h_val) '_choice' num2str(c)])(i,1) = mean(prob_right_vals);
-                summary.(['std_prob_choose_right_hor' num2str(h_val) '_choice' num2str(c)])(i,1)  = std(prob_right_vals);
+                summary.(['mean_prob_choose_right_hor' num2str(h_val) '_choice' num2str(c)])(i,1) = mean(prob_right_vals,'omitnan');
+                summary.(['std_prob_choose_right_hor' num2str(h_val) '_choice' num2str(c)])(i,1)  = std(prob_right_vals,'omitnan');
                         
                 % Probability of choosing high info option for high - low
                 % info rdiff
                 prob_high_info_vals_for_choice_num = prob_choose_high_info(horizon == h_val, c);
                 prob_high_info_vals_for_choice_num_and_rdiff = prob_high_info_vals_for_choice_num(gen_mean_diff_high_info_minus_low_info(horizon == h_val,c)==rdiff);
-                summary.(['mean_prob_high_info_hor' num2str(h_val) '_choice' num2str(c)])(i,1) = mean(prob_high_info_vals_for_choice_num_and_rdiff);
-                summary.(['std_prob_high_info_hor' num2str(h_val) '_choice' num2str(c)])(i,1)  = std(prob_high_info_vals_for_choice_num_and_rdiff);
+                summary.(['mean_prob_high_info_hor' num2str(h_val) '_choice' num2str(c)])(i,1) = mean(prob_high_info_vals_for_choice_num_and_rdiff,'omitnan');
+                summary.(['std_prob_high_info_hor' num2str(h_val) '_choice' num2str(c)])(i,1)  = std(prob_high_info_vals_for_choice_num_and_rdiff,'omitnan');
 
                 % Reaction time
                 rt_vals = simmed_model_output.rts(rows_rdiff_hor, c);
-                summary.(['mean_rt_hor' num2str(h_val) '_choice' num2str(c)])(i,1) = mean(rt_vals);
-                summary.(['std_rt_hor' num2str(h_val) '_choice' num2str(c)])(i,1)  = std(rt_vals);          
+                summary.(['mean_rt_hor' num2str(h_val) '_choice' num2str(c)])(i,1) = mean(rt_vals,'omitnan');
+                summary.(['std_rt_hor' num2str(h_val) '_choice' num2str(c)])(i,1)  = std(rt_vals,'omitnan');          
 
                 % Reaction time for generative mean difference of high info
                 % minus low info rdiff
                 rt_vals_for_choice_num = simmed_model_output.rts(horizon == h_val, c);
                 rt_vals_for_choice_num_and_rdiff = rt_vals_for_choice_num(gen_mean_diff_high_info_minus_low_info(horizon == h_val,c)==rdiff);
-                summary.(['mean_rt_high_minus_low_info_hor' num2str(h_val) '_choice' num2str(c)])(i,1) = mean(rt_vals_for_choice_num_and_rdiff);
-                summary.(['std_rt_high_minus_low_info_hor' num2str(h_val) '_choice' num2str(c)])(i,1)  = std(rt_vals_for_choice_num_and_rdiff);  
+                summary.(['mean_rt_high_minus_low_info_hor' num2str(h_val) '_choice' num2str(c)])(i,1) = mean(rt_vals_for_choice_num_and_rdiff,'omitnan');
+                summary.(['std_rt_high_minus_low_info_hor' num2str(h_val) '_choice' num2str(c)])(i,1)  = std(rt_vals_for_choice_num_and_rdiff,'omitnan');  
             end
         end
     end

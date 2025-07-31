@@ -60,18 +60,18 @@ function summary_table = get_stats_by_choice_num(MDP, simmed_model_output)
         for c = 1:n_choices
             % Probability of choosing high mean
             prob_high_mean = prob_chose_high_mean_option(rows, c);
-            summary.(['mean_prob_choose_cor_hor' num2str(h_val)])(c,1) = mean(prob_high_mean);
-            summary.(['std_prob_choose_cor_hor' num2str(h_val)])(c,1)  = std(prob_high_mean);
+            summary.(['mean_prob_choose_cor_hor' num2str(h_val)])(c,1) = mean(prob_high_mean, 'omitnan');
+            summary.(['std_prob_choose_cor_hor' num2str(h_val)])(c,1)  = std(prob_high_mean,'omitnan');
                     
             % Probability of choosing high info option
             prob_high_info_vals = prob_choose_high_info(rows, c);
-            summary.(['mean_prob_high_info_hor' num2str(h_val)])(c,1) = mean(prob_high_info_vals);
-            summary.(['std_prob_high_info_hor' num2str(h_val)])(c,1)  = std(prob_high_info_vals);
+            summary.(['mean_prob_high_info_hor' num2str(h_val)])(c,1) = mean(prob_high_info_vals,'omitnan');
+            summary.(['std_prob_high_info_hor' num2str(h_val)])(c,1)  = std(prob_high_info_vals,'omitnan');
 
             % Reaction time
             rt_vals = simmed_model_output.rts(rows, c);
-            summary.(['mean_rt_hor' num2str(h_val)])(c,1) = mean(rt_vals);
-            summary.(['std_rt_hor' num2str(h_val)])(c,1)  = std(rt_vals);      
+            summary.(['mean_rt_hor' num2str(h_val)])(c,1) = mean(rt_vals,'omitnan');
+            summary.(['std_rt_hor' num2str(h_val)])(c,1)  = std(rt_vals,'omitnan');      
         end
     end
     % Convert to table (optional)

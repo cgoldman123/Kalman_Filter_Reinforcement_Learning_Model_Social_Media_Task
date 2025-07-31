@@ -2,6 +2,7 @@ function [output_table] = Social_wrapper(varargin)
     %% If running the pyddm scripts for the first time, make sure the correct python virtual environment is called. Run this code to activate the correct virtual environment
     % pyenv('Version', 'C:\Users\CGoldman\AppData\Local\anaconda3\envs\pyddm\python.exe')
     close all;
+    dbstop if error;
     %% Clear workspace
     clearvars -except varargin
     % Simulate (and plot) data under the model OR fit the model to actual
@@ -26,7 +27,6 @@ function [output_table] = Social_wrapper(varargin)
     % If running on the analysis cluster, some parameters will be supplied by 
     % the job submission script -- read those accordingly.
     
-    dbstop if error
     if ispc
         fitting_procedure = "SPM"; % Specify fitting procedure as "SPM", "VBA", or "PYDDM"
         root = 'L:/';
@@ -155,7 +155,7 @@ function [output_table] = Social_wrapper(varargin)
         % Parameters fixed or fit in certain models
         if ismember(model, {'KF_UCB', 'KF_UCB_DDM', 'KF_SIGMA_DDM', 'KF_SIGMA', 'RL'})
             MDP.params.side_bias =  0; 
-            MDP.params.baseline_noise = 1/12; 
+            MDP.params.baseline_noise = 5; 
             
             if ismember(model, {'KF_UCB', 'KF_UCB_DDM', 'RL'})
                 MDP.params.baseline_info_bonus =  0; 
@@ -168,10 +168,10 @@ function [output_table] = Social_wrapper(varargin)
                     MDP.params.random_exp = 1;
                 end
             elseif ismember(model, {'KF_SIGMA_DDM', 'KF_SIGMA'})
-                    MDP.params.cong_base_info_bonus = 1;
-                    MDP.params.incong_base_info_bonus = 2;
-                    MDP.params.cong_directed_exp = -3;
-                    MDP.params.incong_directed_exp = -4;
+                    MDP.params.cong_base_info_bonus = -.01;
+                    MDP.params.incong_base_info_bonus = -.02;
+                    MDP.params.cong_directed_exp = .03;
+                    MDP.params.incong_directed_exp = .04;
                     MDP.params.random_exp = 5;
             end
         end
@@ -289,8 +289,8 @@ function [output_table] = Social_wrapper(varargin)
             if MDP.plot_simulated_data
                 do_plot_choice_given_gen_mean = 1; % Toggle on to plot choice for a given generative mean
                 do_plot_model_statistics = 1; % Toggle on to plot statistics under the current parameter set
-                MDP.num_samples_to_draw_from_pdf = 3;   %If 0, the model will simulate a choice/RT based on the maximum of the simulated pdf. If >0, it will sample from the distribution of choices/RTs this many times. Note this only matters for models that generate RTs.
-                MDP.param_to_sweep = 'side_bias_h1'; % e.g., side_bias_h1 leave empty if don't want to sweep over param
+                MDP.num_samples_to_draw_from_pdf = 0;   %If 0, the model will simulate a choice/RT based on the maximum of the simulated pdf. If >0, it will sample from the distribution of choices/RTs this many times. Note this only matters for models that generate RTs.
+                MDP.param_to_sweep = ''; % e.g., side_bias_h1 leave empty if don't want to sweep over param
                 MDP.param_values_to_sweep_over = linspace(-2, 2, 5); 
                 if do_plot_choice_given_gen_mean
                     gen_mean_difference = 4; % choose generative mean difference of 2, 4, 8, 12, 24

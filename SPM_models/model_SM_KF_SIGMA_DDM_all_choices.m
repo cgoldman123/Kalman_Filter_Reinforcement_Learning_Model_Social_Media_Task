@@ -75,7 +75,9 @@ function model_output = model_SM_KF_SIGMA_DDM_all_choices(params, actions_and_rt
 
                  % SET DDM Parameters
                  drift = (rel_uncert_scaler*relative_uncert) + (reward_diff/log(1 + exp(min(baseline_noise + total_uncert*(num_trials_left-1)*random_exp,700))));
-                 starting_bias = tanh(side_bias + rdiff_bias_mod*reward_diff/total_uncert);
+                 starting_bias_untransformed = (side_bias + rdiff_bias_mod*reward_diff/total_uncert);
+                 % Transform starting_bias to be between 0 and 1 using sigmoid
+                 starting_bias = 1 / (1 + exp(-starting_bias_untransformed));
                  decision_thresh(g,t) = decision_thresh_baseline;
                 
                 if sim
