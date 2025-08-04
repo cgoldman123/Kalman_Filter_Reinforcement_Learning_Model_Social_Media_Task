@@ -55,7 +55,7 @@ clear RT C R
 for sn = 1:length(sub)
     
     % z-scored RT
-    sub(sn).RTz = (sub(sn).RT - nanmean(sub(sn).RT(:))) / nanstd(sub(sn).RT(:));
+    sub(sn).RTz = (sub(sn).RT - mean(sub(sn).RT(:), 'omitnan')) / std(sub(sn).RT(:), 'omitnan');
     
     % running total of how many times each bandit is played
     sub(sn).n1 = cumsum(sub(sn).a == 1,2);

@@ -1,4 +1,4 @@
-function model_output = model_SM_KF_SIGMA_logistic_DDM(params, actions_and_rts, rewards, mdp, sim)
+function model_output = model_SM_obs_means_logistic_DDM(params, actions_and_rts, rewards, mdp, sim)
     dbstop if error;
     % note that right bandit: 
     % mu2
@@ -9,14 +9,14 @@ function model_output = model_SM_KF_SIGMA_logistic_DDM(params, actions_and_rts, 
     
     max_rt = mdp.settings.max_rt;
     
-    initialize params
-    sigma_d = params.sigma_d;
+    % initialize params
+    % sigma_d = params.sigma_d;
     side_bias_h1 = params.side_bias_h1;
     side_bias_h5 = params.side_bias_h5;
-    sigma_r = params.sigma_r;
-    initial_sigma = params.initial_sigma;
-    initial_mu = params.initial_mu;
-    reward_sensitivity = params.reward_sensitivity;   
+    % sigma_r = params.sigma_r;
+    % initial_sigma = params.initial_sigma;
+    % initial_mu = params.initial_mu;
+    % reward_sensitivity = params.reward_sensitivity;   
     h1_info_bonus = params.h1_info_bonus;
     h5_info_bonus = params.h5_info_bonus;
     h1_dec_noise = params.h1_dec_noise;
@@ -36,8 +36,8 @@ function model_output = model_SM_KF_SIGMA_logistic_DDM(params, actions_and_rts, 
     pred_errors_alpha = nan(G,9);
     exp_vals = nan(G,10);
     alpha = nan(G,10);
-    sigma1 = [initial_sigma * ones(G,1), zeros(G,8)];
-    sigma2 = [initial_sigma * ones(G,1), zeros(G,8)];
+    sigma1 = nan(G,9);
+    sigma2 = nan(G,9);
     total_uncertainty = nan(G,9);
     relative_uncertainty_of_choice = nan(G,9);
     change_in_uncertainty_after_choice = nan(G,9);
@@ -49,12 +49,12 @@ function model_output = model_SM_KF_SIGMA_logistic_DDM(params, actions_and_rts, 
     
     for g=1:G  % loop over games
         % values
-        mu1 = [initial_mu nan nan nan nan nan nan nan nan];
-        mu2 = [initial_mu nan nan nan nan nan nan nan nan];
+        mu1 = nan(1:5);
+        mu2 = nan(1:5);
 
         % learning rates 
-        alpha1 = nan(1,9); 
-        alpha2 = nan(1,9); 
+        % alpha1 = nan(1,9); 
+        % alpha2 = nan(1,9); 
         
         % if H1 Game, use H1 info bonus, decision noise, and side bias
         if mdp.C1(g) == 1
@@ -67,6 +67,9 @@ function model_output = model_SM_KF_SIGMA_logistic_DDM(params, actions_and_rts, 
             decision_noise = h5_dec_noise;
             side_bias = side_bias_h5;
         end
+
+        mu1(5) = mean(mdp.bandit1_schedule(g,1:4));
+        mu2(5) = mean(mdp.bandit2_schedule(g,1:4));
 
         for t=1:5  % loop over 4 forced choices and 1 free choice trials
             if t == 5
@@ -157,44 +160,44 @@ function model_output = model_SM_KF_SIGMA_logistic_DDM(params, actions_and_rts, 
                 
             
             % left bandit choice so mu1 updates
-            if (actions(g,t) == 1) 
-                % save relative uncertainty of choice
-                relative_uncertainty_of_choice(g,t) = sigma1(g,t) - sigma2(g,t);
-
-                % update sigma and LR
-                temp = 1/(sigma1(g,t)^2 + sigma_d^2) + 1/(sigma_r^2);
-                sigma1(g,t+1) = (1/temp)^.5;
-                change_in_uncertainty_after_choice(g,t) = sigma1(g,t+1) - sigma1(g,t);
-                alpha1(t) = (sigma1(g,t+1)/(sigma_r))^2; 
-
-                temp = sigma2(g,t)^2 + sigma_d^2;
-                sigma2(g,t+1) = temp^.5; 
-
-                exp_vals(g,t) = mu1(t);
-                pred_errors(g,t) = (reward_sensitivity*rewards(g,t)) - exp_vals(g,t);
-                alpha(g,t) = alpha1(t);
-                pred_errors_alpha(g,t) = alpha1(t) * pred_errors(g,t);
-                mu1(t+1) = mu1(t) + pred_errors_alpha(g,t);
-                mu2(t+1) = mu2(t); 
-            else % right bandit choice so mu2 updates
-                % save relative uncertainty of choice
-                relative_uncertainty_of_choice(g,t) = sigma2(g,t) - sigma1(g,t);
-                % update LR
-                temp = 1/(sigma2(g,t)^2 + sigma_d^2) + 1/(sigma_r^2);
-                sigma2(g,t+1) = (1/temp)^.5;
-                change_in_uncertainty_after_choice(g,t) = sigma2(g,t+1) - sigma2(g,t);
-                alpha2(t) = (sigma2(g,t+1)/(sigma_r))^2; 
-
-                temp = sigma1(g,t)^2 + sigma_d^2;
-                sigma1(g,t+1) = temp^.5; 
-
-                exp_vals(g,t) = mu2(t);
-                pred_errors(g,t) = (reward_sensitivity*rewards(g,t)) - exp_vals(g,t);
-                alpha(g,t) = alpha2(t);
-                pred_errors_alpha(g,t) = alpha2(t) * pred_errors(g,t);
-                mu2(t+1) = mu2(t) + pred_errors_alpha(g,t);
-                mu1(t+1) = mu1(t); 
-            end
+            % if (actions(g,t) == 1) 
+            %     % save relative uncertainty of choice
+            %     relative_uncertainty_of_choice(g,t) = sigma1(g,t) - sigma2(g,t);
+            % 
+            %     % update sigma and LR
+            %     temp = 1/(sigma1(g,t)^2 + sigma_d^2) + 1/(sigma_r^2);
+            %     sigma1(g,t+1) = (1/temp)^.5;
+            %     change_in_uncertainty_after_choice(g,t) = sigma1(g,t+1) - sigma1(g,t);
+            %     alpha1(t) = (sigma1(g,t+1)/(sigma_r))^2; 
+            % 
+            %     temp = sigma2(g,t)^2 + sigma_d^2;
+            %     sigma2(g,t+1) = temp^.5; 
+            % 
+            %     exp_vals(g,t) = mu1(t);
+            %     pred_errors(g,t) = (reward_sensitivity*rewards(g,t)) - exp_vals(g,t);
+            %     alpha(g,t) = alpha1(t);
+            %     pred_errors_alpha(g,t) = alpha1(t) * pred_errors(g,t);
+            %     mu1(t+1) = mu1(t) + pred_errors_alpha(g,t);
+            %     mu2(t+1) = mu2(t); 
+            % else % right bandit choice so mu2 updates
+            %     % save relative uncertainty of choice
+            %     relative_uncertainty_of_choice(g,t) = sigma2(g,t) - sigma1(g,t);
+            %     % update LR
+            %     temp = 1/(sigma2(g,t)^2 + sigma_d^2) + 1/(sigma_r^2);
+            %     sigma2(g,t+1) = (1/temp)^.5;
+            %     change_in_uncertainty_after_choice(g,t) = sigma2(g,t+1) - sigma2(g,t);
+            %     alpha2(t) = (sigma2(g,t+1)/(sigma_r))^2; 
+            % 
+            %     temp = sigma1(g,t)^2 + sigma_d^2;
+            %     sigma1(g,t+1) = temp^.5; 
+            % 
+            %     exp_vals(g,t) = mu2(t);
+            %     pred_errors(g,t) = (reward_sensitivity*rewards(g,t)) - exp_vals(g,t);
+            %     alpha(g,t) = alpha2(t);
+            %     pred_errors_alpha(g,t) = alpha2(t) * pred_errors(g,t);
+            %     mu2(t+1) = mu2(t) + pred_errors_alpha(g,t);
+            %     mu1(t+1) = mu1(t); 
+            % end
 
             if ~sim
                 if rts(g,t) >= max_rt || rts(g,t) <= 0
