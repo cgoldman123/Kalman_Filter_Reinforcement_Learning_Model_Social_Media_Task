@@ -7,14 +7,15 @@ function [output_table] = Social_wrapper(varargin)
     clearvars -except varargin
     % Simulate (and plot) data under the model OR fit the model to actual
     % data. Only toggle one of these on.
-    SIM = 1; % Simulate the model
-    FIT = 0; % Fit the model
+    SIM = 0; % Simulate the model
+    FIT = 1; % Fit the model
     if FIT
         MDP.get_processed_behavior_and_dont_fit_model = 0; % Toggle on to extract the rts and other processed behavioral data but not fit the model
         MDP.do_model_free = 1; % Toggle on to do model-free analyses on actual data
         MDP.fit_model = 1; % Toggle on to fit the model
         if MDP.fit_model
             MDP.do_simulated_model_free = 1; % Toggle on to do model-free analyses on data simulated using posterior parameter estimates of model.
+            MDP.plot_fitted_behavior = 1; % Toggle on to plot behavior after model fitting
         end
     elseif SIM
         MDP.plot_simulated_data = 1; %Toggle on to plot data simulated by model using parameters set in this main file.
@@ -46,15 +47,15 @@ function [output_table] = Social_wrapper(varargin)
         if strcmp(fitting_procedure, "PYDDM")
             MDP.settings = 'fit all choices and rts'; %(e.g., "fit all choices and rts", "fit first free choice and rt")
         elseif ~strcmp(fitting_procedure, "PYDDM")
-            model = "KF_SIGMA_logistic"; % indicate if 'KF_UCB', 'RL', 'KF_UCB_DDM', 'KF_SIGMA_DDM', 'KF_SIGMA', 'KF_SIGMA_RACING
+            model = "KF_SIGMA_DDM"; % indicate if 'KF_UCB', 'RL', 'KF_UCB_DDM', 'KF_SIGMA_DDM', 'KF_SIGMA', 'KF_SIGMA_RACING
             %MDP.field ={'h1_dec_noise','h5_dec_noise','side_bias_h1','side_bias_h5','h5_info_bonus','h1_info_bonus','sigma_d', 'sigma_r', 'starting_bias_baseline', 'drift_baseline', 'decision_thresh_baseline', 'drift_reward_diff_mod', 'wd', 'ws', 'V0'}; 
             %MDP.field = {'cong_base_info_bonus','incong_base_info_bonus','cong_directed_exp','incong_directed_exp', 'side_bias','random_exp','sigma_d', 'sigma_r', 'baseline_noise', 'rdiff_bias_mod', 'decision_thresh_baseline','wd', 'ws', 'V0'}; % KF_SIGMA_RACING
-            %MDP.field = {'cong_base_info_bonus','incong_base_info_bonus','cong_directed_exp','incong_directed_exp', 'side_bias','random_exp','sigma_d', 'sigma_r', 'baseline_noise', 'rdiff_bias_mod', 'decision_thresh_baseline'}; % KF_SIGMA_DDM
+            MDP.field = {'cong_base_info_bonus','incong_base_info_bonus','cong_directed_exp','incong_directed_exp', 'side_bias','random_exp','sigma_d', 'sigma_r', 'baseline_noise', 'rdiff_bias_mod', 'decision_thresh_baseline'}; % KF_SIGMA_DDM
             MDP.field = {'cong_base_info_bonus'}; % Test
             if strcmp(fitting_procedure, "VBA")
                 MDP.observation_params = MDP.field; % When there is no latent state learning, all params are observation params
             end
-            MDP.settings.num_choices_to_fit = 1; % Specify the number of choices to fit as first free choice (1) or all choices (5)
+            MDP.settings.num_choices_to_fit = 5; % Specify the number of choices to fit as first free choice (1) or all choices (5)
             if contains(model, 'DDM') || contains(model, 'RACING')     
                 % possible mappings are action_prob, reward_diff, UCB,
                 % side_bias, decsision_noise
@@ -259,7 +260,7 @@ function [output_table] = Social_wrapper(varargin)
                     plot_choice_given_gen_mean(root, fitting_procedure, experiment,room, results_dir, MDP, id, gen_mean_difference, horizon, truncate_h5);
                 end
                 if do_plot_model_statistics
-                    main_plot_model_statistics(root, fitting_procedure, experiment, room, results_dir,MDP, id);
+                    main_plot_model_stats_or_sweep(root, fitting_procedure, experiment, room, results_dir,MDP, id);
                 end
             end
             % Indicate if you would like to do model-free analyses on

@@ -1,25 +1,12 @@
 function [fits, model_output] = fit_extended_model_SPM(formatted_file, result_dir, MDP)
-    if ispc
-        root = 'L:/';
-    else
-        root = '/media/labs/';
-    end
     fprintf('Using this formatted_file: %s\n',formatted_file);
 
     %formatted_file = 'L:\rsmith\wellbeing\tasks\SocialMedia\output\prolific\kf\beh_Dislike_06_03_24_T16-03-52.csv';  %% remember to comment out
-    addpath([root 'rsmith/lab-members/cgoldman/general/']);
-
 
     sub = process_behavioral_data_SM(formatted_file);
 
     disp(sub);
     
-    %% ========================================================================
-    %% HIERARCHICAL MODEL FIT ON FIRST FREE CHOICE %%
-    %% HIERARCHICAL MODEL FIT ON FIRST FREE CHOICE %%
-    %% HIERARCHICAL MODEL FIT ON FIRST FREE CHOICE %%
-    %% ========================================================================
-
     %% prep data structure 
     NS = length(sub);   % number of subjects
     T = 4;              % number of forced choices
@@ -87,33 +74,33 @@ function [fits, model_output] = fit_extended_model_SPM(formatted_file, result_di
 
     
     %% Organize fits
-    field = DCM.field;
+    DCM_field = DCM.field;
     % get fitted and fixed params
     fits = DCM.params;
-    for i = 1:length(field)
-        if ismember(field{i},{'learning_rate', 'learning_rate_pos', 'learning_rate_neg', 'noise_learning_rate', 'alpha_start', 'alpha_inf', 'associability_weight', ...
+    for i = 1:length(DCM_field)
+        if ismember(DCM_field{i},{'learning_rate', 'learning_rate_pos', 'learning_rate_neg', 'noise_learning_rate', 'alpha_start', 'alpha_inf', 'associability_weight', ...
                 'starting_bias_baseline', 'ws', 'wd'})
-            fits.(field{i}) = 1/(1+exp(-DCM.Ep.(field{i})));
-        elseif ismember(field{i},{'h1_dec_noise', 'h5_dec_noise', 'h5_baseline_dec_noise', 'h5_slope_dec_noise', ...
+            fits.(DCM_field{i}) = 1/(1+exp(-DCM.Ep.(DCM_field{i})));
+        elseif ismember(DCM_field{i},{'h1_dec_noise', 'h5_dec_noise', 'h5_baseline_dec_noise', 'h5_slope_dec_noise', ...
                 'initial_sigma', 'initial_sigma_r', 'initial_mu', 'initial_associability', ...
                 'drift_action_prob_mod', 'drift_reward_diff_mod', 'drift_UCB_diff_mod',...
                 'starting_bias_action_prob_mod', 'starting_bias_reward_diff_mod', 'starting_bias_UCB_diff_mod',...
                 'decision_thresh_action_prob_mod', 'decision_thresh_reward_diff_mod', 'decision_thresh_UCB_diff_mod', 'decision_thresh_decision_noise_mod' ...
                 'outcome_informativeness', 'baseline_noise', ...
                 'reward_sensitivity', 'DE_RE_horizon'})
-            fits.(field{i}) = exp(DCM.Ep.(field{i}));
-        elseif ismember(field{i},{'h5_baseline_info_bonus', 'h5_slope_info_bonus', 'h1_info_bonus', 'baseline_info_bonus', ...
+            fits.(DCM_field{i}) = exp(DCM.Ep.(DCM_field{i}));
+        elseif ismember(DCM_field{i},{'h5_baseline_info_bonus', 'h5_slope_info_bonus', 'h1_info_bonus', 'baseline_info_bonus', ...
                 'side_bias', 'side_bias_h1', 'side_bias_h5', 'info_bonus', 'h5_info_bonus', 'random_exp', 'rdiff_bias_mod',...
                 'drift_baseline', 'drift','directed_exp', 'V0','cong_base_info_bonus','incong_base_info_bonus','cong_directed_exp','incong_directed_exp'})
-            fits.(field{i}) = DCM.Ep.(field{i});
-        elseif any(strcmp(field{i},{'nondecision_time'}))
-            fits.(field{i}) = 0.1 + (0.3 - 0.1) ./ (1 + exp(-DCM.Ep.(field{i})));  
-        elseif any(strcmp(field{i},{'decision_thresh_baseline'}))
-            fits.(field{i}) = .5 + (1000 - .5) ./ (1 + exp(-DCM.Ep.(field{i}))); 
-        elseif any(strcmp(field{i},{'sigma_d', 'sigma_r'}))
-            fits.(field{i}) = (40) ./ (1 + exp(-DCM.Ep.(field{i}))); 
+            fits.(DCM_field{i}) = DCM.Ep.(DCM_field{i});
+        elseif any(strcmp(DCM_field{i},{'nondecision_time'}))
+            fits.(DCM_field{i}) = 0.1 + (0.3 - 0.1) ./ (1 + exp(-DCM.Ep.(DCM_field{i})));  
+        elseif any(strcmp(DCM_field{i},{'decision_thresh_baseline'}))
+            fits.(DCM_field{i}) = .5 + (1000 - .5) ./ (1 + exp(-DCM.Ep.(DCM_field{i}))); 
+        elseif any(strcmp(DCM_field{i},{'sigma_d', 'sigma_r'}))
+            fits.(DCM_field{i}) = (40) ./ (1 + exp(-DCM.Ep.(DCM_field{i}))); 
         else
-            disp(field{i});
+            disp(DCM_field{i});
             error("Param not propertly transformed");
         end
     end
@@ -138,8 +125,6 @@ function [fits, model_output] = fit_extended_model_SPM(formatted_file, result_di
     fits.average_action_prob_H5_3 = mean(model_output.action_probs(2:2:end, 7), 'omitnan');
     fits.average_action_prob_H5_4 = mean(model_output.action_probs(2:2:end, 8), 'omitnan');
     fits.average_action_prob_H5_5 = mean(model_output.action_probs(2:2:end, 9), 'omitnan');
-
-    
     fits.model_acc = sum(model_output.action_probs(~isnan(model_output.action_probs)) > 0.5) / numel(model_output.action_probs(~isnan(model_output.action_probs)));
     fits.F = DCM.F;
 
@@ -149,7 +134,18 @@ function [fits, model_output] = fit_extended_model_SPM(formatted_file, result_di
         fits.num_invalid_rts = model_output.num_invalid_rts;
     end
 
-    
+    % Plot the fitted behavior!
+    if MDP.plot_fitted_behavior
+        % First fill in model_output
+        datastruct_fields = fieldnames(datastruct);
+        for idx = 1:length(datastruct_fields)
+            field = datastruct_fields{idx};  % extract the field name string
+            MDP.(field) = datastruct.(field);
+        end
+        reward_diff_summary_table = get_stats_by_reward_diff(MDP, model_output);
+        choice_num_summary_table = get_stats_by_choice_num(MDP, model_output);
+        make_plots_model_statistics(reward_diff_summary_table,choice_num_summary_table);
+    end
                 
     % simulate behavior with fitted params
     mdp.num_samples_to_draw_from_pdf = 0;
@@ -172,30 +168,30 @@ function [fits, model_output] = fit_extended_model_SPM(formatted_file, result_di
     simfit_DCM = SM_inversion(MDP);
     model_output.simfit_DCM = simfit_DCM;
 
-    for i = 1:length(field)
-        if ismember(field{i},{'learning_rate', 'learning_rate_pos', 'learning_rate_neg', 'noise_learning_rate', 'alpha_start', 'alpha_inf', 'associability_weight', ...
+    for i = 1:length(DCM_field)
+        if ismember(DCM_field{i},{'learning_rate', 'learning_rate_pos', 'learning_rate_neg', 'noise_learning_rate', 'alpha_start', 'alpha_inf', 'associability_weight', ...
                 'starting_bias_baseline', 'ws', 'wd'})
-            fits.(['simfit_' field{i}]) = 1/(1+exp(-simfit_DCM.Ep.(field{i})));
-        elseif ismember(field{i},{'h1_dec_noise', 'h5_dec_noise', 'h5_baseline_dec_noise', 'h5_slope_dec_noise', ...
+            fits.(['simfit_' DCM_field{i}]) = 1/(1+exp(-simfit_DCM.Ep.(DCM_field{i})));
+        elseif ismember(DCM_field{i},{'h1_dec_noise', 'h5_dec_noise', 'h5_baseline_dec_noise', 'h5_slope_dec_noise', ...
                 'initial_sigma', 'initial_sigma_r', 'initial_mu', 'initial_associability', ...
                 'drift_action_prob_mod', 'drift_reward_diff_mod', 'drift_UCB_diff_mod',...
                 'starting_bias_action_prob_mod', 'starting_bias_reward_diff_mod', 'starting_bias_UCB_diff_mod',...
                 'decision_thresh_action_prob_mod', 'decision_thresh_reward_diff_mod', 'decision_thresh_UCB_diff_mod', 'decision_thresh_decision_noise_mod'...
                 'outcome_informativeness', 'baseline_noise',...
                 'reward_sensitivity', 'DE_RE_horizon'})
-            fits.(['simfit_' field{i}]) = exp(simfit_DCM.Ep.(field{i}));
-        elseif ismember(field{i},{'h5_baseline_info_bonus', 'h5_slope_info_bonus', 'h1_info_bonus', 'baseline_info_bonus',...
+            fits.(['simfit_' DCM_field{i}]) = exp(simfit_DCM.Ep.(DCM_field{i}));
+        elseif ismember(DCM_field{i},{'h5_baseline_info_bonus', 'h5_slope_info_bonus', 'h1_info_bonus', 'baseline_info_bonus',...
                 'side_bias', 'side_bias_h1', 'side_bias_h5', 'info_bonus', 'h5_info_bonus', 'random_exp', 'rdiff_bias_mod',...
                 'drift_baseline', 'drift', 'directed_exp', 'V0','cong_base_info_bonus','incong_base_info_bonus','cong_directed_exp','incong_directed_exp'})
-            fits.(['simfit_' field{i}]) = simfit_DCM.Ep.(field{i});
-        elseif any(strcmp(field{i},{'nondecision_time'}))
-            fits.(['simfit_' field{i}]) = 0.1 + (0.3 - 0.1) ./ (1 + exp(-simfit_DCM.Ep.(field{i})));     
-        elseif any(strcmp(field{i},{'decision_thresh_baseline'}))
-            fits.(['simfit_' field{i}]) = .5 + (1000 - .5) ./ (1 + exp(-simfit_DCM.Ep.(field{i})));
-        elseif any(strcmp(field{i},{'sigma_d', 'sigma_r'}))
-            fits.(['simfit_' field{i}]) = (40) ./ (1 + exp(-simfit_DCM.Ep.(field{i})));
+            fits.(['simfit_' DCM_field{i}]) = simfit_DCM.Ep.(DCM_field{i});
+        elseif any(strcmp(DCM_field{i},{'nondecision_time'}))
+            fits.(['simfit_' DCM_field{i}]) = 0.1 + (0.3 - 0.1) ./ (1 + exp(-simfit_DCM.Ep.(DCM_field{i})));     
+        elseif any(strcmp(DCM_field{i},{'decision_thresh_baseline'}))
+            fits.(['simfit_' DCM_field{i}]) = .5 + (1000 - .5) ./ (1 + exp(-simfit_DCM.Ep.(DCM_field{i})));
+        elseif any(strcmp(DCM_field{i},{'sigma_d', 'sigma_r'}))
+            fits.(['simfit_' DCM_field{i}]) = (40) ./ (1 + exp(-simfit_DCM.Ep.(DCM_field{i})));
         else 
-            disp(field{i});
+            disp(DCM_field{i});
             error("Param not propertly transformed");
         end
     end
