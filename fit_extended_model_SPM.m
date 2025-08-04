@@ -143,18 +143,22 @@ function [fits, model_output] = fit_extended_model_SPM(formatted_file, result_di
     fits.model_acc = sum(model_output.action_probs(~isnan(model_output.action_probs)) > 0.5) / numel(model_output.action_probs(~isnan(model_output.action_probs)));
     fits.F = DCM.F;
 
-    if ismember(func2str(MDP.model), {'model_SM_KF_DDM_all_choices', 'model_SM_KF_SIGMA_DDM_all_choices', 'model_SM_KF_SIGMA_logistic_DDM', 'model_SM_KF_SIGMA_logistic_RACING'})
+    % If the model contains a DDM or racing accumulator, save the number of invalid RTs
+    model_str = func2str(MDP.model);
+    if contains(model_str, 'DDM') || contains(model_str, 'RACING')   
         fits.num_invalid_rts = model_output.num_invalid_rts;
     end
 
     
                 
     % simulate behavior with fitted params
+    mdp.num_samples_to_draw_from_pdf = 0;
     simmed_model_output = MDP.model(fits,actions_and_rts, rewards,mdp, 1);    
 
     datastruct.actions = simmed_model_output.actions;
     datastruct.rewards = simmed_model_output.rewards;
-    if ismember(func2str(MDP.model), {'model_SM_KF_DDM_all_choices', 'model_SM_KF_SIGMA_DDM_all_choices', 'model_SM_KF_SIGMA_logistic_DDM', 'model_SM_KF_SIGMA_logistic_RACING'})
+    % If the model contains a DDM or racing accumulator, save simulated RTs
+    if contains(model_str, 'DDM') || contains(model_str, 'RACING')   
         datastruct.RTs = simmed_model_output.rts;
     else
         datastruct.RTs = nan(40,9);

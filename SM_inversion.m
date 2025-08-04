@@ -212,25 +212,27 @@ function L = spm_mdp_L(P,M,U,Y)
 
     % Fit to reaction time pdfs if DDM, fit to action probabilities if
     % choice model
-    if ismember(func2str(M.model), {'model_SM_KF_DDM_all_choices', 'model_SM_KF_SIGMA_DDM_all_choices', 'model_SM_KF_SIGMA_logistic_DDM', 'model_SM_KF_SIGMA_logistic_RACING'})
+    model_str = func2str(M.model);
+    if contains(model_str, 'DDM') || contains(model_str, 'RACING')        
+        % Make sure that there were no NaN values in the log likelihood
+        % after accounting for invalid RTs
+        % calculate number of total choices to fit since half of games were
+        % H1 and half were H5
+        num_total_choices_to_fit = mdp.settings.num_choices_to_fit*mdp.G/2 + mdp.G/2;
+        invalid_rts = model_output.num_invalid_rts;
+        if sum(~isnan(model_output.action_probs),'all') ~= (num_total_choices_to_fit-invalid_rts)
+            error("Error! NaNs encountered in the log likelihood!");
+        end
         log_probs = log(model_output.rt_pdf+eps);
-        summed_log_probs = sum(log_probs(~isnan(log_probs)));
-        % if any log probs were NaN that should not be, throw an error.
-        % Note that we expect a different number of nan values for the
-        % models fitting all free choices vs first free choice.
-        % Models fitting all choices:
-        if ismember(func2str(M.model), {'model_SM_KF_DDM_all_choices', 'model_SM_KF_SIGMA_DDM_all_choices'})
-            number_nan_log_probs = 120 - model_output.num_invalid_rts - sum(~isnan(log_probs(:)));
-        % Models fitting first choice
-        elseif ismember(func2str(M.model), {'model_SM_KF_SIGMA_logistic_DDM', 'model_SM_KF_SIGMA_logistic_RACING'})
-            number_nan_log_probs = 40 - model_output.num_invalid_rts - sum(~isnan(log_probs(:)));
-        end
-        if number_nan_log_probs > 0
-            error("Error! NaNs encountered in the log likelihood!")
-        end
-        L = summed_log_probs + number_nan_log_probs*log(realmin);
-
+        L = sum(log_probs(~isnan(log_probs)));
     else
+        % Make sure that there were no NaN values in the log likelihood
+        % calculate number of total choices to fit since half of games were
+        % H1 and half were H5
+        num_total_choices_to_fit = mdp.settings.num_choices_to_fit*mdp.G/2 + mdp.G/2;
+        if sum(~isnan(model_output.action_probs),'all') ~= num_total_choices_to_fit
+            error("Error! NaNs encountered in the log likelihood!");
+        end
         log_probs = log(model_output.action_probs+eps);
         log_probs(isnan(log_probs)) = 0; % Replace NaN in log output with 0 for summing
         L = sum(log_probs, 'all');

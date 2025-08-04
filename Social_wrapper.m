@@ -7,10 +7,10 @@ function [output_table] = Social_wrapper(varargin)
     clearvars -except varargin
     % Simulate (and plot) data under the model OR fit the model to actual
     % data. Only toggle one of these on.
-    SIM = 1; % Simulate the model
-    FIT = 0; % Fit the model
+    SIM = 0; % Simulate the model
+    FIT = 1; % Fit the model
     if FIT
-        MDP.get_processed_behavior_and_dont_fit_model = 1; % Toggle on to extract the rts and other processed behavioral data but not fit the model
+        MDP.get_processed_behavior_and_dont_fit_model = 0; % Toggle on to extract the rts and other processed behavioral data but not fit the model
         MDP.do_model_free = 1; % Toggle on to do model-free analyses on actual data
         MDP.fit_model = 1; % Toggle on to fit the model
         if MDP.fit_model
@@ -46,10 +46,12 @@ function [output_table] = Social_wrapper(varargin)
         if strcmp(fitting_procedure, "PYDDM")
             MDP.settings = 'fit all choices and rts'; %(e.g., "fit all choices and rts", "fit first free choice and rt")
         elseif ~strcmp(fitting_procedure, "PYDDM")
-            model = "KF_SIGMA_RACING"; % indicate if 'KF_UCB', 'RL', 'KF_UCB_DDM', 'KF_SIGMA_DDM', 'KF_SIGMA', 'KF_SIGMA_RACING
-            %MDP.field = {'h1_dec_noise','h5_dec_noise','side_bias_h1','side_bias_h5','h5_info_bonus','h1_info_bonus','sigma_d', 'sigma_r', 'starting_bias_baseline', 'drift_baseline', 'decision_thresh_baseline', 'drift_reward_diff_mod', 'wd', 'ws', 'V0'};
-            MDP.field = {'cong_base_info_bonus','incong_base_info_bonus','cong_directed_exp','incong_directed_exp', 'side_bias','random_exp','sigma_d', 'sigma_r', 'baseline_noise', 'rdiff_bias_mod', 'decision_thresh_baseline','wd', 'ws', 'V0'};
-            
+            model = "KF_SIGMA_DDM"; % indicate if 'KF_UCB', 'RL', 'KF_UCB_DDM', 'KF_SIGMA_DDM', 'KF_SIGMA', 'KF_SIGMA_RACING
+            %MDP.field ={'h1_dec_noise','h5_dec_noise','side_bias_h1','side_bias_h5','h5_info_bonus','h1_info_bonus','sigma_d', 'sigma_r', 'starting_bias_baseline', 'drift_baseline', 'decision_thresh_baseline', 'drift_reward_diff_mod', 'wd', 'ws', 'V0'}; 
+            %MDP.field = {'cong_base_info_bonus','incong_base_info_bonus','cong_directed_exp','incong_directed_exp', 'side_bias','random_exp','sigma_d', 'sigma_r', 'baseline_noise', 'rdiff_bias_mod', 'decision_thresh_baseline','wd', 'ws', 'V0'}; % KF_SIGMA_RACING
+            %MDP.field = {'cong_base_info_bonus','incong_base_info_bonus','cong_directed_exp','incong_directed_exp', 'side_bias','random_exp','sigma_d', 'sigma_r', 'baseline_noise', 'rdiff_bias_mod', 'decision_thresh_baseline'}; % KF_SIGMA_DDM
+            MDP.field = {'cong_base_info_bonus'}; % Test
+
             if strcmp(fitting_procedure, "VBA")
                 MDP.observation_params = MDP.field; % When there is no latent state learning, all params are observation params
             end
@@ -115,6 +117,7 @@ function [output_table] = Social_wrapper(varargin)
     % Add libraries. Some of these are for the VBA example code and may not
     % be needed.
     addpath(['./SPM_models/']);
+    addpath(['./SPM_models/legacy_models/']);
     addpath(['./VBA_scripts/']);
     addpath(['./racing_accumulator/']);
     addpath(['./plotting/']);
@@ -167,10 +170,10 @@ function [output_table] = Social_wrapper(varargin)
                     MDP.params.random_exp = 1;
                 end
             elseif ismember(model, {'KF_SIGMA_DDM', 'KF_SIGMA', 'KF_SIGMA_RACING'})
-                    MDP.params.cong_base_info_bonus = -.01;
-                    MDP.params.incong_base_info_bonus = -.02;
-                    MDP.params.cong_directed_exp = .03;
-                    MDP.params.incong_directed_exp = .04;
+                    MDP.params.cong_base_info_bonus = 0;
+                    MDP.params.incong_base_info_bonus = 0;
+                    MDP.params.cong_directed_exp = 0;
+                    MDP.params.incong_directed_exp = 0;
                     MDP.params.random_exp = 5;
             end
         end
@@ -216,14 +219,14 @@ function [output_table] = Social_wrapper(varargin)
                 if any(contains(MDP.settings.bias_mapping,'reward_diff'))
                     MDP.params.starting_bias_reward_diff_mod = .1;
                 end
-                %% Racing Accumulator Params %%
+                % Racing Accumulator Params 
                 if ismember(model, {'KF_SIGMA_logistic_RACING','KF_SIGMA_RACING'})
                     MDP.params.wd = 0.05;
                     MDP.params.ws = 0.05;
                     MDP.params.V0 = 0;
                 end
             elseif ismember(model, {'KF_SIGMA_DDM'})
-                    MDP.params.rdiff_bias_mod = -.05;
+                    MDP.params.rdiff_bias_mod = .05;
                     MDP.params.decision_thresh_baseline = 3;
             end
         end
@@ -248,8 +251,8 @@ function [output_table] = Social_wrapper(varargin)
                 do_plot_choice_given_gen_mean = 1; % Toggle on to plot choice for a given generative mean
                 do_plot_model_statistics = 1; % Toggle on to plot statistics under the current parameter set
                 MDP.num_samples_to_draw_from_pdf = 0;   %If 0, the model will simulate a choice/RT based on the maximum of the simulated pdf. If >0, it will sample from the distribution of choices/RTs this many times. Note this only matters for models that generate RTs.
-                MDP.param_to_sweep = ''; % e.g., side_bias_h1 leave empty if don't want to sweep over param
-                MDP.param_values_to_sweep_over = linspace(-2, 2, 5); 
+                MDP.param_to_sweep = 'side_bias'; % e.g., side_bias_h1 leave empty if don't want to sweep over param
+                MDP.param_values_to_sweep_over = linspace(-20, 20, 5); 
                 if do_plot_choice_given_gen_mean
                     gen_mean_difference = 4; % choose generative mean difference of 2, 4, 8, 12, 24
                     horizon = 5; % choose horizon of 1 or 5
@@ -271,9 +274,3 @@ function [output_table] = Social_wrapper(varargin)
         output_table = get_fits(root, fitting_procedure, experiment, room, results_dir,MDP, id);
     end
 end
-
-
-% Effect of DE - people more likely to pick high info in H5 vs H1
-% Effect of RE - people behave more randomly in H5 vs H1. Easier to see when set info_bonus to 0 and gen_mean>4. 
-% Increasing confidence within game - can see in some games e.g., game 8
-% (gen_mean=4), game 2 (gen_mean=8)
