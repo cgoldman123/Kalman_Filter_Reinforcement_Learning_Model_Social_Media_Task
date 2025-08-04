@@ -49,7 +49,7 @@ end
 
 
 [big_table, subj_mapping, flag] = Social_merge(subs, files, room_type, study);
-
+good_behavioral_file = subj_mapping{1,4};
 
 outpath_beh = sprintf([results_dir '%s_beh_%s_%s.csv'], id, room_type, timestamp);
 writetable(big_table, outpath_beh);
@@ -94,6 +94,7 @@ if MDP.fit_model
             model_output(i).results.subject = subject{:};
             model_output(i).results.room_type = room_type;
             model_output(i).results.cb = subj_mapping{i, 3}; 
+            model_output(i).results.good_behavioral_file = good_behavioral_file;
             model_output.id = subject{:}; 
             model_output.room_type = room_type; 
             model_output.cb = subj_mapping{i, 3};
@@ -178,7 +179,6 @@ end
 
 if MDP.do_model_free
     try
-        good_behavioral_file = subj_mapping{1,4};
         model_free = social_model_free(root,good_behavioral_file,room_type,study,struct());
     catch ME
         fprintf("Model free didn't work!");
@@ -191,7 +191,6 @@ end
 
 if MDP.do_simulated_model_free
     try
-        good_behavioral_file = subj_mapping{1,4};
         if strcmp(fitting_procedure, "VBA")
             simulated_model_free = social_model_free(root,good_behavioral_file,room_type,study,model_output.simfit_out.simfit_datastruct);
         elseif strcmp(fitting_procedure, "SPM")

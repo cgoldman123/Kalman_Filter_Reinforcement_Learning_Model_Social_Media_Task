@@ -20,6 +20,9 @@ function model_output = model_SM_KF_SIGMA_logistic(params, actions_and_rts, rewa
     
     % initialize variables
     actions = actions_and_rts.actions;
+    % initialize RTs with an empty double because this is a choice-only
+    % model
+    rts = nan(G,9);
     action_probs = nan(G,9);
     model_acc = nan(G,9);
     
@@ -32,7 +35,7 @@ function model_output = model_SM_KF_SIGMA_logistic(params, actions_and_rts, rewa
     total_uncertainty = nan(G,9);
     relative_uncertainty_of_choice = nan(G,9);
     change_in_uncertainty_after_choice = nan(G,9);
-
+    estimated_mean_diff = nan(G,9);
 
     
     for g=1:G  % loop over games
@@ -87,8 +90,6 @@ function model_output = model_SM_KF_SIGMA_logistic(params, actions_and_rts, rewa
                 
             end
           
-            % Store total uncertainty unless someone wants it later
-            total_uncertainty(g,t) = (sigma1(g,t)^2 + sigma2(g,t)^2)^.5;
 
             % left bandit choice so mu1 updates
             if (actions(g,t) == 1) 
@@ -129,7 +130,9 @@ function model_output = model_SM_KF_SIGMA_logistic(params, actions_and_rts, rewa
                 mu2(t+1) = mu2(t) + pred_errors_alpha(g,t);
                 mu1(t+1) = mu1(t); 
             end
-
+            % save total uncertainty and reward difference
+            total_uncertainty(g,t) = ((sigma1(g,t)^2)+(sigma2(g,t)^2))^.5;
+            estimated_mean_diff(g,t) = mu2(t) - mu1(t);
 
         end
     end
@@ -145,10 +148,12 @@ function model_output = model_SM_KF_SIGMA_logistic(params, actions_and_rts, rewa
     model_output.sigma1 = sigma1;
     model_output.sigma2 = sigma2;
     model_output.actions = actions;
+    model_output.rts = rts;
     model_output.rewards = rewards;
     model_output.relative_uncertainty_of_choice = relative_uncertainty_of_choice;
     model_output.total_uncertainty = total_uncertainty;
     model_output.change_in_uncertainty_after_choice = change_in_uncertainty_after_choice;
+    model_output.estimated_mean_diff = estimated_mean_diff;
 
 
 end

@@ -7,8 +7,8 @@ function [output_table] = Social_wrapper(varargin)
     clearvars -except varargin
     % Simulate (and plot) data under the model OR fit the model to actual
     % data. Only toggle one of these on.
-    SIM = 0; % Simulate the model
-    FIT = 1; % Fit the model
+    SIM = 1; % Simulate the model
+    FIT = 0; % Fit the model
     if FIT
         MDP.get_processed_behavior_and_dont_fit_model = 0; % Toggle on to extract the rts and other processed behavioral data but not fit the model
         MDP.do_model_free = 1; % Toggle on to do model-free analyses on actual data
@@ -46,18 +46,15 @@ function [output_table] = Social_wrapper(varargin)
         if strcmp(fitting_procedure, "PYDDM")
             MDP.settings = 'fit all choices and rts'; %(e.g., "fit all choices and rts", "fit first free choice and rt")
         elseif ~strcmp(fitting_procedure, "PYDDM")
-            %model = "KF_SIGMA_DDM"; % indicate if 'KF_UCB', 'RL', 'KF_UCB_DDM', 'KF_SIGMA_DDM', 'KF_SIGMA', 'KF_SIGMA_RACING
+            model = "KF_SIGMA_logistic"; % indicate if 'KF_UCB', 'RL', 'KF_UCB_DDM', 'KF_SIGMA_DDM', 'KF_SIGMA', 'KF_SIGMA_RACING
             %MDP.field ={'h1_dec_noise','h5_dec_noise','side_bias_h1','side_bias_h5','h5_info_bonus','h1_info_bonus','sigma_d', 'sigma_r', 'starting_bias_baseline', 'drift_baseline', 'decision_thresh_baseline', 'drift_reward_diff_mod', 'wd', 'ws', 'V0'}; 
             %MDP.field = {'cong_base_info_bonus','incong_base_info_bonus','cong_directed_exp','incong_directed_exp', 'side_bias','random_exp','sigma_d', 'sigma_r', 'baseline_noise', 'rdiff_bias_mod', 'decision_thresh_baseline','wd', 'ws', 'V0'}; % KF_SIGMA_RACING
             %MDP.field = {'cong_base_info_bonus','incong_base_info_bonus','cong_directed_exp','incong_directed_exp', 'side_bias','random_exp','sigma_d', 'sigma_r', 'baseline_noise', 'rdiff_bias_mod', 'decision_thresh_baseline'}; % KF_SIGMA_DDM
-            %MDP.field = {'cong_base_info_bonus'}; % Test
-
-            model = "obs_means_logistic_DDM"; % indicate if 'KF_UCB', 'RL', 'KF_UCB_DDM', 'KF_SIGMA_DDM', 'KF_SIGMA'
-            MDP.field = {'h1_dec_noise','h5_dec_noise','side_bias_h1','side_bias_h5','h5_info_bonus','h1_info_bonus'};
+            MDP.field = {'cong_base_info_bonus'}; % Test
             if strcmp(fitting_procedure, "VBA")
                 MDP.observation_params = MDP.field; % When there is no latent state learning, all params are observation params
             end
-            MDP.settings.num_choices_to_fit = 5; % Specify the number of choices to fit as first free choice (1) or all choices (5)
+            MDP.settings.num_choices_to_fit = 1; % Specify the number of choices to fit as first free choice (1) or all choices (5)
             if contains(model, 'DDM') || contains(model, 'RACING')     
                 % possible mappings are action_prob, reward_diff, UCB,
                 % side_bias, decsision_noise
@@ -253,9 +250,9 @@ function [output_table] = Social_wrapper(varargin)
                 do_plot_choice_given_gen_mean = 1; % Toggle on to plot choice for a given generative mean
                 do_plot_model_statistics = 1; % Toggle on to plot statistics under the current parameter set
                 MDP.num_samples_to_draw_from_pdf = 0;   %If 0, the model will simulate a choice/RT based on the maximum of the simulated pdf. If >0, it will sample from the distribution of choices/RTs this many times. Note this only matters for models that generate RTs.
-                MDP.param_to_sweep = 'side_bias'; % e.g., side_bias_h1 leave empty if don't want to sweep over param
+                MDP.param_to_sweep = ''; % e.g., side_bias_h1 leave empty if don't want to sweep over param
                 MDP.param_values_to_sweep_over = linspace(-20, 20, 5); 
-                if do_plot_choice_given_gen_mean
+                if do_plot_choice_given_gen_mean & isempty(MDP.param_to_sweep)
                     gen_mean_difference = 4; % choose generative mean difference of 2, 4, 8, 12, 24
                     horizon = 5; % choose horizon of 1 or 5
                     truncate_h5 = 1; % if truncate_h5 is true, use the H5 bandit schedule but truncate so that all games are H1
