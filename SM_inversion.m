@@ -74,9 +74,9 @@ for i = 1:length(DCM.field)
                 'reward_sensitivity', 'DE_RE_horizon'})
             pE.(field) = log(DCM.params.(field));               % in log-space (to keep positive)
             pC{i,i}    = prior_variance;  
-        elseif ismember(field, {'h5_baseline_info_bonus', 'h5_slope_info_bonus', 'h1_info_bonus', ...
-                'side_bias', 'side_bias_h1', 'side_bias_h5', 'info_bonus', 'h5_info_bonus',...
-                'drift_baseline', 'drift'})
+        elseif ismember(field, {'h5_baseline_info_bonus', 'h5_slope_info_bonus', 'h1_info_bonus', 'rdiff_bias_mod',...
+                'side_bias', 'side_bias_h1', 'side_bias_h5', 'info_bonus', 'h5_info_bonus', 'random_exp',...
+                'drift_baseline', 'drift','cong_base_info_bonus','incong_base_info_bonus','cong_directed_exp','incong_directed_exp'})
             pE.(field) = DCM.params.(field); 
             pC{i,i}    = prior_variance;
         elseif any(strcmp(field,{'nondecision_time'})) % bound between .1 and .3
@@ -99,10 +99,16 @@ for i = 1:length(DCM.field)
             pC{i,i}    = 1/4;                
         elseif any(strcmp(field,{'baseline_noise'})) 
             pE.(field) = log(DCM.params.(field));               % in log-space (to keep positive)
-            pC{i,i}    = 1/4;                
-        elseif any(strcmp(field,{'random_exp'})) % bound between 0 and 40
-            pE.(field) = log(DCM.params.(field));               % in log-space (to keep positive)
-            pC{i,i}    = 1/4;                 
+            pC{i,i}    = 1/4;                              
+        elseif any(strcmp(field,{'ws'})) 
+            pE.(field) = log(DCM.params.(field)/(1-DCM.params.(field)));    
+            pC{i,i}    = 1/4;   
+        elseif any(strcmp(field,{'wd'})) %
+            pE.(field) = log(DCM.params.(field)/(1-DCM.params.(field))); 
+            pC{i,i}    = 1/4;   
+        elseif any(strcmp(field,{'V0'})) 
+            pE.(field) = DCM.params.(field);               % in log-space (to keep positive)
+            pC{i,i}    = 1; 
         else   
             disp(field);
             error("Param not properly transformed");
@@ -148,19 +154,19 @@ function L = spm_mdp_L(P,M,U,Y)
     field = fieldnames(M.pE);
     for i = 1:length(field)
         if ismember(field{i},{'learning_rate', 'learning_rate_pos', 'learning_rate_neg', 'noise_learning_rate', 'alpha_start', 'alpha_inf', 'associability_weight', ...
-                'starting_bias_baseline'})
+                'starting_bias_baseline', 'wd', 'ws'})
             params.(field{i}) = 1/(1+exp(-P.(field{i})));
         elseif ismember(field{i},{'h1_dec_noise', 'h5_dec_noise','h5_baseline_dec_noise', 'h5_slope_dec_noise', ...
                 'initial_sigma', 'initial_sigma_r', 'initial_mu', 'initial_associability', ...
                 'drift_action_prob_mod', 'drift_reward_diff_mod', 'drift_UCB_diff_mod',...
                 'starting_bias_action_prob_mod', 'starting_bias_reward_diff_mod', 'starting_bias_UCB_diff_mod',...
                 'decision_thresh_action_prob_mod', 'decision_thresh_reward_diff_mod', 'decision_thresh_UCB_diff_mod', 'decision_thresh_decision_noise_mod'...
-                'outcome_informativeness', 'random_exp', 'baseline_noise', ...
+                'outcome_informativeness', 'baseline_noise', ...
                 'reward_sensitivity', 'DE_RE_horizon'})
             params.(field{i}) = exp(P.(field{i}));
         elseif ismember(field{i},{'h5_baseline_info_bonus', 'h5_slope_info_bonus', 'h1_info_bonus', 'baseline_info_bonus',...
-                'side_bias', 'side_bias_h1', 'side_bias_h5', 'info_bonus', 'h5_info_bonus',...
-                'drift_baseline', 'drift', 'directed_exp'})
+                'side_bias', 'side_bias_h1', 'side_bias_h5', 'info_bonus', 'h5_info_bonus', 'random_exp', 'rdiff_bias_mod',...
+                'drift_baseline', 'drift', 'directed_exp', 'V0','cong_base_info_bonus','incong_base_info_bonus','cong_directed_exp','incong_directed_exp'})
             params.(field{i}) = P.(field{i});
         elseif ismember(field{i},{'decision_thresh_baseline'})
             params.(field{i}) = .5 + (1000 - .5) ./ (1 + exp(-P.(field{i})));     
@@ -206,24 +212,27 @@ function L = spm_mdp_L(P,M,U,Y)
 
     % Fit to reaction time pdfs if DDM, fit to action probabilities if
     % choice model
-    if ismember(func2str(M.model), {'model_SM_KF_DDM_all_choices', 'model_SM_KF_SIGMA_DDM_all_choices', 'model_SM_KF_SIGMA_logistic_DDM'})
+    model_str = func2str(M.model);
+    if contains(model_str, 'DDM') || contains(model_str, 'RACING')        
+        % Make sure that there were no NaN values in the log likelihood
+        % after accounting for invalid RTs
+        % calculate number of total choices to fit since half of games were
+        % H1 and half were H5
+        num_total_choices_to_fit = mdp.settings.num_choices_to_fit*mdp.G/2 + mdp.G/2;
+        invalid_rts = model_output.num_invalid_rts;
+        if sum(~isnan(model_output.action_probs),'all') ~= (num_total_choices_to_fit-invalid_rts)
+            error("Error! NaNs encountered in the log likelihood!");
+        end
         log_probs = log(model_output.rt_pdf+eps);
-        summed_log_probs = sum(log_probs(~isnan(log_probs)));
-        % if any log probs were NaN that should not be, throw an error or consider the action
-        % prob to be realmin so the max penalty is given. Note that we
-        % expect a different number of nan values for the all choices
-        % models vs the first free choice models
-        if ismember(func2str(M.model), {'model_SM_KF_DDM_all_choices', 'model_SM_KF_SIGMA_DDM_all_choices'})
-            number_nan_log_probs = 120 - model_output.num_invalid_rts - sum(~isnan(log_probs(:)));
-        elseif ismember(func2str(M.model), {'model_SM_KF_SIGMA_logistic_DDM'})
-            number_nan_log_probs = 40 - model_output.num_invalid_rts - sum(~isnan(log_probs(:)));
-        end
-        if number_nan_log_probs > 0
-            error("Error! NaNs encountered in the log likelihood!")
-        end
-        L = summed_log_probs + number_nan_log_probs*log(realmin);
-
+        L = sum(log_probs(~isnan(log_probs)));
     else
+        % Make sure that there were no NaN values in the log likelihood
+        % calculate number of total choices to fit since half of games were
+        % H1 and half were H5
+        num_total_choices_to_fit = mdp.settings.num_choices_to_fit*mdp.G/2 + mdp.G/2;
+        if sum(~isnan(model_output.action_probs),'all') ~= num_total_choices_to_fit
+            error("Error! NaNs encountered in the log likelihood!");
+        end
         log_probs = log(model_output.action_probs+eps);
         log_probs(isnan(log_probs)) = 0; % Replace NaN in log output with 0 for summing
         L = sum(log_probs, 'all');

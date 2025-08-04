@@ -114,7 +114,7 @@ def KF_DDM_model(sample,model,fit_or_sim, sim_using_max_pdf=False):
                         rel_uncert_scaler = (np.exp(num_trials_left-1)-1)*incong_DE+ incong_base_info_bonus
 
                     # Use softplus function in the denominator for a positive transformation; use min(x,700) to prevent overflow error
-                    drift_value = (reward_diff + (rel_uncert_scaler*relative_uncertainty))/np.log1p(np.exp(min(base_noise + total_uncert*(num_trials_left-1)*random_exp,700)))
+                    drift_value = (rel_uncert_scaler*relative_uncertainty) + (reward_diff)/np.log1p(np.exp(min(base_noise + total_uncert*(num_trials_left-1)*random_exp,700)))
  
                     starting_position_value = np.tanh(side_bias + rdiff_bias_mod*reward_diff/total_uncert)
  

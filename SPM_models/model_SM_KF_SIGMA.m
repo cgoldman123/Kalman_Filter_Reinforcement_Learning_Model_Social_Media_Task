@@ -1,8 +1,10 @@
-function model_output = model_SM_KF_SIGMA_all_choices(params, actions_and_rts, rewards, mdp, sim)
+function model_output = model_SM_KF_SIGMA(params, actions_and_rts, rewards, mdp, sim)
     dbstop if error;
     % note that mu2 == right bandit ==  c=2 == free choice = 1
-    G = mdp.G; % num of games    
-    
+    G = mdp.G; % num of games   
+    num_choices_to_fit = mdp.settings.num_choices_to_fit;
+    num_forced_choices = 4;
+
     % initialize params
     sigma_d = params.sigma_d;
     side_bias = params.side_bias;
@@ -43,10 +45,13 @@ function model_output = model_SM_KF_SIGMA_all_choices(params, actions_and_rts, r
         alpha1 = nan(1,9); 
         alpha2 = nan(1,9); 
         
-        num_choices = sum(~isnan(rewards(g,:))); 
+        num_choices_in_this_game = sum(~isnan(rewards(g,:))); 
+        % Get the number of choices to loop over depending on how many free
+        % choices we're fititng and the number of choices in this game
+        num_choices_to_loop_over = min(num_choices_in_this_game, num_choices_to_fit + num_forced_choices);
 
 
-        for t=1:num_choices  % loop over forced-choice trials
+        for t=1:num_choices_to_loop_over  % loop over forced-choice trials
             if t >= 5
                 if mdp.C1(g)==1 % horizon is 1
                     T = 0;
