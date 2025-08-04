@@ -7,8 +7,8 @@ function [output_table] = Social_wrapper(varargin)
     clearvars -except varargin
     % Simulate (and plot) data under the model OR fit the model to actual
     % data. Only toggle one of these on.
-    SIM = 0; % Simulate the model
-    FIT = 1; % Fit the model
+    SIM = 1; % Simulate the model
+    FIT = 0; % Fit the model
     if FIT
         MDP.get_processed_behavior_and_dont_fit_model = 0; % Toggle on to extract the rts and other processed behavioral data but not fit the model
         MDP.do_model_free = 1; % Toggle on to do model-free analyses on actual data
@@ -56,7 +56,7 @@ function [output_table] = Social_wrapper(varargin)
                 MDP.observation_params = MDP.field; % When there is no latent state learning, all params are observation params
             end
             MDP.settings.num_choices_to_fit = 5; % Specify the number of choices to fit as first free choice (1) or all choices (5)
-            if ismember(model, { 'KF_SIGMA_DDM', 'KF_SIGMA_logistic_DDM', 'KF_SIGMA_logistic_RACING','KF_SIGMA_RACING'})
+            if contains(model, 'DDM') || contains(model, 'RACING')     
                 % possible mappings are action_prob, reward_diff, UCB,
                 % side_bias, decsision_noise
                 MDP.settings.drift_mapping = {''};
