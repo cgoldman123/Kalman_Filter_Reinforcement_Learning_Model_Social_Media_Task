@@ -7,12 +7,12 @@ function [output_table] = Social_wrapper(varargin)
     clearvars -except varargin
     % Simulate (and plot) data under the model OR fit the model to actual
     % data. Only toggle one of these on.
-    SIM = 0; % Simulate the model
-    FIT = 1; % Fit the model
+    SIM = 1; % Simulate the model
+    FIT = 0; % Fit the model
     if FIT
         MDP.get_processed_behavior_and_dont_fit_model = 0; % Toggle on to extract the rts and other processed behavioral data but not fit the model
         MDP.do_model_free = 1; % Toggle on to do model-free analyses on actual data
-        MDP.fit_model = 0; % Toggle on to fit the model
+        MDP.fit_model = 1; % Toggle on to fit the model
         if MDP.fit_model
             MDP.do_simulated_model_free = 1; % Toggle on to do model-free analyses on data simulated using posterior parameter estimates of model.
             MDP.plot_fitted_behavior = 1; % Toggle on to plot behavior after model fitting

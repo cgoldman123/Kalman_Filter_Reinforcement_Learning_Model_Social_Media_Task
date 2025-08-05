@@ -1,11 +1,11 @@
-function plot_prob_choice_by_rdiff(reward_diff_summary_table)
+function plot_prob_choice_by_rdiff(reward_diff_summary_table,study_info)
 
     % === SETUP ===
     fig = figure('Name','Interactive Prob Plot','Position',[100, 100, 1200, 700]);
 
     rdiffs = reward_diff_summary_table.reward_diff;
-    choice_nums = 1:9;
-    horizons = [1, 5];
+    choice_nums = 1:study_info.num_choices_big_hor;
+    horizons = [1, study_info.num_free_choices_big_hor];
     all_colors = lines(numel(choice_nums) * numel(horizons));
 
     ax1 = subplot(2,1,1); hold on;

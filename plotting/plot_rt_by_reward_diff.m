@@ -1,11 +1,11 @@
-function plot_rt_by_reward_diff(reward_diff_summary_table)
+function plot_rt_by_reward_diff(reward_diff_summary_table,study_info)
 
     % === SETUP ===
     fig = figure('Name','Interactive RT Plot','Position',[100, 100, 1200, 700]);
 
     rdiffs = reward_diff_summary_table.reward_diff;
-    choice_nums = 1:9;
-    horizons = [1, 5];
+    choice_nums = 1:study_info.num_choices_big_hor;
+    horizons = [1, study_info.num_free_choices_big_hor];
     all_colors = lines(numel(choice_nums) * numel(horizons));
 
     % Prepare axes

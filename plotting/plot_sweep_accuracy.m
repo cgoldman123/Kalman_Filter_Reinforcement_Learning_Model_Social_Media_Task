@@ -1,4 +1,4 @@
-function plot_sweep_accuracy(simmed_model_output)
+function plot_sweep_accuracy(simmed_model_output,study_info)
 
     % === Identify swept parameter ===
     n_params = size(simmed_model_output, 1);
@@ -22,8 +22,8 @@ function plot_sweep_accuracy(simmed_model_output)
     % === SETUP ===
     fig = figure('Name','Parameter Sweep Accuracy','Position',[100, 100, 1200, 700]);
 
-    choice_nums = 1:9;
-    horizons = [1, 5];
+    choice_nums = 1:study_info.num_choices_big_hor;
+    horizons = [1, study_info.num_free_choices_big_hor];
     all_colors = lines(numel(choice_nums) * numel(horizons));
 
     % Prepare axes

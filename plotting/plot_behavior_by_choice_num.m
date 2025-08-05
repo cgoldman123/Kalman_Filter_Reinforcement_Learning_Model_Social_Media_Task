@@ -1,9 +1,9 @@
-function plot_behavior_by_choice_num(choice_num_summary_table)
+function plot_behavior_by_choice_num(choice_num_summary_table,study_info)
 
     figure;
 
     choice_nums = choice_num_summary_table.choice_num;
-    horizons = [1, 5];
+    horizons = [1, study_info.num_free_choices_big_hor];
     colors = lines(numel(horizons)); % one color per horizon
 
     %% --- Subplot 1: Probability of Correct Choice ---

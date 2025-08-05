@@ -1,8 +1,8 @@
-function plot_total_uncert_and_estimated_rdiff(reward_diff_summary_table)
+function plot_total_uncert_and_estimated_rdiff(reward_diff_summary_table,study_info)
     figure;
 
     % Define constants
-    choice_nums = 1:9;
+    choice_nums = 1:study_info.num_choices_big_hor;
     pos_rdiff_indices = height(reward_diff_summary_table)/2+1 : height(reward_diff_summary_table); % only get indices of positive rdiffs when using absolute value of rdiff
     unique_rdiffs = reward_diff_summary_table.reward_diff(pos_rdiff_indices);
     num_rdiffs = numel(unique_rdiffs);
@@ -18,7 +18,7 @@ function plot_total_uncert_and_estimated_rdiff(reward_diff_summary_table)
     for ri = 1:num_rdiffs
         i = pos_rdiff_indices(ri);
         rdiff = reward_diff_summary_table.reward_diff(i);
-        for h = [1, 5]
+        for h = [1, study_info.num_free_choices_big_hor]
             y_vals = zeros(1, numel(choice_nums));
             for c = choice_nums
                 col_name = sprintf('mean_total_uncert_hor%d_choice%d', h, c);
@@ -29,9 +29,9 @@ function plot_total_uncert_and_estimated_rdiff(reward_diff_summary_table)
                 end
             end
             if h == 1
-                ls = '-'; % solid for horizon 1
+                ls = '-'; % solid for small horizon
             else
-                ls = '--'; % dotted for horizon 5
+                ls = '--'; % dotted for big horizon
             end
             plot(choice_nums, y_vals, ls, 'Color', colors(ri,:), 'LineWidth', 1.5);
             legends{end+1} = sprintf('RD=%d, Hor=%d', rdiff, h);
@@ -49,7 +49,7 @@ function plot_total_uncert_and_estimated_rdiff(reward_diff_summary_table)
     for ri = 1:num_rdiffs
         i = pos_rdiff_indices(ri);
         rdiff = reward_diff_summary_table.reward_diff(i);
-        for h = [1, 5]
+        for h = [1, study_info.num_free_choices_big_hor]
             y_vals = zeros(1, numel(choice_nums));
             for c = choice_nums
                 col_name = sprintf('mean_est_mean_diff_hor%d_choice%d', h, c);
