@@ -1,53 +1,37 @@
 function [fits, model_output] = fit_extended_model_SPM(formatted_file, result_dir, MDP)
     fprintf('Using this formatted_file: %s\n',formatted_file);
 
-    %formatted_file = 'L:\rsmith\wellbeing\tasks\SocialMedia\output\prolific\kf\beh_Dislike_06_03_24_T16-03-52.csv';  %% remember to comment out
+    %formatted_file = 'L:\rsmith\lab-members\cgoldman\Wellbeing\social_media\output\test\568d0641b5a2c2000cb657d0_beh_Like_08_04_25_T17-01-33.csv';  %% remember to comment out
 
     sub = process_behavioral_data_SM(formatted_file);
 
     disp(sub);
     
     %% prep data structure 
-    NS = length(sub);   % number of subjects
-    T = 4;              % number of forced choices
-    
-    NUM_GAMES = 40; %max(vertcat(sub.game), [], 'all');
-    
-
-    GL = nan(NS,   NUM_GAMES);
-
-    for sn = 1:length(sub)
-
-
-        % game length
-        dum = sub(sn).gameLength;
-        GL(sn,1:size(dum,1)) = dum;
-
-        G(sn) = length(dum);
-
-        % information difference
-        dum = sub(sn).uc - 2;
-        dI(sn, 1:size(dum,1)) = -dum;
+    num_forced_choices = 4;              
+    num_free_choices_big_hor = 5;
+    num_games = 40; 
+    % game length i.e., horion
+    horizon_type = nan(1,   num_games);
+    dum = sub.gameLength;
+    horizon_type(1,1:size(dum,1)) = dum;
+    % information difference
+    dum = sub.uc - 2;
+    forced_choice_info_diff(1, 1:size(dum,1)) = -dum;
 
 
-    end
+ 
 
-    GL(GL==5) = 1;
-    GL(GL==9) = 2; %used to be 10
-
-    C1 = GL ;      %(GL-1)*2+UC;      CAL edits
-    nC1 = 2;
-
+    horizon_type(horizon_type==num_forced_choices+1) = 1;
+    horizon_type(horizon_type==num_forced_choices+num_free_choices_big_hor) = 2; %used to be 10
 
 
     datastruct = struct(...
-        'C1', C1, 'nC1', nC1, ...
-        'NS', NS, 'G',  G,  'T',   T, ...
-        'dI', dI, 'actions',  sub.a,  'RTs', sub.RT, 'rewards', sub.r, 'bandit1_schedule', sub.bandit1_schedule,...
+        'horizon_type', horizon_type, 'num_games',  num_games, ...
+        'num_forced_choices',   num_forced_choices, 'num_free_choices_big_hor',   num_free_choices_big_hor,...
+        'forced_choice_info_diff', forced_choice_info_diff, 'actions',  sub.a,  'RTs', sub.RT, 'rewards', sub.r, 'bandit1_schedule', sub.bandit1_schedule,...
         'bandit2_schedule', sub.bandit2_schedule, 'settings', MDP.settings, 'result_dir', result_dir);
     
-    % mdp = datastruct;
-    % save('./SPM_scripts/social_media_local_mdp_cb1.mat', 'mdp');
     
     % If we are just getting the rts/datastruct and not fitting the model, return
     if MDP.get_processed_behavior_and_dont_fit_model
@@ -58,13 +42,6 @@ function [fits, model_output] = fit_extended_model_SPM(formatted_file, result_di
         return;
     end
 
-    if ispc
-        root = 'L:/';
-    elseif ismac
-        root = '/Volumes/labs/';
-    elseif isunix 
-        root = '/media/labs/';
-    end
     
     fprintf( 'Running Newton Function to fit\n' );
     MDP.datastruct = datastruct;
@@ -81,7 +58,7 @@ function [fits, model_output] = fit_extended_model_SPM(formatted_file, result_di
         if ismember(DCM_field{i},{'learning_rate', 'learning_rate_pos', 'learning_rate_neg', 'noise_learning_rate', 'alpha_start', 'alpha_inf', 'associability_weight', ...
                 'starting_bias_baseline', 'ws', 'wd'})
             fits.(DCM_field{i}) = 1/(1+exp(-DCM.Ep.(DCM_field{i})));
-        elseif ismember(DCM_field{i},{'h1_dec_noise', 'h5_dec_noise', 'h5_baseline_dec_noise', 'h5_slope_dec_noise', ...
+        elseif ismember(DCM_field{i},{'dec_noise_small_hor', 'dec_noise_big_hor', 'h5_baseline_dec_noise', 'h5_slope_dec_noise', ...
                 'initial_sigma', 'initial_sigma_r', 'initial_mu', 'initial_associability', ...
                 'drift_action_prob_mod', 'drift_reward_diff_mod', 'drift_UCB_diff_mod',...
                 'starting_bias_action_prob_mod', 'starting_bias_reward_diff_mod', 'starting_bias_UCB_diff_mod',...
@@ -89,8 +66,8 @@ function [fits, model_output] = fit_extended_model_SPM(formatted_file, result_di
                 'outcome_informativeness', 'baseline_noise', ...
                 'reward_sensitivity', 'DE_RE_horizon'})
             fits.(DCM_field{i}) = exp(DCM.Ep.(DCM_field{i}));
-        elseif ismember(DCM_field{i},{'h5_baseline_info_bonus', 'h5_slope_info_bonus', 'h1_info_bonus', 'baseline_info_bonus', ...
-                'side_bias', 'side_bias_h1', 'side_bias_h5', 'info_bonus', 'h5_info_bonus', 'random_exp', 'rdiff_bias_mod',...
+        elseif ismember(DCM_field{i},{'h5_baseline_info_bonus', 'h5_slope_info_bonus', 'info_bonus_small_hor', 'baseline_info_bonus', ...
+                'side_bias', 'side_bias_small_hor', 'side_bias_big_hor', 'info_bonus', 'info_bonus_big_hor', 'random_exp', 'rdiff_bias_mod',...
                 'drift_baseline', 'drift','directed_exp', 'V0','cong_base_info_bonus','incong_base_info_bonus','cong_directed_exp','incong_directed_exp'})
             fits.(DCM_field{i}) = DCM.Ep.(DCM_field{i});
         elseif any(strcmp(DCM_field{i},{'nondecision_time'}))
@@ -120,11 +97,14 @@ function [fits, model_output] = fit_extended_model_SPM(formatted_file, result_di
     fits.average_action_prob = mean(model_output.action_probs(~isnan(model_output.action_probs)), 'all');
     
     fits.average_action_prob_H1_1 = mean(model_output.action_probs(1:2:end, 5), 'omitnan');
-    fits.average_action_prob_H5_1 = mean(model_output.action_probs(2:2:end, 5), 'omitnan');
-    fits.average_action_prob_H5_2 = mean(model_output.action_probs(2:2:end, 6), 'omitnan');
-    fits.average_action_prob_H5_3 = mean(model_output.action_probs(2:2:end, 7), 'omitnan');
-    fits.average_action_prob_H5_4 = mean(model_output.action_probs(2:2:end, 8), 'omitnan');
-    fits.average_action_prob_H5_5 = mean(model_output.action_probs(2:2:end, 9), 'omitnan');
+    
+    % Dynamically assign average action prob for big horizon games
+    for i = 1:num_free_choices_big_hor
+        col_idx = i + 4; % skip over the forced choices
+        fieldname = sprintf('average_action_prob_H5_%d', i);
+        fits.(fieldname) = mean(model_output.action_probs(2:2:end, col_idx), 'omitnan');
+    end
+
     fits.model_acc = sum(model_output.action_probs(~isnan(model_output.action_probs)) > 0.5) / numel(model_output.action_probs(~isnan(model_output.action_probs)));
     fits.F = DCM.F;
 
@@ -157,7 +137,7 @@ function [fits, model_output] = fit_extended_model_SPM(formatted_file, result_di
     if contains(model_str, 'DDM') || contains(model_str, 'RACING')   
         datastruct.RTs = simmed_model_output.rts;
     else
-        datastruct.RTs = nan(40,9);
+        datastruct.RTs = nan(num_games,num_free_choices_big_hor+num_forced_choices);
     end
 
 
@@ -172,7 +152,7 @@ function [fits, model_output] = fit_extended_model_SPM(formatted_file, result_di
         if ismember(DCM_field{i},{'learning_rate', 'learning_rate_pos', 'learning_rate_neg', 'noise_learning_rate', 'alpha_start', 'alpha_inf', 'associability_weight', ...
                 'starting_bias_baseline', 'ws', 'wd'})
             fits.(['simfit_' DCM_field{i}]) = 1/(1+exp(-simfit_DCM.Ep.(DCM_field{i})));
-        elseif ismember(DCM_field{i},{'h1_dec_noise', 'h5_dec_noise', 'h5_baseline_dec_noise', 'h5_slope_dec_noise', ...
+        elseif ismember(DCM_field{i},{'dec_noise_small_hor', 'dec_noise_big_hor', 'h5_baseline_dec_noise', 'h5_slope_dec_noise', ...
                 'initial_sigma', 'initial_sigma_r', 'initial_mu', 'initial_associability', ...
                 'drift_action_prob_mod', 'drift_reward_diff_mod', 'drift_UCB_diff_mod',...
                 'starting_bias_action_prob_mod', 'starting_bias_reward_diff_mod', 'starting_bias_UCB_diff_mod',...
@@ -180,8 +160,8 @@ function [fits, model_output] = fit_extended_model_SPM(formatted_file, result_di
                 'outcome_informativeness', 'baseline_noise',...
                 'reward_sensitivity', 'DE_RE_horizon'})
             fits.(['simfit_' DCM_field{i}]) = exp(simfit_DCM.Ep.(DCM_field{i}));
-        elseif ismember(DCM_field{i},{'h5_baseline_info_bonus', 'h5_slope_info_bonus', 'h1_info_bonus', 'baseline_info_bonus',...
-                'side_bias', 'side_bias_h1', 'side_bias_h5', 'info_bonus', 'h5_info_bonus', 'random_exp', 'rdiff_bias_mod',...
+        elseif ismember(DCM_field{i},{'h5_baseline_info_bonus', 'h5_slope_info_bonus', 'info_bonus_small_hor', 'baseline_info_bonus',...
+                'side_bias', 'side_bias_small_hor', 'side_bias_big_hor', 'info_bonus', 'info_bonus_big_hor', 'random_exp', 'rdiff_bias_mod',...
                 'drift_baseline', 'drift', 'directed_exp', 'V0','cong_base_info_bonus','incong_base_info_bonus','cong_directed_exp','incong_directed_exp'})
             fits.(['simfit_' DCM_field{i}]) = simfit_DCM.Ep.(DCM_field{i});
         elseif any(strcmp(DCM_field{i},{'nondecision_time'}))

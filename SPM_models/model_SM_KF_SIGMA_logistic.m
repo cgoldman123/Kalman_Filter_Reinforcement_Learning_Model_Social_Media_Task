@@ -1,20 +1,23 @@
 function model_output = model_SM_KF_SIGMA_logistic(params, actions_and_rts, rewards, mdp, sim)
-    dbstop if error;
-    % note that mu2 == right bandit ==  c=2 == free choice = 1
-    G = mdp.G; % num of games    
+    % note that mu2 == right bandit ==  actions2
+    num_games = mdp.num_games; % num of games
+    num_choices_to_fit = mdp.settings.num_choices_to_fit;
+    num_forced_choices = mdp.num_forced_choices;
+    num_free_choices_big_hor = mdp.num_free_choices_big_hor;
+    num_choices_big_hor = num_forced_choices + num_free_choices_big_hor;
     
     % initialize params
     sigma_d = params.sigma_d;
-    side_bias_h1 = params.side_bias_h1;
-    side_bias_h5 = params.side_bias_h5;
+    side_bias_small_hor = params.side_bias_small_hor;
+    side_bias_big_hor = params.side_bias_big_hor;
     sigma_r = params.sigma_r;
     initial_sigma = params.initial_sigma;
     initial_mu = params.initial_mu;
     reward_sensitivity = params.reward_sensitivity;   
-    h1_info_bonus = params.h1_info_bonus;
-    h5_info_bonus = params.h5_info_bonus;
-    h1_dec_noise = params.h1_dec_noise;
-    h5_dec_noise = params.h5_dec_noise;
+    info_bonus_small_hor = params.info_bonus_small_hor;
+    info_bonus_big_hor = params.info_bonus_big_hor;
+    dec_noise_small_hor = params.dec_noise_small_hor;
+    dec_noise_big_hor = params.dec_noise_big_hor;
     
    
     
@@ -22,54 +25,54 @@ function model_output = model_SM_KF_SIGMA_logistic(params, actions_and_rts, rewa
     actions = actions_and_rts.actions;
     % initialize RTs with an empty double because this is a choice-only
     % model
-    rts = nan(G,9);
-    action_probs = nan(G,9);
-    model_acc = nan(G,9);
+    rts = nan(num_games,num_choices_big_hor);
+    action_probs = nan(num_games,num_choices_big_hor);
+    model_acc = nan(num_games,num_choices_big_hor);
     
-    pred_errors = nan(G,10);
-    pred_errors_alpha = nan(G,9);
-    exp_vals = nan(G,10);
-    alpha = nan(G,10);
-    sigma1 = [initial_sigma * ones(G,1), zeros(G,8)];
-    sigma2 = [initial_sigma * ones(G,1), zeros(G,8)];
-    total_uncertainty = nan(G,9);
-    relative_uncertainty_of_choice = nan(G,9);
-    change_in_uncertainty_after_choice = nan(G,9);
-    estimated_mean_diff = nan(G,9);
+    pred_errors = nan(num_games,num_choices_big_hor+1);
+    pred_errors_alpha = nan(num_games,num_choices_big_hor+1);
+    exp_vals = nan(num_games,num_choices_big_hor+1);
+    alpha = nan(num_games,num_choices_big_hor+1);
+    sigma1 = [initial_sigma * ones(num_games,1), zeros(num_games,num_choices_big_hor-1)];
+    sigma2 = [initial_sigma * ones(num_games,1), zeros(num_games,num_choices_big_hor-1)];
+    total_uncertainty = nan(num_games,num_choices_big_hor);
+    relative_uncertainty_of_choice = nan(num_games,num_choices_big_hor);
+    change_in_uncertainty_after_choice = nan(num_games,num_choices_big_hor);
+    estimated_mean_diff = nan(num_games,num_choices_big_hor);
 
     
-    for g=1:G  % loop over games
+    for g=1:num_games  % loop over games
         % values
         mu1 = [initial_mu nan nan nan nan nan nan nan nan];
         mu2 = [initial_mu nan nan nan nan nan nan nan nan];
 
         % learning rates 
-        alpha1 = nan(1,9); 
-        alpha2 = nan(1,9); 
+        alpha1 = nan(1,num_choices_big_hor); 
+        alpha2 = nan(1,num_choices_big_hor); 
         
-        % if H1 Game, use H1 info bonus, decision noise, and side bias
-        if mdp.C1(g) == 1
-            info_bonus = h1_info_bonus;
-            decision_noise = h1_dec_noise;
-            side_bias = side_bias_h1;
+        % if small horizon Game, use small horizon info bonus, decision noise, and side bias
+        if mdp.horizon_type(g) == 1
+            info_bonus = info_bonus_small_hor;
+            decision_noise = dec_noise_small_hor;
+            side_bias = side_bias_small_hor;
         else
-        % if H5 Game, use H5 info bonus, decision noise, and side bias
-            info_bonus = h5_info_bonus;
-            decision_noise = h5_dec_noise;
-            side_bias = side_bias_h5;
+        % if big horizon Game, use big horizon info bonus, decision noise, and side bias
+            info_bonus = info_bonus_big_hor;
+            decision_noise = dec_noise_big_hor;
+            side_bias = side_bias_big_hor;
         end
 
 
 
         
-        for t=1:5  % loop over 4 forced choices and 1 free choice trials
-            if t == 5
+        for t=1:num_forced_choices+1  % loop over forced choices and first free choice
+            if t == num_forced_choices+1
                 % Get the reward difference
                 reward_diff = mu2(t) - mu1(t);
                 % Get the information difference (+1 when fewer options are
                 % shown on the right, -1 when fewer options are shown on
                 % left)
-                info_diff = mdp.dI(g);
+                info_diff = mdp.forced_choice_info_diff(g);
                 % total uncertainty is variance of both arms
                 % probability of choosing bandit 1
                 p = 1 / (1 + exp((reward_diff+(info_diff*info_bonus)+side_bias)/(decision_noise)));

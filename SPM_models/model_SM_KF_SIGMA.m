@@ -1,9 +1,10 @@
 function model_output = model_SM_KF_SIGMA(params, actions_and_rts, rewards, mdp, sim)
-    dbstop if error;
-    % note that mu2 == right bandit ==  c=2 == free choice = 1
-    G = mdp.G; % num of games
+    % note that mu2 == right bandit ==  actions2
+    num_games = mdp.num_games; % num of games
     num_choices_to_fit = mdp.settings.num_choices_to_fit;
-    num_forced_choices = 4;
+    num_forced_choices = mdp.num_forced_choices;
+    num_free_choices_big_hor = mdp.num_free_choices_big_hor;
+    num_choices_big_hor = num_forced_choices + num_free_choices_big_hor;
     
     % initialize params
     initial_sigma = params.initial_sigma;
@@ -23,32 +24,32 @@ function model_output = model_SM_KF_SIGMA(params, actions_and_rts, rewards, mdp,
     % initialize variables
     actions = actions_and_rts.actions;
     % Since this is a choice-only model, fill in NaNs for RTs
-    rts = nan(G,9);
-    action_probs = nan(G,9);
-    model_acc = nan(G,9);
+    rts = nan(num_games,num_choices_big_hor);
+    action_probs = nan(num_games,num_choices_big_hor);
+    model_acc = nan(num_games,num_choices_big_hor);
     
-    pred_errors = nan(G,10);
-    pred_errors_alpha = nan(G,9);
-    exp_vals = nan(G,10);
-    alpha = nan(G,10);
-    sigma1 = [initial_sigma * ones(G,1), zeros(G,8)];
-    sigma2 = [initial_sigma * ones(G,1), zeros(G,8)];
-    total_uncertainty = nan(G,9);
-    estimated_mean_diff = nan(G,9);
+    pred_errors = nan(num_games,num_choices_big_hor+1);
+    pred_errors_alpha = nan(num_games,num_choices_big_hor+1);
+    exp_vals = nan(num_games,num_choices_big_hor+1);
+    alpha = nan(num_games,num_choices_big_hor+1);
+    sigma1 = [initial_sigma * ones(num_games,1), zeros(num_games,num_choices_big_hor-1)];
+    sigma2 = [initial_sigma * ones(num_games,1), zeros(num_games,num_choices_big_hor-1)];
+    total_uncertainty = nan(num_games,num_choices_big_hor);
+    estimated_mean_diff = nan(num_games,num_choices_big_hor);
 
-    relative_uncertainty_of_choice = nan(G,9);
-    change_in_uncertainty_after_choice = nan(G,9);
+    relative_uncertainty_of_choice = nan(num_games,num_choices_big_hor);
+    change_in_uncertainty_after_choice = nan(num_games,num_choices_big_hor);
 
 
     
-    for g=1:G  % loop over games
+    for g=1:num_games  % loop over games
         % values
         mu1 = [initial_mu nan nan nan nan nan nan nan nan];
         mu2 = [initial_mu nan nan nan nan nan nan nan nan];
 
         % learning rates 
-        alpha1 = nan(1,9); 
-        alpha2 = nan(1,9); 
+        alpha1 = nan(1,num_choices_big_hor); 
+        alpha2 = nan(1,num_choices_big_hor); 
         
         num_choices_in_this_game = sum(~isnan(rewards(g,:))); 
         % Get the number of choices to loop over depending on how many free
@@ -57,7 +58,7 @@ function model_output = model_SM_KF_SIGMA(params, actions_and_rts, rewards, mdp,
 
 
         for t=1:num_choices_to_loop_over  % loop over forced-choice trials
-            if t >= 5
+            if t > num_forced_choices
                 num_trials_left = num_choices_to_loop_over - t + 1;
                 reward_diff = mu2(t) - mu1(t);
                 % relative uncertainty is the difference in uncertainty

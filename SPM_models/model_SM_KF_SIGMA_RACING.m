@@ -1,10 +1,10 @@
 function model_output = model_SM_KF_SIGMA_RACING(params, actions_and_rts, rewards, mdp, sim)
-    dbstop if error;
-    % note that mu2 == right bandit ==  c=2 == free choice = 1
-    G = mdp.G; % num of games
+    % note that mu2 == right bandit ==  actions2
+    num_games = mdp.num_games; % num of games
     num_choices_to_fit = mdp.settings.num_choices_to_fit;
-    num_forced_choices = 4;
-
+    num_forced_choices = mdp.num_forced_choices;
+    num_free_choices_big_hor = mdp.num_free_choices_big_hor;
+    num_choices_big_hor = num_forced_choices + num_free_choices_big_hor;
     max_rt = mdp.settings.max_rt;
     
     % initialize params
@@ -27,37 +27,37 @@ function model_output = model_SM_KF_SIGMA_RACING(params, actions_and_rts, reward
     V0 = params.V0;
     
     % initialize variables
-
+    
     actions = actions_and_rts.actions;
     rts = actions_and_rts.RTs;
-    rt_pdf = nan(G,9);
-    action_probs = nan(G,9);
-    model_acc = nan(G,9);
+    rt_pdf = nan(num_games,num_choices_big_hor);
+    action_probs = nan(num_games,num_choices_big_hor);
+    model_acc = nan(num_games,num_choices_big_hor);
     
-    pred_errors = nan(G,10);
-    pred_errors_alpha = nan(G,9);
-    exp_vals = nan(G,10);
-    alpha = nan(G,10);
-    sigma1 = [initial_sigma * ones(G,1), zeros(G,8)];
-    sigma2 = [initial_sigma * ones(G,1), zeros(G,8)];
-    total_uncertainty = nan(G,9);
-    estimated_mean_diff = nan(G,9);
-    relative_uncertainty_of_choice = nan(G,9);
-    change_in_uncertainty_after_choice = nan(G,9);
+    pred_errors = nan(num_games,num_choices_big_hor+1);
+    pred_errors_alpha = nan(num_games,num_choices_big_hor+1);
+    exp_vals = nan(num_games,num_choices_big_hor+1);
+    alpha = nan(num_games,num_choices_big_hor+1);
+    sigma1 = [initial_sigma * ones(num_games,1), zeros(num_games,num_choices_big_hor-1)];
+    sigma2 = [initial_sigma * ones(num_games,1), zeros(num_games,num_choices_big_hor-1)];
+    total_uncertainty = nan(num_games,num_choices_big_hor);
+    estimated_mean_diff = nan(num_games,num_choices_big_hor);
+    relative_uncertainty_of_choice = nan(num_games,num_choices_big_hor);
+    change_in_uncertainty_after_choice = nan(num_games,num_choices_big_hor);
 
     num_invalid_rts = 0;
 
-    decision_thresh = nan(G,9);
+    decision_thresh = nan(num_games,num_choices_big_hor);
 
     
-    for g=1:G  % loop over games
+    for g=1:num_games  % loop over games
         % values
         mu1 = [initial_mu nan nan nan nan nan nan nan nan];
         mu2 = [initial_mu nan nan nan nan nan nan nan nan];
 
         % learning rates 
-        alpha1 = nan(1,9); 
-        alpha2 = nan(1,9); 
+        alpha1 = nan(1,num_games); 
+        alpha2 = nan(1,num_games); 
         
         num_choices_in_this_game = sum(~isnan(rewards(g,:))); 
         % Get the number of choices to loop over depending on how many free

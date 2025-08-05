@@ -12,7 +12,7 @@ function [output_table] = Social_wrapper(varargin)
     if FIT
         MDP.get_processed_behavior_and_dont_fit_model = 0; % Toggle on to extract the rts and other processed behavioral data but not fit the model
         MDP.do_model_free = 1; % Toggle on to do model-free analyses on actual data
-        MDP.fit_model = 1; % Toggle on to fit the model
+        MDP.fit_model = 0; % Toggle on to fit the model
         if MDP.fit_model
             MDP.do_simulated_model_free = 1; % Toggle on to do model-free analyses on data simulated using posterior parameter estimates of model.
             MDP.plot_fitted_behavior = 1; % Toggle on to plot behavior after model fitting
@@ -48,10 +48,10 @@ function [output_table] = Social_wrapper(varargin)
             MDP.settings = 'fit all choices and rts'; %(e.g., "fit all choices and rts", "fit first free choice and rt")
         elseif ~strcmp(fitting_procedure, "PYDDM")
             model = "KF_SIGMA_DDM"; % indicate if 'KF_UCB', 'RL', 'KF_UCB_DDM', 'KF_SIGMA_DDM', 'KF_SIGMA', 'KF_SIGMA_RACING
-            %MDP.field ={'h1_dec_noise','h5_dec_noise','side_bias_h1','side_bias_h5','h5_info_bonus','h1_info_bonus','sigma_d', 'sigma_r', 'starting_bias_baseline', 'drift_baseline', 'decision_thresh_baseline', 'drift_reward_diff_mod', 'wd', 'ws', 'V0'}; 
+            %MDP.field ={'dec_noise_small_hor','dec_noise_big_hor','side_bias_small_hor','side_bias_big_hor','info_bonus_big_hor','info_bonus_small_hor','sigma_d', 'sigma_r', 'starting_bias_baseline', 'drift_baseline', 'decision_thresh_baseline', 'drift_reward_diff_mod', 'wd', 'ws', 'V0'}; 
             %MDP.field = {'cong_base_info_bonus','incong_base_info_bonus','cong_directed_exp','incong_directed_exp', 'side_bias','random_exp','sigma_d', 'sigma_r', 'baseline_noise', 'rdiff_bias_mod', 'decision_thresh_baseline','wd', 'ws', 'V0'}; % KF_SIGMA_RACING
-            MDP.field = {'cong_base_info_bonus','incong_base_info_bonus','cong_directed_exp','incong_directed_exp', 'side_bias','random_exp','sigma_d', 'sigma_r', 'baseline_noise', 'rdiff_bias_mod', 'decision_thresh_baseline'}; % KF_SIGMA_DDM
-            MDP.field = {'cong_base_info_bonus'}; % Test
+            %MDP.field = {'cong_base_info_bonus','incong_base_info_bonus','cong_directed_exp','incong_directed_exp', 'side_bias','random_exp','sigma_d', 'sigma_r', 'baseline_noise', 'rdiff_bias_mod', 'decision_thresh_baseline'}; % KF_SIGMA_DDM
+            MDP.field = {'cong_base_info_bonus'};
             if strcmp(fitting_procedure, "VBA")
                 MDP.observation_params = MDP.field; % When there is no latent state learning, all params are observation params
             end
@@ -233,12 +233,12 @@ function [output_table] = Social_wrapper(varargin)
        
         % Parameters fixed or fit in kalman filter (KF) logistic model
         if ismember(model, {'KF_SIGMA_logistic','KF_SIGMA_logistic_DDM', 'KF_SIGMA_logistic_RACING', 'obs_means_logistic', 'obs_means_logistic_DDM'})
-            MDP.params.h1_info_bonus = 0;
-            MDP.params.h5_info_bonus = 0;
-            MDP.params.h1_dec_noise = 1;
-            MDP.params.h5_dec_noise = 1;
-            MDP.params.side_bias_h1 = 0;
-            MDP.params.side_bias_h5 = 0;
+            MDP.params.info_bonus_small_hor = 0;
+            MDP.params.info_bonus_big_hor = 0;
+            MDP.params.dec_noise_small_hor = 1;
+            MDP.params.dec_noise_big_hor = 1;
+            MDP.params.side_bias_small_hor = 0;
+            MDP.params.side_bias_big_hor = 0;
             
         end
         % display the MDP.params
@@ -251,13 +251,13 @@ function [output_table] = Social_wrapper(varargin)
                 do_plot_choice_given_gen_mean = 1; % Toggle on to plot choice for a given generative mean
                 do_plot_model_statistics = 1; % Toggle on to plot statistics under the current parameter set
                 MDP.num_samples_to_draw_from_pdf = 0;   %If 0, the model will simulate a choice/RT based on the maximum of the simulated pdf. If >0, it will sample from the distribution of choices/RTs this many times. Note this only matters for models that generate RTs.
-                MDP.param_to_sweep = ''; % e.g., side_bias_h1 leave empty if don't want to sweep over param
+                MDP.param_to_sweep = ''; % e.g., side_bias_small_hor leave empty if don't want to sweep over param
                 MDP.param_values_to_sweep_over = linspace(-20, 20, 5); 
                 if do_plot_choice_given_gen_mean & isempty(MDP.param_to_sweep)
                     gen_mean_difference = 4; % choose generative mean difference of 2, 4, 8, 12, 24
                     horizon = 5; % choose horizon of 1 or 5
-                    truncate_h5 = 1; % if truncate_h5 is true, use the H5 bandit schedule but truncate so that all games are H1
-                    plot_choice_given_gen_mean(root, fitting_procedure, experiment,room, results_dir, MDP, id, gen_mean_difference, horizon, truncate_h5);
+                    truncate_big_hor = 1; % if truncate_big_hor is true, use the H5 bandit schedule but truncate so that all games are H1
+                    plot_choice_given_gen_mean(root, fitting_procedure, experiment,room, results_dir, MDP, id, gen_mean_difference, horizon, truncate_big_hor);
                 end
                 if do_plot_model_statistics
                     main_plot_model_stats_or_sweep(root, fitting_procedure, experiment, room, results_dir,MDP, id);
