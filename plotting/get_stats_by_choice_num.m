@@ -1,8 +1,8 @@
 
 function summary_table = get_stats_by_choice_num(MDP, simmed_model_output)
     % Get the gen mean difference for each game
-    left_means = mean(MDP.bandit1_schedule(:,1:4), 2); % get mean of forced choices on left
-    right_means = mean(MDP.bandit2_schedule(:,1:4), 2); % get mean of forced choices on right
+    left_means = mean(MDP.processed_data.bandit1_schedule(:,1:4), 2); % get mean of forced choices on left
+    right_means = mean(MDP.processed_data.bandit2_schedule(:,1:4), 2); % get mean of forced choices on right
     gen_mean_diff = round(right_means - left_means);
     actions = simmed_model_output.actions;
     [n_games, n_trials] = size(actions);
@@ -44,7 +44,7 @@ function summary_table = get_stats_by_choice_num(MDP, simmed_model_output)
 
 
     % Compute horizon values: row-wise count of non-NaNs in MDP.actions minus 4
-    horizon = sum(~isnan(MDP.actions), 2) - 4;
+    horizon = sum(~isnan(MDP.processed_data.actions), 2) - 4;
     unique_horizons = unique(horizon);
 
     % Initialize struct

@@ -131,7 +131,7 @@ M.model = DCM.model;
 
 % Variational Laplace
 %--------------------------------------------------------------------------
-[Ep,Cp,F] = spm_nlsi_Newton(M,DCM.datastruct,DCM.datastruct);
+[Ep,Cp,F] = spm_nlsi_Newton(M,DCM,DCM);
 
 % Store posterior densities and log evidnce (free energy)
 %--------------------------------------------------------------------------
@@ -201,9 +201,9 @@ function L = spm_mdp_L(P,M,U,Y)
     % Update params_old for next comparison
     params_old = params;
 
-    actions_and_rts.actions = U.actions;
-    actions_and_rts.RTs = U.RTs;
-    rewards = U.rewards;
+    actions_and_rts.actions = U.processed_data.actions;
+    actions_and_rts.RTs = U.processed_data.RTs;
+    rewards = U.processed_data.rewards;
 
     mdp = U;
         
@@ -218,7 +218,7 @@ function L = spm_mdp_L(P,M,U,Y)
         % after accounting for invalid RTs
         % calculate number of total choices to fit since half of games were
         % H1 and half were H5
-        num_total_choices_to_fit = mdp.settings.num_choices_to_fit*mdp.num_games/2 + mdp.num_games/2;
+        num_total_choices_to_fit = mdp.num_choices_to_fit*mdp.processed_data.num_games/2 + mdp.processed_data.num_games/2;
         invalid_rts = model_output.num_invalid_rts;
         if sum(~isnan(model_output.action_probs),'all') ~= (num_total_choices_to_fit-invalid_rts)
             error("Error! NaNs encountered in the log likelihood!");
@@ -229,7 +229,7 @@ function L = spm_mdp_L(P,M,U,Y)
         % Make sure that there were no NaN values in the log likelihood
         % calculate number of total choices to fit since half of games were
         % H1 and half were H5
-        num_total_choices_to_fit = mdp.settings.num_choices_to_fit*mdp.num_games/2 + mdp.num_games/2;
+        num_total_choices_to_fit = mdp.num_choices_to_fit*mdp.processed_data.num_games/2 + mdp.processed_data.num_games/2;
         if sum(~isnan(model_output.action_probs),'all') ~= num_total_choices_to_fit
             error("Error! NaNs encountered in the log likelihood!");
         end

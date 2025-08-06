@@ -1,34 +1,5 @@
-function [fits, model_output] = fit_extended_model_SPM(formatted_file, result_dir, MDP)
-    fprintf('Using this formatted_file: %s\n',formatted_file);
-    sub = process_behavioral_data_SM(formatted_file);
+function [fits, model_output] = fit_extended_model_SPM(processed_data, MDP)
 
-    disp(sub);
-    
-    %% prep data structure 
-    num_forced_choices = 4;              
-    num_free_choices_big_hor = 5;
-    num_games = 40; 
-    % game length i.e., horion
-    horizon_type = nan(1,   num_games);
-    dum = sub.gameLength;
-    horizon_type(1,1:size(dum,1)) = dum;
-    % information difference
-    dum = sub.uc - 2;
-    forced_choice_info_diff(1, 1:size(dum,1)) = -dum;
-
-
- 
-
-    horizon_type(horizon_type==num_forced_choices+1) = 1;
-    horizon_type(horizon_type==num_forced_choices+num_free_choices_big_hor) = 2; %used to be 10
-
-
-    datastruct = struct(...
-        'horizon_type', horizon_type, 'num_games',  num_games, ...
-        'num_forced_choices',   num_forced_choices, 'num_free_choices_big_hor',   num_free_choices_big_hor,...
-        'forced_choice_info_diff', forced_choice_info_diff, 'actions',  sub.a,  'RTs', sub.RT, 'rewards', sub.r, 'bandit1_schedule', sub.bandit1_schedule,...
-        'bandit2_schedule', sub.bandit2_schedule, 'settings', MDP.settings, 'result_dir', result_dir);
-    
     
     % If we are just getting the rts/datastruct and not fitting the model, return
     if MDP.get_processed_behavior_and_dont_fit_model
@@ -39,9 +10,8 @@ function [fits, model_output] = fit_extended_model_SPM(formatted_file, result_di
         return;
     end
 
-    
     fprintf( 'Running Newton Function to fit\n' );
-    MDP.datastruct = datastruct;
+    MDP.processed_data = processed_data;
 
     DCM = SM_inversion(MDP);
    
@@ -80,23 +50,18 @@ function [fits, model_output] = fit_extended_model_SPM(formatted_file, result_di
     end
     
     
-    actions_and_rts.actions = datastruct.actions;
-    actions_and_rts.RTs = datastruct.RTs;
-    rewards = datastruct.rewards;
-
-    mdp = datastruct;
-    % note that mu2 == right bandit ==  c=2 == free choice = 1
-
+    actions_and_rts.actions = processed_data.actions;
+    actions_and_rts.RTs = processed_data.RTs;
+    rewards = processed_data.rewards;
     
-    
-    model_output = MDP.model(fits,actions_and_rts, rewards,mdp, 0);    
+    model_output = MDP.model(fits,actions_and_rts, rewards,MDP, 0);    
     model_output.DCM = DCM;
     fits.average_action_prob = mean(model_output.action_probs(~isnan(model_output.action_probs)), 'all');
     
     fits.average_action_prob_H1_1 = mean(model_output.action_probs(1:2:end, 5), 'omitnan');
     
     % Dynamically assign average action prob for big horizon games
-    for i = 1:num_free_choices_big_hor
+    for i = 1:processed_data.num_free_choices_big_hor
         col_idx = i + 4; % skip over the forced choices
         fieldname = sprintf('average_action_prob_H5_%d', i);
         fits.(fieldname) = mean(model_output.action_probs(2:2:end, col_idx), 'omitnan');
@@ -113,32 +78,24 @@ function [fits, model_output] = fit_extended_model_SPM(formatted_file, result_di
 
     % Plot the fitted behavior!
     if MDP.plot_fitted_behavior
-        % First fill in model_output
-        datastruct_fields = fieldnames(datastruct);
-        for idx = 1:length(datastruct_fields)
-            field = datastruct_fields{idx};  % extract the field name string
-            MDP.(field) = datastruct.(field);
-        end
         reward_diff_summary_table = get_stats_by_reward_diff(MDP, model_output);
         choice_num_summary_table = get_stats_by_choice_num(MDP, model_output);
         make_plots_model_statistics(reward_diff_summary_table,choice_num_summary_table);
     end
                 
     % simulate behavior with fitted params
-    mdp.num_samples_to_draw_from_pdf = 0;
-    simmed_model_output = MDP.model(fits,actions_and_rts, rewards,mdp, 1);    
+    simmed_model_output = MDP.model(fits,actions_and_rts, rewards,MDP, 1);    
 
-    datastruct.actions = simmed_model_output.actions;
-    datastruct.rewards = simmed_model_output.rewards;
+    MDP.processed_data.actions = simmed_model_output.actions;
+    MDP.processed_data.rewards = simmed_model_output.rewards;
     % If the model contains a DDM or racing accumulator, save simulated RTs
     if contains(model_str, 'DDM') || contains(model_str, 'RACING')   
-        datastruct.RTs = simmed_model_output.rts;
+        MDP.processed_data.RTs = simmed_model_output.rts;
     else
-        datastruct.RTs = nan(num_games,num_free_choices_big_hor+num_forced_choices);
+        MDP.processed_data.RTs = nan(MDP.processed_data.num_games,MDP.processed_data.num_free_choices_big_hor+MDP.processed_data.num_forced_choices);
     end
 
 
-    MDP.datastruct = datastruct;
     % note old social media model model_KFcond_v2_SMT
     fprintf( 'Running VB to fit simulated behavior! \n' );
 

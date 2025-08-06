@@ -1,9 +1,9 @@
 function model_output = model_SM_KF_SIGMA(params, actions_and_rts, rewards, mdp, sim)
     % note that mu2 == right bandit ==  actions2
-    num_games = mdp.num_games; % num of games
-    num_choices_to_fit = mdp.settings.num_choices_to_fit;
-    num_forced_choices = mdp.num_forced_choices;
-    num_free_choices_big_hor = mdp.num_free_choices_big_hor;
+    num_games = mdp.processed_data.num_games; % num of games
+    num_choices_to_fit = mdp.num_choices_to_fit;
+    num_forced_choices = mdp.processed_data.num_forced_choices;
+    num_free_choices_big_hor = mdp.processed_data.num_free_choices_big_hor;
     num_choices_big_hor = num_forced_choices + num_free_choices_big_hor;
     
     % initialize params
@@ -84,10 +84,10 @@ function model_output = model_SM_KF_SIGMA(params, actions_and_rts, rewards, mdp,
                     u = rand(1,1);
                     if u <= p
                         actions(g,t) = 1;
-                        rewards(g,t) = mdp.bandit1_schedule(g,t);
+                        rewards(g,t) = mdp.processed_data.bandit1_schedule(g,t);
                     else
                         actions(g,t) = 2;
-                        rewards(g,t) = mdp.bandit2_schedule(g,t);
+                        rewards(g,t) = mdp.processed_data.bandit2_schedule(g,t);
                     end
                 end
                 action_probs(g,t) = mod(actions(g,t),2)*p + (1-mod(actions(g,t),2))*(1-p);

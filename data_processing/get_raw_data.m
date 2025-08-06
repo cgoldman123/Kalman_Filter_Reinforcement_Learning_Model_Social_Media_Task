@@ -1,4 +1,4 @@
-function [raw_data,raw_file_path] = get_raw_data(root,study,room_type,id)
+function [raw_data,subject_data_info] = get_raw_data(root,study,room_type,id)
     % Clean up files and concatenate for fitting
     files = {};
     subs = {id};
@@ -46,7 +46,6 @@ function [raw_data,raw_file_path] = get_raw_data(root,study,room_type,id)
     end
     
     
-    [raw_data, subj_mapping, ~] = Social_merge(subs, files, room_type, study);
-    raw_file_path = subj_mapping{1,4};
+    [raw_data, subject_data_info] = Social_merge(subs, files, room_type, study);
     
 end
