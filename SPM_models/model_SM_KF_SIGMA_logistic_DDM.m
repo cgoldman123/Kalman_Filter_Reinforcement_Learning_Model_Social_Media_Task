@@ -80,47 +80,10 @@ function model_output = model_SM_KF_SIGMA_logistic_DDM(params, actions_and_rts, 
                 p = 1 / (1 + exp((reward_diff+(info_diff*info_bonus)+side_bias)/(decision_noise)));
                             
 
-                % Set DDM params
-                % DRIFT
-                % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                drift = params.drift_baseline;
-                if any(contains(mdp.settings.drift_mapping, 'reward_diff'))
-                    drift = drift + params.drift_reward_diff_mod*reward_diff;
-                end
-                if any(contains(mdp.settings.drift_mapping, 'info_diff'))
-                    drift = drift + info_diff*info_bonus;
-                end
-                if any(contains(mdp.settings.drift_mapping, 'side_bias'))
-                    drift = drift + side_bias;
-                end    
-                if any(contains(mdp.settings.drift_mapping, 'decision_noise'))
-                    drift = drift/decision_noise;
-                end 
-                    
-                % STARTING BIAS
-                % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                % Transform baseline starting bias so in sigmoid space
-                % (must be between 0 and 1)
-                starting_bias = log(params.starting_bias_baseline/(1-params.starting_bias_baseline));
-                if any(contains(mdp.settings.bias_mapping, 'reward_diff'))
-                    starting_bias = starting_bias + params.starting_bias_reward_diff_mod*reward_diff;
-                end
-                if any(contains(mdp.settings.bias_mapping, 'info_diff'))
-                    starting_bias = starting_bias + info_diff*info_bonus;
-                end
-                if any(contains(mdp.settings.bias_mapping, 'side_bias'))
-                    starting_bias = starting_bias + side_bias;
-                end    
-                % Transform starting_bias to be between 0 and 1 using sigmoid
-                starting_bias = 1 / (1 + exp(-starting_bias));
-                
-                % DECISION THRESHOLD
-                % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                % bounded to be less than 500
+                drift = p - .5;
+                starting_bias = side_bias;
                 decision_thresh(g,t) = params.decision_thresh_baseline;
-                if any(contains(mdp.settings.thresh_mapping, 'decision_noise'))
-                    decision_thresh(g,t) = decision_noise;
-                end
+
                 
                 if sim
                     % higher drift rate / bias entails greater prob of

@@ -1,57 +1,38 @@
-function plot_choice_given_gen_mean(root, fitting_procedure, experiment,room_type, results_dir, MDP, id, gen_mean_difference, horizon, truncate_big_hor)
-    % Set the study info
-    study_info.num_games = 40;
-    study_info.num_forced_choices = 4;
-    study_info.num_free_choices_big_hor = 5;
-    study_info.num_choices_big_hor = 9;
-
-    % First call get_fits to get the schedule/forced choices before
-    MDP.get_processed_behavior_and_dont_fit_model = 1; % Toggle on to extract the rts and other processed behavioral data but not fit the model
-    MDP.fit_model = 1; % Toggle on even though the model won't fit
-    [rt_data, mdp] = get_fits(root, fitting_procedure, experiment,room_type, results_dir, MDP, id);
+function plot_choice_given_gen_mean(processed_data, MDP, gen_mean_difference, horizon, truncate_big_hor)
     
-    %load('./SPM_scripts/social_media_prolific_mdp_cb1.mat'); 
-    mdp_fieldnames = fieldnames(mdp);
-    for (i=1:length(mdp_fieldnames))
-        MDP.(mdp_fieldnames{i}) = mdp.(mdp_fieldnames{i});
-    end
+    MDP.processed_data = processed_data;
     params = MDP.params;
     model = MDP.model;
+    num_choices_big_hor = processed_data.num_forced_choices+processed_data.num_free_choices_big_hor;
     % Locate games of interest based on gen_mean_difference and horizon
     if truncate_big_hor
-        horizon = study_info.num_free_choices_big_hor;
+        horizon = processed_data.num_free_choices_big_hor;
         % run model unnecessarily to locate games of interest within big hor
-        actions_and_rts.actions = mdp.actions;
-        actions_and_rts.RTs = nan(study_info.num_games,study_info.num_choices_big_hor);
-        model_output = model(params, actions_and_rts, mdp.rewards, MDP, 1);
-        games_of_interest = locate_games_of_interest(mdp, model_output, gen_mean_difference, horizon);
+        actions_and_rts.actions = processed_data.actions;
+        actions_and_rts.RTs = nan(processed_data.num_games,num_choices_big_hor);
+        model_output = model(params, actions_and_rts, processed_data.rewards, MDP, 1);
+        games_of_interest = locate_games_of_interest(processed_data, model_output, gen_mean_difference, horizon);
         % run the model again treating every game like Small hor
-        mdp.C1 = ones(1,study_info.num_games);
-        actions_and_rts.actions(:, 6:study_info.num_choices_big_hor) = NaN;
-        mdp.rewards(:, 6:study_info.num_choices_big_hor) = NaN;
-        model_output = model(params, actions_and_rts, mdp.rewards, MDP, 1);
+        processed_data.horizon_type = ones(processed_data.num_games,1);
+        actions_and_rts.actions(:, 6:num_choices_big_hor) = NaN;
+        processed_data.rewards(:, 6:num_choices_big_hor) = NaN;
+        model_output = model(params, actions_and_rts, processed_data.rewards, MDP, 1);
 
     else
-        actions_and_rts.actions = mdp.actions;
-        actions_and_rts.RTs = nan(study_info.num_games,study_info.num_choices_big_hor);
-        model_output = model(params, actions_and_rts, mdp.rewards, MDP, 1);
-        games_of_interest = locate_games_of_interest(mdp, model_output, gen_mean_difference, horizon);
+        actions_and_rts.actions = processed_data.actions;
+        actions_and_rts.RTs = nan(processed_data.num_games,num_choices_big_hor);
+        model_output = model(params, actions_and_rts, processed_data.rewards, MDP, 1);
+        games_of_interest = locate_games_of_interest(processed_data, model_output, gen_mean_difference, horizon);
     end
-
-    
-    
-    % Call the model function to get model output
-    
-    
     
     % Plot the games of interest
-    plot_bandit_games(model_output, games_of_interest,study_info);
+    plot_bandit_games(model_output, games_of_interest,processed_data);
 end
 
-function games_of_interest = locate_games_of_interest(mdp, model_output, gen_mean_difference, horizon)
+function games_of_interest = locate_games_of_interest(processed_data, model_output, gen_mean_difference, horizon)
     % Calculate the mean difference between the first 4 choices of each bandit
-    mean_bandit1 = mean(mdp.bandit1_schedule(:, 1:4), 2);
-    mean_bandit2 = mean(mdp.bandit2_schedule(:, 1:4), 2);
+    mean_bandit1 = mean(processed_data.bandit1_schedule(:, 1:4), 2);
+    mean_bandit2 = mean(processed_data.bandit2_schedule(:, 1:4), 2);
     mean_diff = abs(mean_bandit1 - mean_bandit2);
 
     % Define target values based on gen_mean_difference
@@ -76,9 +57,9 @@ function games_of_interest = locate_games_of_interest(mdp, model_output, gen_mea
     games_of_interest = intersect(rows_with_gen_mean_diff, rows_with_horizon);
 end
 
-function plot_bandit_games(model_output, games_of_interest,study_info)
+function plot_bandit_games(model_output, games_of_interest,processed_data)
     num_games = length(games_of_interest);
-    num_choices = study_info.num_choices_big_hor;  % Each game has several total choices
+    num_choices = processed_data.num_free_choices_big_hor + processed_data.num_forced_choices;  % Each game has several total choices
 
     figure;
     

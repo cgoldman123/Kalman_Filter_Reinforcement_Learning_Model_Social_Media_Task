@@ -12,7 +12,7 @@ function [output_table] = Social_wrapper(varargin)
         MDP.fit_model = 1; % Toggle on to fit the model
         if MDP.fit_model
             MDP.do_simulated_model_free = 1; % Toggle on to do model-free analyses on data simulated using posterior parameter estimates of model.
-            MDP.plot_fitted_behavior = 0; % Toggle on to plot behavior after model fitting
+            MDP.plot_fitted_behavior = 1; % Toggle on to plot behavior after model fitting
         end
     elseif SIM
         MDP.plot_simulated_data = 1; %Toggle on to plot data simulated by model using parameters set in this main file.
@@ -126,6 +126,8 @@ function [output_table] = Social_wrapper(varargin)
     % display the MDP.params
     disp(MDP.params)
         
+    [raw_data,subject_data_info] = get_raw_data(root,experiment,room,id);
+    processed_data = process_behavioral_data_SM(raw_data);
         
     if SIM
         if MDP.plot_simulated_data
@@ -138,7 +140,7 @@ function [output_table] = Social_wrapper(varargin)
                 gen_mean_difference = 4; % choose generative mean difference of 2, 4, 8, 12, 24
                 horizon = 5; % choose horizon of 1 or 5
                 truncate_big_hor = 1; % if truncate_big_hor is true, use the H5 bandit schedule but truncate so that all games are H1
-                plot_choice_given_gen_mean(root, experiment,room, results_dir, MDP, id, gen_mean_difference, horizon, truncate_big_hor);
+                plot_choice_given_gen_mean(processed_data, MDP, gen_mean_difference, horizon, truncate_big_hor);
             end
             if do_plot_model_statistics
                 main_plot_model_stats_or_sweep(root, experiment, room, results_dir,MDP, id);
@@ -153,5 +155,5 @@ function [output_table] = Social_wrapper(varargin)
     
     if FIT
         MDP.num_samples_to_draw_from_pdf = 0;
-        output_table = get_fits(root, experiment, room, results_dir,MDP, id);
+        output_table = get_fits(root, processed_data, subject_data_info, results_dir,MDP);
     end

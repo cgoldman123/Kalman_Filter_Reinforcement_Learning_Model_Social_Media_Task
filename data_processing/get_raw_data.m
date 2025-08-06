@@ -47,5 +47,7 @@ function [raw_data,subject_data_info] = get_raw_data(root,study,room_type,id)
     
     
     [raw_data, subject_data_info] = Social_merge(subs, files, room_type, study);
+    subject_data_info.study = study;
+    subject_data_info.room_type = room_type;
     
 end
