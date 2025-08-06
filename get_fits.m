@@ -1,4 +1,4 @@
-function varargout = get_fits(root, processed_data, subject_data_info, results_dir, MDP)
+function output = get_fits(root, processed_data, subject_data_info, results_dir, MDP)
     id = subject_data_info.id;
     room_type = subject_data_info.room_type;
     study = subject_data_info.study;
@@ -8,6 +8,12 @@ function varargout = get_fits(root, processed_data, subject_data_info, results_d
     if MDP.fit_model
         [fits, model_output] = fit_extended_model_SPM(processed_data, MDP);
     
+        if MDP.save_trial_by_trial_output
+            trial_by_trial_output = get_trial_by_trial_output(model_output, subject_data_info, processed_data);
+            outpath_trial_by_trial = sprintf([results_dir '%s_trial_by_trial_%s_%s.csv'], id, room_type, timestamp);
+            writetable(trial_by_trial_output, outpath_trial_by_trial);
+        end
+
         % Assemble .mat object to save
         model_output.id = id; 
         model_output.room_type = room_type;
@@ -96,6 +102,5 @@ function varargout = get_fits(root, processed_data, subject_data_info, results_d
     
     outpath_fits = sprintf([results_dir '%s_fits_%s_%s.csv'], id, room_type, timestamp);
     writetable(struct2table(output,'AsArray',true), outpath_fits);
-    varargout{1} = output;
     
 end

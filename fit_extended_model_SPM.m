@@ -1,15 +1,5 @@
 function [fits, model_output] = fit_extended_model_SPM(processed_data, MDP)
 
-    
-    % If we are just getting the rts/datastruct and not fitting the model, return
-    if MDP.get_processed_behavior_and_dont_fit_model
-        fits = sub.RT; % return RT as fits as a placeholder
-        model_output.results.RT = sub.RT; % store RTs in model output
-        model_output.results.choices = sub.a; % store choices in model output
-        model_output.datastruct = datastruct; % store full datastruct for simulating behavior
-        return;
-    end
-
     fprintf( 'Running Newton Function to fit\n' );
     MDP.processed_data = processed_data;
 
