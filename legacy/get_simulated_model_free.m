@@ -1,10 +1,10 @@
-function output_struct = get_simulated_model_free(root, experiment, room_type, results_dir,MDP,id)
+function output_struct = get_simulated_model_free(root, fitting_procedure, experiment, room_type, cb, results_dir,MDP,id)
     timestamp = datestr(datetime('now'), 'mm_dd_yy_THH-MM-SS');
 
     % First call get_fits to get the schedule/forced choices before
     MDP.get_processed_behavior_and_dont_fit_model = 1; % Toggle on to extract the rts and other processed behavioral data but not fit the model
     MDP.fit_model = 1; % Toggle on even though the model won't fit
-    [processed_data_info, mdp] = get_fits(root, experiment,room_type, results_dir, MDP, id);
+    [processed_data_info, mdp] = get_fits(root, fitting_procedure, experiment,room_type, results_dir, MDP, id);
     file = processed_data_info.good_behavioral_file;
 
     mdp_fieldnames = fieldnames(mdp);

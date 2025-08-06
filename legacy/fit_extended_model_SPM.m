@@ -1,5 +1,8 @@
 function [fits, model_output] = fit_extended_model_SPM(formatted_file, result_dir, MDP)
     fprintf('Using this formatted_file: %s\n',formatted_file);
+
+    %formatted_file = 'L:\rsmith\lab-members\cgoldman\Wellbeing\social_media\output\test\568d0641b5a2c2000cb657d0_beh_Like_08_04_25_T17-01-33.csv';  %% remember to comment out
+
     sub = process_behavioral_data_SM(formatted_file);
 
     disp(sub);
