@@ -4,8 +4,8 @@ function [output_table] = Social_wrapper(varargin)
     clearvars -except varargin
     % Simulate (and plot) data under the model OR fit the model to actual
     % data. Only toggle one of these on.
-    SIM = 0; % Simulate the model
-    FIT = 1; % Fit the model
+    SIM = 1; % Simulate the model
+    FIT = 0; % Fit the model
     if FIT
         MDP.get_processed_behavior_and_dont_fit_model = 0; % Toggle on to extract the rts and other processed behavioral data but not fit the model
         MDP.do_model_free = 1; % Toggle on to do model-free analyses on actual data
@@ -15,7 +15,7 @@ function [output_table] = Social_wrapper(varargin)
             MDP.plot_fitted_behavior = 1; % Toggle on to plot behavior after model fitting
         end
     elseif SIM
-        MDP.plot_simulated_data = 1; %Toggle on to plot data simulated by model using parameters set in this main file.
+        MDP.plot_simulated_data = 0; %Toggle on to plot data simulated by model using parameters set in this main file.
         MDP.do_simulated_model_free = 1; % Toggle on to do model-free analyses on data simulated using parameters set in this main file.
     end
     rng(23);
@@ -143,13 +143,13 @@ function [output_table] = Social_wrapper(varargin)
                 plot_choice_given_gen_mean(processed_data, MDP, gen_mean_difference, horizon, truncate_big_hor);
             end
             if do_plot_model_statistics
-                main_plot_model_stats_or_sweep(root, experiment, room, results_dir,MDP, id);
+                main_plot_model_stats_or_sweep(processed_data, MDP);
             end
         end
         % Indicate if you would like to do model-free analyses on
         % simulated data
         if MDP.do_simulated_model_free
-            output_table = get_simulated_model_free(root, experiment, room, results_dir,MDP,id);
+            output_table = get_simulated_model_free(processed_data, MDP,subject_data_info,root,results_dir);
         end
     end
     
