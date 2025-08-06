@@ -9,14 +9,14 @@ function model_output = model_SM_KF_SIGMA_logistic_DDM(params, actions_and_rts, 
     
     max_rt = mdp.settings.max_rt;
     
-    initialize params
+    % initialize params
     sigma_d = params.sigma_d;
     side_bias_h1 = params.side_bias_h1;
     side_bias_h5 = params.side_bias_h5;
     sigma_r = params.sigma_r;
     initial_sigma = params.initial_sigma;
     initial_mu = params.initial_mu;
-    reward_sensitivity = params.reward_sensitivity;   
+    reward_sensitivity = params.reward_sensitivity;
     h1_info_bonus = params.h1_info_bonus;
     h5_info_bonus = params.h5_info_bonus;
     h1_dec_noise = params.h1_dec_noise;

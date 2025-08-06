@@ -27,6 +27,7 @@ function model_output = model_SM_obs_means_logistic(params, actions_and_rts, rew
     total_uncertainty = nan(G,9);
     relative_uncertainty_of_choice = nan(G,9);
     change_in_uncertainty_after_choice = nan(G,9);
+    estimated_mean_diff = nan(G,9);
     
 
 
@@ -129,6 +130,7 @@ function model_output = model_SM_obs_means_logistic(params, actions_and_rts, rew
             %     mu1(t+1) = mu1(t);
             % end
 
+            estimated_mean_diff(g,t) = mu2(t) - mu1(t);
 
         end
     end
@@ -147,6 +149,7 @@ function model_output = model_SM_obs_means_logistic(params, actions_and_rts, rew
     model_output.rewards = rewards;
     model_output.relative_uncertainty_of_choice = relative_uncertainty_of_choice;
     model_output.total_uncertainty = total_uncertainty;
+    model_output.estimated_mean_diff = estimated_mean_diff;
     model_output.change_in_uncertainty_after_choice = change_in_uncertainty_after_choice;
 
 

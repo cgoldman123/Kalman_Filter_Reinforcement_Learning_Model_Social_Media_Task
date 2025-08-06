@@ -10,13 +10,13 @@ function model_output = model_SM_KF_SIGMA_logistic_RACING(params, actions_and_rt
     %% for testing %%
     %%%%%%
     % initialize params
-    sigma_d = params.sigma_d;
+    %sigma_d = params.sigma_d;
     side_bias_h1 = params.side_bias_h1;
     side_bias_h5 = params.side_bias_h5;
-    sigma_r = params.sigma_r;
-    initial_sigma = params.initial_sigma;
-    initial_mu = params.initial_mu;
-    reward_sensitivity = params.reward_sensitivity;   
+    %sigma_r = params.sigma_r;
+    %initial_sigma = params.initial_sigma;
+    %initial_mu = params.initial_mu;
+    %reward_sensitivity = params.reward_sensitivity;   
     h1_info_bonus = params.h1_info_bonus;
     h5_info_bonus = params.h5_info_bonus;
     h1_dec_noise = params.h1_dec_noise;
@@ -39,8 +39,8 @@ function model_output = model_SM_KF_SIGMA_logistic_RACING(params, actions_and_rt
     pred_errors_alpha = nan(G,9);
     exp_vals = nan(G,10);
     alpha = nan(G,10);
-    sigma1 = [initial_sigma * ones(G,1), zeros(G,8)];
-    sigma2 = [initial_sigma * ones(G,1), zeros(G,8)];
+    sigma1 = nan(G,9);
+    sigma2 = nan(G,9);
     total_uncertainty = nan(G,9);
     estimated_mean_diff = nan(G,9);
     relative_uncertainty_of_choice = nan(G,9);
@@ -53,8 +53,8 @@ function model_output = model_SM_KF_SIGMA_logistic_RACING(params, actions_and_rt
     
     for g = 1:G  % loop over games
         % values
-        mu1 = [initial_mu nan nan nan nan nan nan nan nan];
-        mu2 = [initial_mu nan nan nan nan nan nan nan nan];
+        mu1 = nan(1:5);
+        mu2 = nan(1:5);
     
         % learning rates 
         alpha1 = nan(1,9); 
@@ -70,6 +70,9 @@ function model_output = model_SM_KF_SIGMA_logistic_RACING(params, actions_and_rt
             decision_noise = h5_dec_noise;
             side_bias      = side_bias_h5;
         end
+    
+        mu1(5) = mean(mdp.bandit1_schedule(g,1:4));
+        mu2(5) = mean(mdp.bandit2_schedule(g,1:4));
 
         for t = 1:5  % 4 forced + 1 free choice
             if t == 5
@@ -194,41 +197,41 @@ function model_output = model_SM_KF_SIGMA_logistic_RACING(params, actions_and_rt
                     model_acc(g,t) = (action_probs(g,t) > 0.5);
                 end
             end
-            if actions(g,t) == 1
-                % left bandit update
-                relative_uncertainty_of_choice(g,t)    = sigma1(g,t) - sigma2(g,t);
-                tmp = 1/(sigma1(g,t)^2 + sigma_d^2) + 1/(sigma_r^2);
-                sigma1(g,t+1) = sqrt(1/tmp);
-                change_in_uncertainty_after_choice(g,t) = sigma1(g,t+1) - sigma1(g,t);
-                alpha1(t)     = (sigma1(g,t+1)/sigma_r)^2;
-
-                sigma2(g,t+1) = sqrt(sigma2(g,t)^2 + sigma_d^2);
-
-                exp_vals(g,t)       = mu1(t);
-                pred_errors(g,t)    = reward_sensitivity*rewards(g,t) - exp_vals(g,t);
-                alpha(g,t)          = alpha1(t);
-                pred_errors_alpha(g,t) = alpha1(t)*pred_errors(g,t);
-                mu1(t+1)            = mu1(t) + pred_errors_alpha(g,t);
-                mu2(t+1)            = mu2(t);
-            else
-                % right bandit update
-                relative_uncertainty_of_choice(g,t)    = sigma2(g,t) - sigma1(g,t);
-                tmp = 1/(sigma2(g,t)^2 + sigma_d^2) + 1/(sigma_r^2);
-                sigma2(g,t+1) = sqrt(1/tmp);
-                change_in_uncertainty_after_choice(g,t) = sigma2(g,t+1) - sigma2(g,t);
-                alpha2(t)     = (sigma2(g,t+1)/sigma_r)^2;
-
-                sigma1(g,t+1) = sqrt(sigma1(g,t)^2 + sigma_d^2);
-
-                exp_vals(g,t)       = mu2(t);
-                pred_errors(g,t)    = reward_sensitivity*rewards(g,t) - exp_vals(g,t);
-                alpha(g,t)          = alpha2(t);
-                pred_errors_alpha(g,t) = alpha2(t)*pred_errors(g,t);
-                mu2(t+1)            = mu2(t) + pred_errors_alpha(g,t);
-                mu1(t+1)            = mu1(t);
-            end
-            %save total uncertainty and reward difference
-            total_uncertainty(g,t) = ((sigma1(g,t)^2)+(sigma2(g,t)^2))^.5;
+            % if actions(g,t) == 1
+            %     % left bandit update
+            %     relative_uncertainty_of_choice(g,t)    = sigma1(g,t) - sigma2(g,t);
+            %     tmp = 1/(sigma1(g,t)^2 + sigma_d^2) + 1/(sigma_r^2);
+            %     sigma1(g,t+1) = sqrt(1/tmp);
+            %     change_in_uncertainty_after_choice(g,t) = sigma1(g,t+1) - sigma1(g,t);
+            %     alpha1(t)     = (sigma1(g,t+1)/sigma_r)^2;
+            % 
+            %     sigma2(g,t+1) = sqrt(sigma2(g,t)^2 + sigma_d^2);
+            % 
+            %     exp_vals(g,t)       = mu1(t);
+            %     pred_errors(g,t)    = reward_sensitivity*rewards(g,t) - exp_vals(g,t);
+            %     alpha(g,t)          = alpha1(t);
+            %     pred_errors_alpha(g,t) = alpha1(t)*pred_errors(g,t);
+            %     mu1(t+1)            = mu1(t) + pred_errors_alpha(g,t);
+            %     mu2(t+1)            = mu2(t);
+            % else
+            %     % right bandit update
+            %     relative_uncertainty_of_choice(g,t)    = sigma2(g,t) - sigma1(g,t);
+            %     tmp = 1/(sigma2(g,t)^2 + sigma_d^2) + 1/(sigma_r^2);
+            %     sigma2(g,t+1) = sqrt(1/tmp);
+            %     change_in_uncertainty_after_choice(g,t) = sigma2(g,t+1) - sigma2(g,t);
+            %     alpha2(t)     = (sigma2(g,t+1)/sigma_r)^2;
+            % 
+            %     sigma1(g,t+1) = sqrt(sigma1(g,t)^2 + sigma_d^2);
+            % 
+            %     exp_vals(g,t)       = mu2(t);
+            %     pred_errors(g,t)    = reward_sensitivity*rewards(g,t) - exp_vals(g,t);
+            %     alpha(g,t)          = alpha2(t);
+            %     pred_errors_alpha(g,t) = alpha2(t)*pred_errors(g,t);
+            %     mu2(t+1)            = mu2(t) + pred_errors_alpha(g,t);
+            %     mu1(t+1)            = mu1(t);
+            % end
+            % % save total uncertainty and reward difference
+            % total_uncertainty(g,t) = ((sigma1(g,t)^2)+(sigma2(g,t)^2))^.5;
             estimated_mean_diff(g,t) = mu2(t) - mu1(t);
     
             if ~sim
