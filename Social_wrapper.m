@@ -7,7 +7,7 @@ function [output_table] = Social_wrapper()
     % Using empirical choices!
     if EMPIRICAL
         MDP.do_model_free = 1; % Toggle on to do model-free analyses on empirical data.
-        MDP.fit_model = 0; % Toggle on to fit the model to empirical data.
+        MDP.fit_model = 1; % Toggle on to fit the model to empirical data.
         % If fitting the model
         if MDP.fit_model
             MDP.do_simulated_model_free = 1; % Toggle on to do model-free analyses on data simulated using posterior parameter estimates of model.
@@ -16,7 +16,6 @@ function [output_table] = Social_wrapper()
         end
     else
         % Using simulated choices!
-        MDP.num_samples_to_draw_from_pdf = 2;   %If 0, the model will simulate a choice/RT based on the maximum of the simulated pdf. If >0, it will sample from the distribution of choices/RTs this many times. Note this only matters for models that generate RTs.
         MDP.do_plot_model_statistics = 1; % Toggle on to plot statistics under the current parameter set
         MDP.do_simulated_model_free = 1; % Toggle on to calculate and save model-free analyses on data simulated using parameters set in this main file.
         MDP.do_plot_choice_given_gen_mean = 1; % Toggle on to plot simulated behavior for games of a specific generative mean and horizon (specified below).
@@ -32,6 +31,8 @@ function [output_table] = Social_wrapper()
             truncate_big_hor = 1; % if truncate_big_hor is true, use the H5 bandit schedule but truncate so that all games are H1
         end
     end
+    MDP.num_samples_to_draw_from_pdf = 0;   %If 0, the model will simulate a choice/RT based on the maximum of the simulated pdf. If >0, it will sample from the distribution of choices/RTs this many times. Note this only matters for models that generate RTs.
+
     rng(23);
     
     % If running this code locally

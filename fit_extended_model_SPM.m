@@ -70,7 +70,7 @@ function [fits, model_output] = fit_extended_model_SPM(processed_data, MDP)
     if MDP.plot_fitted_behavior
         reward_diff_summary_table = get_stats_by_reward_diff(MDP, model_output);
         choice_num_summary_table = get_stats_by_choice_num(MDP, model_output);
-        make_plots_model_statistics(reward_diff_summary_table,choice_num_summary_table);
+        make_plots_model_statistics(reward_diff_summary_table,choice_num_summary_table,processed_data);
     end
                 
     % simulate behavior with fitted params
