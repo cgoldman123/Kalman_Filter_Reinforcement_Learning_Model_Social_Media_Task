@@ -86,7 +86,7 @@ function model_output = model_SM_obs_means_logistic_DDM(params, actions_and_rts,
 
                 drift = p - .5;
                 starting_bias = 1/(1+exp(side_bias));
-                decision_thresh(g,t) = params.decision_thresh_baseline
+                decision_thresh(g,t) = params.decision_thresh_baseline;
                             
                 
                 if sim

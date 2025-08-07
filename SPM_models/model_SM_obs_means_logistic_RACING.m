@@ -1,4 +1,4 @@
-function model_output = model_SM_KF_SIGMA_logistic_RACING(params, actions_and_rts, rewards, mdp, sim)
+function model_output = model_SM_obs_means_logistic_RACING(params, actions_and_rts, rewards, mdp, sim)
     dbstop if error;
     % note that mu2 == right bandit ==  actions2
     num_games = mdp.processed_data.num_games; % num of games
@@ -6,7 +6,7 @@ function model_output = model_SM_KF_SIGMA_logistic_RACING(params, actions_and_rt
     num_forced_choices = mdp.processed_data.num_forced_choices;
     num_free_choices_big_hor = mdp.processed_data.num_free_choices_big_hor;
     num_choices_big_hor = num_forced_choices + num_free_choices_big_hor;
-    max_rt = mdp.settings.max_rt;
+    max_rt = mdp.max_rt;
     
     %% for testing %%
     %%%%%%
@@ -62,7 +62,7 @@ function model_output = model_SM_KF_SIGMA_logistic_RACING(params, actions_and_rt
         alpha2 = nan(1,9); 
     
         % pick H1 vs H5 params
-        if mdp.horizon_type(g) == 1
+        if mdp.processed_data.horizon_type(g) == 1
             info_bonus = info_bonus_small_hor;
             decision_noise = dec_noise_small_hor;
             side_bias = side_bias_small_hor;
@@ -79,11 +79,9 @@ function model_output = model_SM_KF_SIGMA_logistic_RACING(params, actions_and_rt
             if t == 5
                 % compute trial‐specific predictors
                 reward_diff = mu2(t) - mu1(t);
-                info_diff   = mdp.forced_choice_info_diff(g);
+                info_diff   = mdp.processed_data.forced_choice_info_diff(g);
                 p = 1 / (1 + exp((reward_diff + info_diff*info_bonus + side_bias) / decision_noise));
     
-                drift = p - .5;
-                starting_bias = side_bias;
                 decision_thresh(g,t) = params.decision_thresh_baseline;
                 
                 %BUILD 2‑ACCUMULATOR RACE%

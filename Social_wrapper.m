@@ -7,7 +7,7 @@ function [output_table] = Social_wrapper()
     % Using empirical choices!
     if EMPIRICAL
         MDP.do_model_free = 1; % Toggle on to do model-free analyses on empirical data.
-        MDP.fit_model = 0; % Toggle on to fit the model to empirical data.
+        MDP.fit_model = 1; % Toggle on to fit the model to empirical data.
         % If fitting the model
         if MDP.fit_model
             MDP.do_simulated_model_free = 1; % Toggle on to do model-free analyses on data simulated using posterior parameter estimates of model.
@@ -50,8 +50,8 @@ function [output_table] = Social_wrapper()
         end
         room = 'Like';
         % Indicate the model to fit or simulate
-        model = "obs_means_logistic_DDM"; % Possible models: 'KF_SIGMA_logistic','KF_SIGMA_logistic_DDM', 'KF_SIGMA_logistic_RACING','KF_SIGMA', 'KF_SIGMA_DDM', 'KF_SIGMA_RACING', 'obs_means_logistic', 'obs_means_logistic_DDM'
-        MDP.field = {'side_bias_big_hor'}; % Determine which parameters to fit
+        model = "KF_SIGMA_RACING"; % Possible models: 'KF_SIGMA_logistic','KF_SIGMA_logistic_DDM', 'KF_SIGMA_logistic_RACING','KF_SIGMA', 'KF_SIGMA_DDM', 'KF_SIGMA_RACING', 'obs_means_logistic', 'obs_means_logistic_DDM', 'obs_means_logistic_RACING'
+        MDP.field = {'side_bias'}; % Determine which parameters to fit
     
     % If running this code on the analysis cluster, read in variables using getenv() 
     elseif isunix
