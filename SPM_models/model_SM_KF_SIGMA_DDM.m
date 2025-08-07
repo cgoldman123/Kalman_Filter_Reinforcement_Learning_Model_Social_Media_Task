@@ -116,10 +116,10 @@ function model_output = model_SM_KF_SIGMA_DDM(params, actions_and_rts, rewards, 
                     end
                     if chose_right
                         actions(g,t) = 2;
-                        rewards(g,t) = mdp.bandit2_schedule(g,t);
+                        rewards(g,t) = mdp.processed_data.bandit2_schedule(g,t);
                     else
                         actions(g,t) = 1;
-                        rewards(g,t) = mdp.bandit1_schedule(g,t);
+                        rewards(g,t) = mdp.processed_data.bandit1_schedule(g,t);
                     end
                     rts(g,t) = simmed_rt;
                 end

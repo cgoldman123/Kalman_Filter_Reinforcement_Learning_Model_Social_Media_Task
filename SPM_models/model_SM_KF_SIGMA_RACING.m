@@ -1,11 +1,11 @@
 function model_output = model_SM_KF_SIGMA_RACING(params, actions_and_rts, rewards, mdp, sim)
     % note that mu2 == right bandit ==  actions2
-    num_games = mdp.num_games; % num of games
-    num_choices_to_fit = mdp.settings.num_choices_to_fit;
-    num_forced_choices = mdp.num_forced_choices;
-    num_free_choices_big_hor = mdp.num_free_choices_big_hor;
+    num_games = mdp.processed_data.num_games; % num of games
+    num_choices_to_fit = mdp.num_choices_to_fit;
+    num_forced_choices = mdp.processed_data.num_forced_choices;
+    num_free_choices_big_hor = mdp.processed_data.num_free_choices_big_hor;
     num_choices_big_hor = num_forced_choices + num_free_choices_big_hor;
-    max_rt = mdp.settings.max_rt;
+    max_rt = mdp.max_rt;
     
     % initialize params
     initial_sigma = params.initial_sigma;
@@ -141,9 +141,9 @@ function model_output = model_SM_KF_SIGMA_RACING(params, actions_and_rts, reward
                     end
                     actions(g,t) = simmed_choice;
                     if simmed_choice == 2
-                        rewards(g,t) = mdp.bandit2_schedule(g,t);
+                        rewards(g,t) = mdp.processed_data.bandit2_schedule(g,t);
                     else
-                        rewards(g,t) = mdp.bandit1_schedule(g,t);
+                        rewards(g,t) = mdp.processed_data.bandit1_schedule(g,t);
                     end
                     rts(g,t) = simmed_rt;
                 end

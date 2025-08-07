@@ -1,11 +1,11 @@
 function model_output = model_SM_KF_SIGMA_logistic_DDM(params, actions_and_rts, rewards, mdp, sim)
     % note that mu2 == right bandit ==  actions2
-    num_games = mdp.num_games; % num of games
-    num_choices_to_fit = mdp.settings.num_choices_to_fit;
-    num_forced_choices = mdp.num_forced_choices;
-    num_free_choices_big_hor = mdp.num_free_choices_big_hor;
+    num_games = mdp.processed_data.num_games; % num of games
+    num_choices_to_fit = mdp.num_choices_to_fit;
+    num_forced_choices = mdp.processed_data.num_forced_choices;
+    num_free_choices_big_hor = mdp.processed_data.num_free_choices_big_hor;
     num_choices_big_hor = num_forced_choices + num_free_choices_big_hor;
-    max_rt = mdp.settings.max_rt;
+    max_rt = mdp.max_rt;
     
     % initialize params
     sigma_d = params.sigma_d;
@@ -56,7 +56,7 @@ function model_output = model_SM_KF_SIGMA_logistic_DDM(params, actions_and_rts, 
         alpha2 = nan(1,num_games); 
         
         % if small horizon Game, use small horizon info bonus, decision noise, and side bias
-        if mdp.horizon_type(g) == 1
+        if mdp.processed_data.horizon_type(g) == 1
             info_bonus = info_bonus_small_hor;
             decision_noise = dec_noise_small_hor;
             side_bias = side_bias_small_hor;
@@ -68,20 +68,20 @@ function model_output = model_SM_KF_SIGMA_logistic_DDM(params, actions_and_rts, 
         end
 
         for t=1:num_forced_choices+1  % loop over forced choices and first free choice
-            if t == num_forced_choices+1
+            if t == 5
                 % Get the reward difference
                 reward_diff = mu2(t) - mu1(t);
                 % Get the information difference (+1 when fewer options are
                 % shown on the right, -1 when fewer options are shown on
                 % left)
-                info_diff = mdp.forced_choice_info_diff(g);
+                info_diff = mdp.processed_data.forced_choice_info_diff(g);
                 % total uncertainty is variance of both arms
                 % probability of choosing bandit 1
                 p = 1 / (1 + exp((reward_diff+(info_diff*info_bonus)+side_bias)/(decision_noise)));
                             
 
                 drift = p - .5;
-                starting_bias = side_bias;
+                starting_bias = 1/(1+exp(side_bias));
                 decision_thresh(g,t) = params.decision_thresh_baseline;
 
                 
@@ -117,10 +117,10 @@ function model_output = model_SM_KF_SIGMA_logistic_DDM(params, actions_and_rts, 
                     end
                     if chose_right
                         actions(g,t) = 2;
-                        rewards(g,t) = mdp.bandit2_schedule(g,t);
+                        rewards(g,t) = mdp.processed_data.bandit2_schedule(g,t);
                     else
                         actions(g,t) = 1;
-                        rewards(g,t) = mdp.bandit1_schedule(g,t);
+                        rewards(g,t) = mdp.processed_data.bandit1_schedule(g,t);
                     end
                     rts(g,t) = simmed_rt;
                 end
