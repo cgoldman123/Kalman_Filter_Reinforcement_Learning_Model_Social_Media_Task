@@ -1,11 +1,11 @@
 function model_output = model_SM_KF_SIGMA_logistic_RACING(params, actions_and_rts, rewards, mdp, sim)
     % note that mu2 == right bandit ==  actions2
-    num_games = mdp.num_games; % num of games
-    num_choices_to_fit = mdp.settings.num_choices_to_fit;
-    num_forced_choices = mdp.num_forced_choices;
-    num_free_choices_big_hor = mdp.num_free_choices_big_hor;
+    num_games = mdp.processed_data.num_games; % num of games
+    num_choices_to_fit = mdp.num_choices_to_fit;
+    num_forced_choices = mdp.processed_data.num_forced_choices;
+    num_free_choices_big_hor = mdp.processed_data.num_free_choices_big_hor;
     num_choices_big_hor = num_forced_choices + num_free_choices_big_hor;
-    max_rt = mdp.settings.max_rt;
+    max_rt = mdp.max_rt;
 
     % initialize params
     sigma_d = params.sigma_d;
@@ -61,7 +61,7 @@ function model_output = model_SM_KF_SIGMA_logistic_RACING(params, actions_and_rt
     
         
         % if small horizon Game, use small horizon info bonus, decision noise, and side bias
-        if mdp.horizon_type(g) == 1
+        if mdp.processed_data.horizon_type(g) == 1
             info_bonus = info_bonus_small_hor;
             decision_noise = dec_noise_small_hor;
             side_bias = side_bias_small_hor;
@@ -76,43 +76,12 @@ function model_output = model_SM_KF_SIGMA_logistic_RACING(params, actions_and_rt
             if t == 5
                 % compute trial‐specific predictors
                 reward_diff = mu2(t) - mu1(t);
-                info_diff = mdp.forced_choice_info_diff(g);
+                info_diff = mdp.processed_data.forced_choice_info_diff(g);
                 p = 1 / (1 + exp((reward_diff + info_diff*info_bonus + side_bias) / decision_noise));
     
-                %DDM PARAM MAPPING
-                % drift
-                drift = params.drift_baseline;
-                if any(contains(mdp.settings.drift_mapping,'reward_diff'))
-                    drift = drift + params.drift_reward_diff_mod * reward_diff;
-                end
-                if any(contains(mdp.settings.drift_mapping,'info_diff'))
-                    drift = drift + info_diff * info_bonus;
-                end
-                if any(contains(mdp.settings.drift_mapping,'side_bias'))
-                    drift = drift + side_bias;
-                end
-                if any(contains(mdp.settings.drift_mapping,'decision_noise'))
-                    drift = drift / decision_noise;
-                end
-    
-                % starting bias (0–1)
-                sbias = log(params.starting_bias_baseline/(1 - params.starting_bias_baseline));
-                if any(contains(mdp.settings.bias_mapping,'reward_diff'))
-                    sbias = sbias + params.starting_bias_reward_diff_mod * reward_diff;
-                end
-                if any(contains(mdp.settings.bias_mapping,'info_diff'))
-                    sbias = sbias + info_diff * info_bonus;
-                end
-                if any(contains(mdp.settings.bias_mapping,'side_bias'))
-                    sbias = sbias + side_bias;
-                end
-                starting_bias = 1/(1 + exp(-sbias));
-    
-                % threshold
+                drift = p - .5;
+                starting_bias = 1/(1+exp(side_bias));
                 decision_thresh(g,t) = params.decision_thresh_baseline;
-                if any(contains(mdp.settings.thresh_mapping,'decision_noise'))
-                    decision_thresh(g,t) = decision_noise;
-                end
                 
                 %BUILD 2‑ACCUMULATOR RACE%
                 % drifts: Based on Advantaged Racing Diffusion 
@@ -168,9 +137,9 @@ function model_output = model_SM_KF_SIGMA_logistic_RACING(params, actions_and_rt
                     end
                     actions(g,t) = simmed_choice;
                     if simmed_choice == 2
-                        rewards(g,t) = mdp.bandit2_schedule(g,t);
+                        rewards(g,t) = mdp.processed_data.bandit2_schedule(g,t);
                     else
-                        rewards(g,t) = mdp.bandit1_schedule(g,t);
+                        rewards(g,t) = mdp.processed_data.bandit1_schedule(g,t);
                     end
                     rts(g,t) = simmed_rt;
                 end

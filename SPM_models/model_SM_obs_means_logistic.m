@@ -1,61 +1,67 @@
 function model_output = model_SM_obs_means_logistic(params, actions_and_rts, rewards, mdp, sim)
     dbstop if error;
-    % note that mu2 == right bandit ==  c=2 == free choice = 1
-    G = mdp.G; % num of games    
+    % note that mu2 == right bandit ==  c=2 == free choice = 1   
+    num_games = mdp.processed_data.num_games; % num of games
+    num_choices_to_fit = mdp.num_choices_to_fit;
+    num_forced_choices = mdp.processed_data.num_forced_choices;
+    num_free_choices_big_hor = mdp.processed_data.num_free_choices_big_hor;
+    num_choices_big_hor = num_forced_choices + num_free_choices_big_hor;
     
     % initialize params
-    side_bias_h1 = params.side_bias_h1;
-    side_bias_h5 = params.side_bias_h5;
-    h1_info_bonus = params.h1_info_bonus;
-    h5_info_bonus = params.h5_info_bonus;
-    h1_dec_noise = params.h1_dec_noise;
-    h5_dec_noise = params.h5_dec_noise;
+    %sigma_d = params.sigma_d;
+    side_bias_small_hor = params.side_bias_small_hor;
+    side_bias_big_hor = params.side_bias_big_hor;
+    %sigma_r = params.sigma_r;
+    %initial_sigma = params.initial_sigma;
+    %initial_mu = params.initial_mu;
+    %reward_sensitivity = params.reward_sensitivity;   
+    info_bonus_small_hor = params.info_bonus_small_hor;
+    info_bonus_big_hor = params.info_bonus_big_hor;
+    dec_noise_small_hor = params.dec_noise_small_hor;
+    dec_noise_big_hor = params.dec_noise_big_hor;
     
    
     
     % initialize variables
     actions = actions_and_rts.actions;
-    action_probs = nan(G,9);
-    model_acc = nan(G,9);
+    action_probs = nan(num_games,num_choices_big_hor);
+    model_acc = nan(num_games,num_choices_big_hor);
+    rts = nan(num_games,num_choices_big_hor);
 
-    pred_errors = nan(G,10);
-    pred_errors_alpha = nan(G,9);
-    exp_vals = nan(G,10);
-    alpha = nan(G,10);
-    sigma1 = nan(G,9);
-    sigma2 = nan(G,9);
-    total_uncertainty = nan(G,9);
-    relative_uncertainty_of_choice = nan(G,9);
-    change_in_uncertainty_after_choice = nan(G,9);
-    estimated_mean_diff = nan(G,9);
+    pred_errors = nan(num_games,num_choices_big_hor+1);
+    pred_errors_alpha = nan(num_games,num_choices_big_hor+1);
+    exp_vals = nan(num_games,num_choices_big_hor+1);
+    alpha = nan(num_games,10);
+    sigma1 = nan(num_games,9);
+    sigma2 = nan(num_games,9);
+    total_uncertainty = nan(num_games,num_choices_big_hor);
+    relative_uncertainty_of_choice = nan(num_games,num_choices_big_hor);
+    change_in_uncertainty_after_choice = nan(num_games,num_choices_big_hor);
+    estimated_mean_diff = nan(num_games,num_choices_big_hor);
     
 
 
     
-    for g=1:G  % loop over games
+    for g=1:num_games  % loop over games
         % values
         mu1 = nan(1,5);
         mu2 = nan(1,5);
         
         % if H1 Game, use H1 info bonus, decision noise, and side bias
-        if mdp.C1(g) == 1
-            info_bonus = h1_info_bonus;
-            decision_noise = h1_dec_noise;
-            side_bias = side_bias_h1;
+        if mdp.processed_data.horizon_type(g) == 1
+            info_bonus = info_bonus_small_hor;
+            decision_noise = dec_noise_small_hor;
+            side_bias = side_bias_small_hor;
         else
         % if H5 Game, use H5 info bonus, decision noise, and side bias
-            info_bonus = h5_info_bonus;
-            decision_noise = h5_dec_noise;
-            side_bias = side_bias_h5;
+            info_bonus = info_bonus_big_hor;
+            decision_noise = dec_noise_big_hor;
+            side_bias = side_bias_big_hor;
         end
 
-        
-        %mu1(1:4) = mdp.bandit1_schedule(g, 1:4);
-        %mu2(1:4) = mdp.bandit2_schedule(g, 1:4);
 
-
-        mu1(5) = mean(mdp.bandit1_schedule(g,1:4));
-        mu2(5) = mean(mdp.bandit2_schedule(g,1:4));
+        mu1(5) = mean(mdp.processed_data.bandit1_schedule(g,1:4));
+        mu2(5) = mean(mdp.processed_data.bandit2_schedule(g,1:4));
 
         
         for t=1:5  % loop over 4 forced choices and 1 free choice trials
@@ -65,21 +71,20 @@ function model_output = model_SM_obs_means_logistic(params, actions_and_rts, rew
                 % Get the information difference (+1 when fewer options are
                 % shown on the right, -1 when fewer options are shown on
                 % left)
-                info_diff = mdp.dI(g);
+                info_diff = mdp.processed_data.forced_choice_info_diff(g);
                 % total uncertainty is variance of both arms
                 % probability of choosing bandit 1
                 p = 1 / (1 + exp((reward_diff+(info_diff*info_bonus)+side_bias)/(decision_noise)));
-                p2 = 1 - p;
                             
                 %simulate behavior
                 if sim
                     u = rand(1,1);
                     if u <= p
                         actions(g,t) = 1;
-                        rewards(g,t) = mdp.bandit1_schedule(g,t);
+                        rewards(g,t) = mdp.processed_data.bandit1_schedule(g,t);
                     else
                         actions(g,t) = 2;
-                        rewards(g,t) = mdp.bandit2_schedule(g,t);
+                        rewards(g,t) = mdp.processed_data.bandit2_schedule(g,t);
                     end
                 end
                 action_probs(g,t) = mod(actions(g,t),2)*p + (1-mod(actions(g,t),2))*(1-p);
@@ -130,6 +135,7 @@ function model_output = model_SM_obs_means_logistic(params, actions_and_rts, rew
             %     mu1(t+1) = mu1(t);
             % end
 
+            % save reward difference
             estimated_mean_diff(g,t) = mu2(t) - mu1(t);
 
         end
@@ -151,6 +157,7 @@ function model_output = model_SM_obs_means_logistic(params, actions_and_rts, rew
     model_output.total_uncertainty = total_uncertainty;
     model_output.estimated_mean_diff = estimated_mean_diff;
     model_output.change_in_uncertainty_after_choice = change_in_uncertainty_after_choice;
+    model_output.rts = rts;
 
 
 end
