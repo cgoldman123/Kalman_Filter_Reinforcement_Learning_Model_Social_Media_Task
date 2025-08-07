@@ -1,92 +1,78 @@
-function ff = social_model_free(root,file, room_type, study,simulated_data)
-    num_games_in_roomtype = 40;
-    num_total_games = num_games_in_roomtype*2;
-    num_forced_choices = 4;
-    num_free_choices_big_hor = 5;
+function ff = social_model_free(processed_data, simulated_data)
+    num_games = processed_data.num_games;
+    num_forced_choices = processed_data.num_forced_choices;
+    num_free_choices_big_hor = processed_data.num_free_choices_big_hor;
     num_choices_big_hor = num_forced_choices + num_free_choices_big_hor;
-    gen_mean_diffs = [-24, -12, -8, -4, -2, 2, 4, 8, 12, 24]; % generative mean differences
 
+    % Get generative mean diffs
+    left_means = mean(processed_data.bandit1_schedule(:,1:4), 2); % get mean of forced choices on left
+    right_means = mean(processed_data.bandit2_schedule(:,1:4), 2); % get mean of forced choices on right
+    gen_mean_diff = round(right_means - left_means);
+    % Get unique values and preallocate
+    [unique_rdiffs, ~, idx_rdiff] = unique(gen_mean_diff);
+    gen_mean_diffs = unique_rdiffs'; % generative mean differences
 
-    %The only difference between the two versions of the schedules is the
-    %order of blocks. Since we fit Dislike and Like rooms separately and
-    %the same block within each room type always goes first (within a
-    %session), we can use the same schedule.
-    
-     % determine if cb=1 or cb=2
-    if strcmp(study,'local')
-        if contains(file, '_R1-')
-            schedule = readtable([root 'rsmith/wellbeing/tasks/SocialMedia/schedules/sm_distributed_schedule_CB1.csv']);
-            cb = 1;
-        else
-            schedule = readtable([root 'rsmith/wellbeing/tasks/SocialMedia/schedules/sm_distributed_schedule_CB2.csv']);
-            cb = 2;
-        end
-    elseif strcmp(study,'prolific')
-        if contains(file, '_CB_')
-            schedule = readtable([root 'rsmith/wellbeing/tasks/SocialMedia/schedules/sm_distributed_schedule_CB2.csv']);
-            cb = 2;
-        else
-           schedule = readtable([root 'rsmith/wellbeing/tasks/SocialMedia/schedules/sm_distributed_schedule_CB1.csv']);
-            cb = 1;
-        end
-     end
-
-    orgfunc = str2func(['Social_' study '_organize']);
-    subj_data = orgfunc(file, schedule, room_type);
-
-    % for debugging: disp(subj_data);disp(file{:});disp(ses); disp(room_type);
-    ses = 999; % filler because session is no longer relevant
-    data = parse_table(subj_data, file, ses, num_total_games, room_type);
-        
-    % Calculate the difference between left and right options
-    mean_diff_values = arrayfun(@(x) x.mean(1) - x.mean(2), data);
-    for i = 1:numel(data)
-        data(i).mean_diff = mean_diff_values(i);
-    end
-
+    % Build data structure to do model free analyses
+    data(num_games,1) = struct(); % creates an empty struct array 
 
     % If passing in simulated data, replace participants' actual behavior
-    % with simulated behavior in "data"
-    if ~isempty(fieldnames(simulated_data))
-        for game = 1:num_games_in_roomtype
-            data(game).key = simulated_data.actions(game, ~isnan(simulated_data.actions(game, :)));
-            data(game).reward = simulated_data.rewards(game, ~isnan(simulated_data.rewards(game, :)));
-            data(game).accuracy = data(game).correcttot/data(game).nfree;
-            data(game).correct = data(game).key == ((data(game).rewards(1,:) < data(game).rewards(2,:)) + 1);
-            data(game).correcttot = sum(data(game).correct(5:end));
-            data(game).mean_correct = data(game).key == ((data(game).mean(1) < data(game).mean(2)) + 1);
+    % with simulated behavior
+    if isempty(fieldnames(simulated_data))
+        actions = processed_data.actions;
+        rewards = processed_data.rewards;
+        RTs = processed_data.RTs;
 
-            data(game).left_observed = mean(data(game).reward(data(game).key==1));
-            data(game).right_observed = mean(data(game).reward(data(game).key==2));
-
-            left_observed_mean_before_choice5 = mean(data(game).reward(data(game).key(1:4)==1));
-            right_observed_mean_before_choice5 = mean(data(game).reward(data(game).key(1:4)==2));
-
-            data(game).choice5_generative_correct = data(game).key(5) == data(game).max_side;
-            data(game).choice5_true_correct = data(game).choice5_generative_correct;
-            data(game).choice5_observed_correct = data(game).key(5) == ((left_observed_mean_before_choice5 <right_observed_mean_before_choice5) + 1);
-            
-           left_observed_mean_before_last_choice = mean(data(game).reward(data(game).key(1:end-1)==1));
-           right_observed_mean_before_last_choice = mean(data(game).reward(data(game).key(1:end-1)==2));
-
-            data(game).last_generative_correct = data(game).key(end) == data(game).max_side;
-            data(game).last_true_correct = data(game).last_generative_correct;
-            data(game).last_observed_correct = data(game).key(end) == ((left_observed_mean_before_last_choice < right_observed_mean_before_last_choice) + 1);
-            
-            
-            data(game).got_total = sum(data(game).reward(data(game).key==2)) + sum(data(game).reward(data(game).key==1));
-            for rt_index=1:length(data(game).RT)
-                data(game).RT(rt_index) = simulated_data.RTs(game,rt_index);
-            end
-            data(game).RT_choice5 = data(game).RT(5);
-            data(game).RT_choiceLast = data(game).RT(end);
-            data(game).true_correct_frac = sum(data(game).mean_correct(5:end))/length(data(game).mean_correct(5:end));
-        end
+    else
+        actions = simulated_data.actions;
+        rewards = simulated_data.rewards;
+        RTs = simulated_data.RTs;
     end
 
-    % ff = fit_horizon(data, ses, room_type);
-    ff.room_type = room_type;
-    ff.counterbalance = cb;
+    for game = 1:num_games
+        data(game).game_num = game - 1;
+        data(game).key = actions(game, ~isnan(actions(game, :)));
+        data(game).num_forced_left = sum(data(game).key(1:4) == 1);
+        data(game).gameLength = length(data(game).key);
+        data(game).nfree = data(game).gameLength - processed_data.num_forced_choices;
+        data(game).horizon = data(game).nfree;
+        data(game).reward = rewards(game, ~isnan(rewards(game, :)));
+        data(game).mean = [left_means(game); right_means(game)];
+        data(game).mean_diff = right_means(game) - left_means(game);
+        data(game).max_side = (right_means(game) > left_means(game))+1; % Should be 2 when right side is better, 1 when left
+        % Save the schedule of both bandits
+        data(game).rewards = [processed_data.bandit1_schedule(game, ~isnan(rewards(game, :))); processed_data.bandit2_schedule(game, ~isnan(rewards(game, :)))];
+        data(game).correct = data(game).key == ((data(game).rewards(1,:) < data(game).rewards(2,:)) + 1); % Checks if subject is choosing the better option according to schedule
+        data(game).correcttot = sum(data(game).correct(5:end));
+        data(game).accuracy = data(game).correcttot/data(game).nfree;
+
+        data(game).mean_correct = data(game).key == ((data(game).mean(1) < data(game).mean(2)) + 1);
+
+        data(game).left_observed = mean(data(game).reward(data(game).key==1));
+        data(game).right_observed = mean(data(game).reward(data(game).key==2));
+
+        left_observed_mean_before_choice5 = mean(data(game).reward(data(game).key(1:4)==1));
+        right_observed_mean_before_choice5 = mean(data(game).reward(data(game).key(1:4)==2));
+
+        data(game).choice5_generative_correct = data(game).key(5) == data(game).max_side;
+        data(game).choice5_true_correct = data(game).choice5_generative_correct;
+        data(game).choice5_observed_correct = data(game).key(5) == ((left_observed_mean_before_choice5 <right_observed_mean_before_choice5) + 1);
+        
+       left_observed_mean_before_last_choice = mean(data(game).reward(data(game).key(1:end-1)==1));
+       right_observed_mean_before_last_choice = mean(data(game).reward(data(game).key(1:end-1)==2));
+
+        data(game).last_generative_correct = data(game).key(end) == data(game).max_side;
+        data(game).last_true_correct = data(game).last_generative_correct;
+        data(game).last_observed_correct = data(game).key(end) == ((left_observed_mean_before_last_choice < right_observed_mean_before_last_choice) + 1);
+        
+        
+        data(game).got_total = sum(data(game).reward(data(game).key==2)) + sum(data(game).reward(data(game).key==1));
+        for rt_index=1:length(RTs(game,:))
+            data(game).RT(rt_index) = RTs(game,rt_index);
+        end
+        data(game).RT_choice5 = data(game).RT(5);
+        data(game).RT_choiceLast = data(game).RT(end);
+        data(game).true_correct_frac = sum(data(game).mean_correct(5:end))/length(data(game).mean_correct(5:end));
+    end
 
 
     %%%%%%%%%%%%%%%% Statistics related to accuracy %%%%%%%%%%%%%%%%
@@ -94,11 +80,9 @@ function ff = social_model_free(root,file, room_type, study,simulated_data)
     big_hor = data([data.horizon] == num_free_choices_big_hor);
     small_hor = data([data.horizon] == 1);
     
-    %small_hor_22 = small_hor(sum([vertcat(small_hor.forced_type)'] == 2) == 2);
-    small_hor_13 = small_hor(sum([vertcat(small_hor.forced_type)'] == 2) ~= 2);
+    small_hor_13 = small_hor([small_hor.num_forced_left]~=2);
 
-    %h6_22 = h6(sum([vertcat(h6.forced_type)'] == 2) == 2);
-    big_hor_13 = big_hor(sum([vertcat(big_hor.forced_type)'] == 2) ~= 2);
+    big_hor_13 = big_hor([big_hor.num_forced_left]~=2);
     
     big_hor_meancor = vertcat(big_hor.mean_correct);
     small_hor_meancor = vertcat(small_hor.mean_correct);

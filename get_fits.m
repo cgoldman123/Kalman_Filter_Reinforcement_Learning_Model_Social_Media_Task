@@ -49,7 +49,7 @@ function output = get_fits(root, processed_data, subject_data_info, results_dir,
     end
     
     if MDP.do_model_free
-        model_free = social_model_free(root,subject_data_info.behavioral_file_path,room_type,study,struct());
+        model_free = social_model_free(processed_data,struct());
     end
     
     if MDP.do_simulated_model_free
