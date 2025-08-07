@@ -80,9 +80,9 @@ function main_plot_model_stats_or_sweep(processed_data,MDP)
     % Make plots
     % If not doing a parameter sweep, make all plots
     if isempty(MDP.param_to_sweep) 
-        make_plots_model_statistics(simmed_model_output{1,2},simmed_model_output{1,3});
+        make_plots_model_statistics(simmed_model_output{1,2},simmed_model_output{1,3},processed_data);
     else
-        make_plots_param_sweep(simmed_model_output);
+        make_plots_param_sweep(simmed_model_output,processed_data);
     end
 
 
