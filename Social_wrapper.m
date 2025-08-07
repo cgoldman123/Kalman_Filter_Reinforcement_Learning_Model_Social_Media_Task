@@ -7,7 +7,7 @@ function [output_table] = Social_wrapper()
     % Using empirical choices!
     if EMPIRICAL
         MDP.do_model_free = 1; % Toggle on to do model-free analyses on empirical data.
-        MDP.fit_model = 1; % Toggle on to fit the model to empirical data.
+        MDP.fit_model = 0; % Toggle on to fit the model to empirical data.
         % If fitting the model
         if MDP.fit_model
             MDP.do_simulated_model_free = 1; % Toggle on to do model-free analyses on data simulated using posterior parameter estimates of model.

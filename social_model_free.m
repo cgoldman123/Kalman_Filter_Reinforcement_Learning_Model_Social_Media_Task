@@ -37,7 +37,7 @@ function ff = social_model_free(processed_data, simulated_data)
         data(game).horizon = data(game).nfree;
         data(game).reward = rewards(game, ~isnan(rewards(game, :)));
         data(game).mean = [left_means(game); right_means(game)];
-        data(game).mean_diff = right_means(game) - left_means(game);
+        data(game).mean_diff = round(left_means(game) - right_means(game));
         data(game).max_side = (right_means(game) > left_means(game))+1; % Should be 2 when right side is better, 1 when left
         % Save the schedule of both bandits
         data(game).rewards = [processed_data.bandit1_schedule(game, ~isnan(rewards(game, :))); processed_data.bandit2_schedule(game, ~isnan(rewards(game, :)))];
@@ -70,7 +70,7 @@ function ff = social_model_free(processed_data, simulated_data)
             data(game).RT(rt_index) = RTs(game,rt_index);
         end
         data(game).RT_choice5 = data(game).RT(5);
-        data(game).RT_choiceLast = data(game).RT(end);
+        data(game).RT_choiceLast = data(game).RT(data(game).gameLength);
         data(game).true_correct_frac = sum(data(game).mean_correct(5:end))/length(data(game).mean_correct(5:end));
     end
 
@@ -98,7 +98,7 @@ function ff = social_model_free(processed_data, simulated_data)
     ff.small_hor_freec1_acc = sum(small_hor_meancor(:, 5)) / numel(small_hor);
    
 
-    %%%%%%%%%%%%%%%% Probability of choosing a side given reward difference %%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%% Probability of choosing left side given reward difference %%%%%%%%%%%%%%%%
 
     % First load in mean diffs as a cell string
     mean_diffs = arrayfun(@(x) sprintf('%02d', abs(x)), gen_mean_diffs, 'UniformOutput', false);
@@ -111,17 +111,34 @@ function ff = social_model_free(processed_data, simulated_data)
         else
             more_or_less = 'less';
         end
-        % Do this for small horizon
+
+        % Do this for small horizon  
+        % first filter to games of the mean difference
         filtered_dat = small_hor_13([small_hor_13.mean_diff] == mean_diff_double);  
-        ff.(['small_hor_left_' mean_diff_char(end-1:end) '_' more_or_less '_prob']) = ((filtered_dat(1).key(end) == 1) + (filtered_dat(2).key(end) == 1))/2;
+        n = numel(filtered_dat); % Get number of games
+        sum_val = 0; % Initialize counter for times chose left
+        % Loop through each element and check if the last key is 1
+        for i = 1:n
+            sum_val = sum_val + (filtered_dat(i).key(end) == 1); % chose left
+        end
+        % Compute average probability of choosing left given gen mean
+        % difference
+        ff.(['small_hor_left_' mean_diff_char(end-1:end) '_' more_or_less '_prob']) = sum_val / n;
+        
         % Do this for big horizon
         % Filter data based on matching mean_diff
         filtered_dat = big_hor_13([big_hor_13.mean_diff] == mean_diff_double);  
         % Loop through the free choices 
-        for i = 1:num_free_choices_big_hor
-            col_idx = i + 4; % maps i = 1 to key(5), etc.
-            fieldname = sprintf('big_hor_left_%s_%s_choice_%d_prob',mean_diff_char(end-1:end), more_or_less, i);
-            ff.(fieldname) = ((filtered_dat(1).key(col_idx) == 1) + (filtered_dat(2).key(col_idx) == 1)) / 2;
+        for free_choice_num = 1:num_free_choices_big_hor
+            col_idx = free_choice_num + 4; % maps free_choice_num = 1 to key(5), etc.
+            fieldname = sprintf('big_hor_left_%s_%s_choice_%d_prob',mean_diff_char(end-1:end), more_or_less, free_choice_num);        
+            n = numel(filtered_dat); % Get number of games
+            sum_val = 0; % Initialize counter for times chose left
+            % Loop through each element and check if the free choice key is 1
+            for i = 1:n
+                sum_val = sum_val + (filtered_dat(i).key(col_idx) == 1); % chose left
+            end
+            ff.(fieldname) = sum_val / n;
         end
     end
 
@@ -155,9 +172,9 @@ function ff = social_model_free(processed_data, simulated_data)
             if made_high_info_choice || made_low_info_choice
                 % generative mean difference between high and low info option
                 if num_1_choices > num_2_choices
-                    gen_mean_diff = game.mean(2) - game.mean(1);
+                    gen_mean_diff = round(game.mean(2) - game.mean(1));
                 else
-                    gen_mean_diff = game.mean(1) - game.mean(2);
+                    gen_mean_diff = round(game.mean(1) - game.mean(2));
                 end
                 % Format gen_mean_diff
                 if gen_mean_diff < 0
@@ -277,7 +294,7 @@ function ff = social_model_free(processed_data, simulated_data)
     
     % ---------------------------------------------------------------
     
-    ff.mean_RT       = mean([data.RT]);
+    ff.mean_RT       = mean([data.RT],'omitnan');
     ff.sub_accuracy  = mean([data.accuracy]);
     
     ff.choice5_acc_gen_mean      = mean([data.choice5_generative_correct]);
@@ -301,8 +318,8 @@ function ff = social_model_free(processed_data, simulated_data)
     ff.last_acc_true_mean_small_hor     = mean([small_hor.last_true_correct]);
 
     
-    ff.mean_RT_big_hor                = mean([big_hor.RT]); 
-    ff.mean_RT_small_hor                = mean([small_hor.RT]); 
+    ff.mean_RT_big_hor                = mean([big_hor.RT],'omitnan'); 
+    ff.mean_RT_small_hor                = mean([small_hor.RT],'omitnan'); 
     
     ff.mean_RT_choice5           = mean([data.RT_choice5]);
     ff.mean_RT_choiceLast        = mean([data.RT_choiceLast]);
