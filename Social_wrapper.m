@@ -1,13 +1,13 @@
-function [output_table] = Social_wrapper(varargin)
+function [output_table] = Social_wrapper()
     close all;
     dbstop if error;
     clearvars -except varargin
 
-    EMPIRICAL = 1; % Indicate if using empirical choices (1) or simulated choices (0).
+    EMPIRICAL = 1; % Indicate if analyzing empirical choices (1) or simulated choices (0).
     % Using empirical choices!
     if EMPIRICAL
         MDP.do_model_free = 1; % Toggle on to do model-free analyses on empirical data.
-        MDP.fit_model = 1; % Toggle on to fit the model to empirical data.
+        MDP.fit_model = 0; % Toggle on to fit the model to empirical data.
         % If fitting the model
         if MDP.fit_model
             MDP.do_simulated_model_free = 1; % Toggle on to do model-free analyses on data simulated using posterior parameter estimates of model.
@@ -16,7 +16,7 @@ function [output_table] = Social_wrapper(varargin)
         end
     else
         % Using simulated choices!
-        MDP.num_samples_to_draw_from_pdf = 0;   %If 0, the model will simulate a choice/RT based on the maximum of the simulated pdf. If >0, it will sample from the distribution of choices/RTs this many times. Note this only matters for models that generate RTs.
+        MDP.num_samples_to_draw_from_pdf = 2;   %If 0, the model will simulate a choice/RT based on the maximum of the simulated pdf. If >0, it will sample from the distribution of choices/RTs this many times. Note this only matters for models that generate RTs.
         MDP.do_plot_model_statistics = 1; % Toggle on to plot statistics under the current parameter set
         MDP.do_simulated_model_free = 1; % Toggle on to calculate and save model-free analyses on data simulated using parameters set in this main file.
         MDP.do_plot_choice_given_gen_mean = 1; % Toggle on to plot simulated behavior for games of a specific generative mean and horizon (specified below).
@@ -37,7 +37,7 @@ function [output_table] = Social_wrapper(varargin)
     % If running this code locally
     if ispc
         root = 'L:/';
-        experiment = 'prolific'; % indicate local or prolific
+        experiment = 'local'; % indicate local or prolific
         results_dir = sprintf([root 'rsmith/lab-members/cgoldman/Wellbeing/social_media/output/test/']); % Specify directory to save results
         % Specify the subject and room type (like or dislike) to fit, or
         % instead use the forced choices in that behavioral file for
@@ -49,8 +49,8 @@ function [output_table] = Social_wrapper(varargin)
         end
         room = 'Like';
         % Indicate the model to fit or simulate
-        model = "KF_SIGMA"; % Possible models: 'KF_SIGMA_logistic','KF_SIGMA_logistic_DDM', 'KF_SIGMA_logistic_RACING','KF_SIGMA', 'KF_SIGMA_DDM', 'KF_SIGMA_RACING', 'obs_means_logistic', 'obs_means_logistic_DDM'
-        MDP.field = {'cong_base_info_bonus'}; % Determine which parameters to fit
+        model = "KF_SIGMA_DDM"; % Possible models: 'KF_SIGMA_logistic','KF_SIGMA_logistic_DDM', 'KF_SIGMA_logistic_RACING','KF_SIGMA', 'KF_SIGMA_DDM', 'KF_SIGMA_RACING', 'obs_means_logistic', 'obs_means_logistic_DDM'
+        MDP.field = {'cong_base_info_bonus','incong_base_info_bonus'}; % Determine which parameters to fit
     
     % If running this code on the analysis cluster, read in variables using getenv() 
     elseif isunix
