@@ -3,7 +3,7 @@ function [output_table] = Social_wrapper()
     dbstop if error;
     clearvars -except varargin
 
-    EMPIRICAL = 1; % Indicate if analyzing empirical choices (1) or simulated choices (0).
+    EMPIRICAL = 0; % Indicate if analyzing empirical choices (1) or simulated choices (0).
     % Using empirical choices!
     if EMPIRICAL
         MDP.do_model_free = 1; % Toggle on to do model-free analyses on empirical data.
@@ -21,7 +21,7 @@ function [output_table] = Social_wrapper()
         MDP.do_plot_choice_given_gen_mean = 1; % Toggle on to plot simulated behavior for games of a specific generative mean and horizon (specified below).
         % If plotting simulated data, decide if doing parameter sweep.
         if MDP.do_plot_model_statistics         
-            MDP.param_to_sweep = ''; % Specify the name of the parameter name to sweep over or leave this empty to not sweep.
+            MDP.param_to_sweep = 'side_bias'; % Specify the name of the parameter name to sweep over or leave this empty to not sweep.
             MDP.param_values_to_sweep_over = linspace(-20, 20, 5); % Specify the values of the parameter to sweep over
         end
         % If plotting simulated data for a given game type
@@ -50,7 +50,7 @@ function [output_table] = Social_wrapper()
         end
         room = 'Like';
         % Indicate the model to fit or simulate
-        model = "KF_SIGMA_DDM"; % Possible models: 'KF_SIGMA_logistic','KF_SIGMA_logistic_DDM', 'KF_SIGMA_logistic_RACING','KF_SIGMA', 'KF_SIGMA_DDM', 'KF_SIGMA_RACING', 'obs_means_logistic', 'obs_means_logistic_DDM'
+        model = "KF_SIGMA"; % Possible models: 'KF_SIGMA_logistic','KF_SIGMA_logistic_DDM', 'KF_SIGMA_logistic_RACING','KF_SIGMA', 'KF_SIGMA_DDM', 'KF_SIGMA_RACING', 'obs_means_logistic', 'obs_means_logistic_DDM'
         MDP.field = {'cong_base_info_bonus','incong_base_info_bonus'}; % Determine which parameters to fit
     
     % If running this code on the analysis cluster, read in variables using getenv() 
