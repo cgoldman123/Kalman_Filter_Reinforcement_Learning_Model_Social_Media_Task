@@ -65,7 +65,7 @@ for i = 1:length(DCM.field)
                 'starting_bias_baseline'})
             pE.(field) = log(DCM.params.(field)/(1-DCM.params.(field)));  % bound between 0 and 1
             pC{i,i}    = prior_variance; 
-        elseif ismember(field, {'h1_dec_noise', 'h5_dec_noise', 'h5_baseline_dec_noise', 'h5_slope_dec_noise', ...
+        elseif ismember(field, {'dec_noise_small_hor', 'dec_noise_big_hor', 'h5_baseline_dec_noise', 'h5_slope_dec_noise', ...
                 'initial_sigma', 'initial_sigma_r', 'initial_mu', 'initial_associability', ...
                 'drift_action_prob_mod', 'drift_reward_diff_mod', 'drift_UCB_diff_mod',...
                 'starting_bias_action_prob_mod', 'starting_bias_reward_diff_mod', 'starting_bias_UCB_diff_mod',...
@@ -74,8 +74,8 @@ for i = 1:length(DCM.field)
                 'reward_sensitivity', 'DE_RE_horizon'})
             pE.(field) = log(DCM.params.(field));               % in log-space (to keep positive)
             pC{i,i}    = prior_variance;  
-        elseif ismember(field, {'h5_baseline_info_bonus', 'h5_slope_info_bonus', 'h1_info_bonus', 'rdiff_bias_mod',...
-                'side_bias', 'side_bias_h1', 'side_bias_h5', 'info_bonus', 'h5_info_bonus', 'random_exp',...
+        elseif ismember(field, {'h5_baseline_info_bonus', 'h5_slope_info_bonus', 'info_bonus_small_hor', 'rdiff_bias_mod',...
+                'side_bias', 'side_bias_small_hor', 'side_bias_big_hor', 'info_bonus', 'info_bonus_big_hor', 'random_exp',...
                 'drift_baseline', 'drift','cong_base_info_bonus','incong_base_info_bonus','cong_directed_exp','incong_directed_exp'})
             pE.(field) = DCM.params.(field); 
             pC{i,i}    = prior_variance;
@@ -131,7 +131,7 @@ M.model = DCM.model;
 
 % Variational Laplace
 %--------------------------------------------------------------------------
-[Ep,Cp,F] = spm_nlsi_Newton(M,DCM.datastruct,DCM.datastruct);
+[Ep,Cp,F] = spm_nlsi_Newton(M,DCM,DCM);
 
 % Store posterior densities and log evidnce (free energy)
 %--------------------------------------------------------------------------
@@ -156,7 +156,7 @@ function L = spm_mdp_L(P,M,U,Y)
         if ismember(field{i},{'learning_rate', 'learning_rate_pos', 'learning_rate_neg', 'noise_learning_rate', 'alpha_start', 'alpha_inf', 'associability_weight', ...
                 'starting_bias_baseline', 'wd', 'ws'})
             params.(field{i}) = 1/(1+exp(-P.(field{i})));
-        elseif ismember(field{i},{'h1_dec_noise', 'h5_dec_noise','h5_baseline_dec_noise', 'h5_slope_dec_noise', ...
+        elseif ismember(field{i},{'dec_noise_small_hor', 'dec_noise_big_hor','h5_baseline_dec_noise', 'h5_slope_dec_noise', ...
                 'initial_sigma', 'initial_sigma_r', 'initial_mu', 'initial_associability', ...
                 'drift_action_prob_mod', 'drift_reward_diff_mod', 'drift_UCB_diff_mod',...
                 'starting_bias_action_prob_mod', 'starting_bias_reward_diff_mod', 'starting_bias_UCB_diff_mod',...
@@ -164,8 +164,8 @@ function L = spm_mdp_L(P,M,U,Y)
                 'outcome_informativeness', 'baseline_noise', ...
                 'reward_sensitivity', 'DE_RE_horizon'})
             params.(field{i}) = exp(P.(field{i}));
-        elseif ismember(field{i},{'h5_baseline_info_bonus', 'h5_slope_info_bonus', 'h1_info_bonus', 'baseline_info_bonus',...
-                'side_bias', 'side_bias_h1', 'side_bias_h5', 'info_bonus', 'h5_info_bonus', 'random_exp', 'rdiff_bias_mod',...
+        elseif ismember(field{i},{'h5_baseline_info_bonus', 'h5_slope_info_bonus', 'info_bonus_small_hor', 'baseline_info_bonus',...
+                'side_bias', 'side_bias_small_hor', 'side_bias_big_hor', 'info_bonus', 'info_bonus_big_hor', 'random_exp', 'rdiff_bias_mod',...
                 'drift_baseline', 'drift', 'directed_exp', 'V0','cong_base_info_bonus','incong_base_info_bonus','cong_directed_exp','incong_directed_exp'})
             params.(field{i}) = P.(field{i});
         elseif ismember(field{i},{'decision_thresh_baseline'})
@@ -201,9 +201,9 @@ function L = spm_mdp_L(P,M,U,Y)
     % Update params_old for next comparison
     params_old = params;
 
-    actions_and_rts.actions = U.actions;
-    actions_and_rts.RTs = U.RTs;
-    rewards = U.rewards;
+    actions_and_rts.actions = U.processed_data.actions;
+    actions_and_rts.RTs = U.processed_data.RTs;
+    rewards = U.processed_data.rewards;
 
     mdp = U;
         
@@ -218,7 +218,7 @@ function L = spm_mdp_L(P,M,U,Y)
         % after accounting for invalid RTs
         % calculate number of total choices to fit since half of games were
         % H1 and half were H5
-        num_total_choices_to_fit = mdp.settings.num_choices_to_fit*mdp.G/2 + mdp.G/2;
+        num_total_choices_to_fit = mdp.num_choices_to_fit*mdp.processed_data.num_games/2 + mdp.processed_data.num_games/2;
         invalid_rts = model_output.num_invalid_rts;
         if sum(~isnan(model_output.action_probs),'all') ~= (num_total_choices_to_fit-invalid_rts)
             error("Error! NaNs encountered in the log likelihood!");
@@ -229,7 +229,7 @@ function L = spm_mdp_L(P,M,U,Y)
         % Make sure that there were no NaN values in the log likelihood
         % calculate number of total choices to fit since half of games were
         % H1 and half were H5
-        num_total_choices_to_fit = mdp.settings.num_choices_to_fit*mdp.G/2 + mdp.G/2;
+        num_total_choices_to_fit = mdp.num_choices_to_fit*mdp.processed_data.num_games/2 + mdp.processed_data.num_games/2;
         if sum(~isnan(model_output.action_probs),'all') ~= num_total_choices_to_fit
             error("Error! NaNs encountered in the log likelihood!");
         end

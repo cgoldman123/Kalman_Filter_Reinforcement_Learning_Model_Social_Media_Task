@@ -1,18 +1,9 @@
-function main_plot_model_statistics(root, fitting_procedure, experiment, room_type, results_dir,MDP, id)
-    % First call get_fits to get the schedule/forced choices before
-    MDP.get_processed_behavior_and_dont_fit_model = 1; % Toggle on to extract the rts and other processed behavioral data but not fit the model
-    MDP.fit_model = 1; % Toggle on even though the model won't fit
-    [rt_data, mdp] = get_fits(root, fitting_procedure, experiment,room_type, results_dir, MDP, id);
-    
-    % Load the mdp variable to get bandit schedule
-    % load(['./SPM_scripts/social_media_' experiment '_mdp_cb' num2str(cb) '.mat']); 
+function main_plot_model_stats_or_sweep(processed_data,MDP)
+    MDP.processed_data = processed_data;
 
-    mdp_fieldnames = fieldnames(mdp);
-    for (i=1:length(mdp_fieldnames))
-        MDP.(mdp_fieldnames{i}) = mdp.(mdp_fieldnames{i});
-    end
-    actions_and_rts.actions = mdp.actions;
-    actions_and_rts.RTs = nan(40,9);
+    num_choices_big_hor = processed_data.num_forced_choices + processed_data.num_free_choices_big_hor;
+    actions_and_rts.actions = processed_data.actions;
+    actions_and_rts.RTs = nan(processed_data.num_games,num_choices_big_hor);
 
     if isempty(MDP.param_to_sweep) 
         param_values_to_sweep_over = 1;
@@ -28,7 +19,7 @@ function main_plot_model_statistics(root, fitting_procedure, experiment, room_ty
         % Simulate behavior using max pdf or take a bunch of samples
         if MDP.num_samples_to_draw_from_pdf == 0
             simmed_model_output{param_set_idx,1} = MDP.params; % save the parameters used to simulate behavior
-            model_results = MDP.model(MDP.params, actions_and_rts, MDP.rewards, MDP, 1); % save the behavior
+            model_results = MDP.model(MDP.params, actions_and_rts, processed_data.rewards, MDP, 1); % save the behavior
             reward_diff_summary_table = get_stats_by_reward_diff(MDP, model_results);
             choice_num_summary_table = get_stats_by_choice_num(MDP, model_results);
             simmed_model_output{param_set_idx,2} = reward_diff_summary_table;
@@ -36,7 +27,7 @@ function main_plot_model_statistics(root, fitting_procedure, experiment, room_ty
         else
             for sample_num = 1:MDP.num_samples_to_draw_from_pdf
                 simmed_model_output{param_set_idx,sample_num,1} = MDP.params; % save the parameters used to simulate behavior
-                model_results = MDP.model(MDP.params, actions_and_rts, MDP.rewards, MDP, 1); % save the behavior
+                model_results = MDP.model(MDP.params, actions_and_rts, processed_data.rewards, MDP, 1); % save the behavior
                 samp_reward_diff_summary_table{sample_num} = get_stats_by_reward_diff(MDP, model_results);
                 samp_choice_num_summary_table{sample_num} = get_stats_by_choice_num(MDP, model_results);
             end

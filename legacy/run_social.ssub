@@ -1,0 +1,51 @@
+#!/bin/bash
+#
+#SBATCH --partition=c3
+#SBATCH --ntasks=1
+#SBATCH --mem=12000
+#SBATCH --nodes=1
+#SBATCH --begin=now
+#SBATCH --chdir=/media/labs/rsmith/lab-members/cgoldman/Wellbeing/social_media/scripts/
+#SBATCH --time=48:00:00
+
+#
+#################################################
+
+# Activate a conda virtual environment containing the pyddm package. This is only necessary if using pyddm, but shouldn't interfere with other scripts
+source /home/librad.laureateinstitute.org/cgoldman/miniconda3/etc/profile.d/conda.sh
+conda activate pyddm 
+
+ID=$1
+export ID
+
+RESULTS=$2
+export RESULTS
+
+ROOM=$3
+export ROOM
+
+EXPERIMENT=$4
+export EXPERIMENT
+
+FIELD=$5
+export FIELD
+
+MODEL=$6
+export MODEL
+
+DRIFT_MAPPING=$7
+export DRIFT_MAPPING
+
+BIAS_MAPPING=$8
+export BIAS_MAPPING
+
+THRESH_MAPPING=$9
+export THRESH_MAPPING
+
+FITTING_PROCEDURE=${10}
+export FITTING_PROCEDURE
+
+module load matlab/2022a
+
+run_file='/media/labs/rsmith/lab-members/cgoldman/Wellbeing/social_media/scripts/Social_wrapper.m'
+matlab -nodisplay -nosplash < ${run_file}

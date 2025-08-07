@@ -1,10 +1,10 @@
-function [all_data, subj_mapping, flag_ids] = Social_merge(ids, files, room_type, study)        
+function [all_data, subject_data_info] = Social_merge(ids, files, room_type, study)        
     
     % Note that the ids argument will be as long as the
     % total number of files for all subjects (in the files argument). So there may be 
     % ID repetitions if one ID has multiple behavioral files.  
     
-    % This function returns two outputs, all_data and subj_mapping, that
+    % This function returns two outputs, all_data and subject_data_info, that
     % will only contain valid subject data. 
    
     % Data is considered valid if it is
@@ -21,10 +21,9 @@ function [all_data, subj_mapping, flag_ids] = Social_merge(ids, files, room_type
     
     
     all_data = cell(1, numel(ids)); 
-    flag_ids = {};
     good_index = [];
     
-    subj_mapping = cell(numel(ids), 4); 
+    subject_data_info = struct(); 
     
     for i = 1:numel(ids)
         id   = ids{i};
@@ -82,17 +81,16 @@ function [all_data, subj_mapping, flag_ids] = Social_merge(ids, files, room_type
             
             all_data{i}.subjectID = repmat(i, size(all_data{i}, 1), 1);
             
-            subj_mapping{i, 1} = {id};
-            subj_mapping{i, 2} = i;
-            subj_mapping{i, 3} = cb;
+            subject_data_info.id = id;
+            subject_data_info.has_practice_effects = has_started_a_game > 1;
+            subject_data_info.cb = cb;
         end
     end
     
     % only take the rows of all_data that are good
     all_data = all_data(good_index);
     all_data = vertcat(all_data{:});    
-    subj_mapping = subj_mapping(good_index, :);
-    subj_mapping{1,4} = good_file;
+    subject_data_info.behavioral_file_path = good_file;
 
     % add in schedule
     is_dislike_type = strcmp(room_type,'Dislike');

@@ -1,7 +1,7 @@
 
 function summary_table = get_stats_by_reward_diff(MDP, simmed_model_output)
-    left_means = mean(MDP.bandit1_schedule(:,1:4), 2); % get mean of forced choices on left
-    right_means = mean(MDP.bandit2_schedule(:,1:4), 2); % get mean of forced choices on right
+    left_means = mean(MDP.processed_data.bandit1_schedule(:,1:4), 2); % get mean of forced choices on left
+    right_means = mean(MDP.processed_data.bandit2_schedule(:,1:4), 2); % get mean of forced choices on right
     gen_mean_diff = round(right_means - left_means);
     % Get unique values and preallocate
     [unique_rdiffs, ~, idx_rdiff] = unique(gen_mean_diff);
@@ -9,7 +9,7 @@ function summary_table = get_stats_by_reward_diff(MDP, simmed_model_output)
     n_choices = size(simmed_model_output.total_uncertainty, 2);
     
     % Compute horizon values: row-wise count of non-NaNs in MDP.actions minus 4
-    horizon = sum(~isnan(MDP.actions), 2) - 4;
+    horizon = sum(~isnan(MDP.processed_data.actions), 2) - 4;
     unique_horizons = unique(horizon);
 
     % Compute probability of choosing right option

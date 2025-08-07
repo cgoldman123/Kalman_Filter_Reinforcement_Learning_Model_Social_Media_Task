@@ -3,7 +3,6 @@ from datetime import datetime
 
 result_stem = sys.argv[1]
 experiment = sys.argv[2]
-fitting_procedure = sys.argv[3] # indicate if fitting with "SPM", "VBA", or "PYDDM"
 model_class = "PYDDM" # indicate if "KF_UCB", "RL", "KF_UCB_DDM", or "PYDDM" model
 
 current_datetime = datetime.now().strftime("%m-%d-%Y_%H-%M-%S")
@@ -155,11 +154,11 @@ for room in room_type:
             bias_map = bias_mapping if bias_mapping else "none"
             thresh_map = thresh_mapping if thresh_mapping else "none"
             #print(f"sbatch -J {jobname} -o {stdout_name} -e {stderr_name} {ssub_path} {subject} {combined_results_dir} {room} {experiment} {field} {model_class} {drift_map} {bias_map} {thresh_map}")
-            os.system(f"sbatch -J {jobname} -o {stdout_name} -e {stderr_name} {ssub_path} {subject} {combined_results_dir} {room} {experiment} {field} {model_class} {drift_map} {bias_map} {thresh_map} {fitting_procedure}")
+            os.system(f"sbatch -J {jobname} -o {stdout_name} -e {stderr_name} {ssub_path} {subject} {combined_results_dir} {room} {experiment} {field} {model_class} {drift_map} {bias_map} {thresh_map}")
 
             print(f"SUBMITTED JOB [{jobname}]")
 
 # Note that the fitting procedure is automatically appended to result directory
 # Remember to adjust model being fit at the top of the script
 # Call this script with:
-# python3 /media/labs/rsmith/lab-members/cgoldman/Wellbeing/social_media/scripts/runall_social.py /media/labs/rsmith/lab-members/cgoldman/Wellbeing/social_media/output/SM_fits_PYDDM_test "prolific" "PYDDM"
+# python3 /media/labs/rsmith/lab-members/cgoldman/Wellbeing/social_media/scripts/runall_social.py /media/labs/rsmith/lab-members/cgoldman/Wellbeing/social_media/output/SM_fits_PYDDM_test "prolific"
