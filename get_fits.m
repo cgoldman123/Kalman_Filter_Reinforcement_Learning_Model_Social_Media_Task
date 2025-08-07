@@ -51,9 +51,10 @@ function output = get_fits(root, processed_data, subject_data_info, results_dir,
     if MDP.do_model_free
         model_free = social_model_free(processed_data,struct());
     end
-    
-    if MDP.do_simulated_model_free
-        simulated_model_free = social_model_free(root,subject_data_info.behavioral_file_path,room_type,study,model_output.simfit_DCM.processed_data);
+    if MDP.fit_model
+        if MDP.do_simulated_model_free 
+            simulated_model_free = social_model_free(root,subject_data_info.behavioral_file_path,room_type,study,model_output.simfit_DCM.processed_data);
+        end
     end
     
     % if fits and/or model-free analyses are present, add them to the output

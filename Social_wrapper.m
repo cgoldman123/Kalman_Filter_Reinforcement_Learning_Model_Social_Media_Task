@@ -50,7 +50,7 @@ function [output_table] = Social_wrapper()
         end
         room = 'Like';
         % Indicate the model to fit or simulate
-        model = "KF_SIGMA_RACING"; % Possible models: 'KF_SIGMA_logistic','KF_SIGMA_logistic_DDM', 'KF_SIGMA_logistic_RACING','KF_SIGMA', 'KF_SIGMA_DDM', 'KF_SIGMA_RACING', 'obs_means_logistic', 'obs_means_logistic_DDM', 'obs_means_logistic_RACING'
+        model = "KF_SIGMA"; % Possible models: 'KF_SIGMA_logistic','KF_SIGMA_logistic_DDM', 'KF_SIGMA_logistic_RACING','KF_SIGMA', 'KF_SIGMA_DDM', 'KF_SIGMA_RACING', 'obs_means_logistic', 'obs_means_logistic_DDM', 'obs_means_logistic_RACING'
         MDP.field = {'side_bias'}; % Determine which parameters to fit
     
     % If running this code on the analysis cluster, read in variables using getenv() 

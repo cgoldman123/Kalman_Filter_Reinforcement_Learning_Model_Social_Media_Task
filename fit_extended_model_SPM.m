@@ -45,16 +45,22 @@ function [fits, model_output] = fit_extended_model_SPM(processed_data, MDP)
     rewards = processed_data.rewards;
     
     model_output = MDP.model(fits,actions_and_rts, rewards,MDP, 0);    
+    
+    % Fill in RTs for the plots for models that are choice only
+    if all(all(isnan(model_output.rts)))
+        model_output.rts = processed_data.RTs;
+    end
+
     model_output.DCM = DCM;
     fits.average_action_prob = mean(model_output.action_probs(~isnan(model_output.action_probs)), 'all');
     
-    fits.average_action_prob_H1_1 = mean(model_output.action_probs(1:2:end, 5), 'omitnan');
+    fits.average_action_prob_small_hor_1 = mean(model_output.action_probs(find(processed_data.horizon_type==1),5), 'omitnan');
     
     % Dynamically assign average action prob for big horizon games
     for i = 1:processed_data.num_free_choices_big_hor
         col_idx = i + 4; % skip over the forced choices
-        fieldname = sprintf('average_action_prob_H5_%d', i);
-        fits.(fieldname) = mean(model_output.action_probs(2:2:end, col_idx), 'omitnan');
+        fieldname = sprintf('average_action_prob_big_hor_%d', i);
+        fits.(fieldname) = mean(model_output.action_probs(find(processed_data.horizon_type==2), col_idx), 'omitnan');
     end
 
     fits.model_acc = sum(model_output.action_probs(~isnan(model_output.action_probs)) > 0.5) / numel(model_output.action_probs(~isnan(model_output.action_probs)));
