@@ -7,7 +7,7 @@ function [output_table] = Social_wrapper()
     % Using empirical choices!
     if EMPIRICAL
         MDP.do_model_free = 1; % Toggle on to do model-free analyses on empirical data.
-        MDP.fit_model = 0; % Toggle on to fit the model to empirical data.
+        MDP.fit_model = 1; % Toggle on to fit the model to empirical data.
         % If fitting the model
         if MDP.fit_model
             MDP.do_simulated_model_free = 1; % Toggle on to do model-free analyses on data simulated using posterior parameter estimates of model.
@@ -26,9 +26,9 @@ function [output_table] = Social_wrapper()
         end
         % If plotting simulated data for a given game type
         if MDP.do_plot_choice_given_gen_mean
-            gen_mean_difference = 4; % choose a generative mean difference of 2, 4, 8, 12, 24
+            gen_mean_difference = 4; % choose a generative mean difference
             horizon = 5; % choose horizon of 1 or 5
-            truncate_big_hor = 1; % if truncate_big_hor is true, use the H5 bandit schedule but truncate so that all games are H1
+            truncate_big_hor = 1; % if truncate_big_hor is true, use the big bandit schedule but truncate so that all games are H1
         end
     end
     MDP.num_samples_to_draw_from_pdf = 0;   %If 0, the model will simulate a choice/RT based on the maximum of the simulated pdf. If >0, it will sample from the distribution of choices/RTs this many times. Note this only matters for models that generate RTs.
@@ -38,17 +38,28 @@ function [output_table] = Social_wrapper()
     % If running this code locally
     if ispc
         root = 'L:/';
-        experiment = 'local'; % indicate local or prolific
-        results_dir = sprintf([root 'rsmith/lab-members/cgoldman/Wellbeing/social_media/output/test/']); % Specify directory to save results
-        % Specify the subject and room type (like or dislike) to fit, or
-        % instead use the forced choices in that behavioral file for
-        % simulated data
-        if strcmp(experiment,'prolific')
-            id = '568d0641b5a2c2000cb657d0';
-        elseif strcmp(experiment,'local')
-            id = 'AV841';
+        study_info.study = 'wellbeing'; % 'wellbeing', 'exercise', 'cobre_neut', 'adm', 'eit'
+        %%%%% Specify the data to process for the wellbeing study
+        if strcmp(study_info.study,'wellbeing')
+            if strcmp(study_info.experiment,'prolific')
+                study_info.id = '568d0641b5a2c2000cb657d0';
+            elseif strcmp(study_info.experiment,'local')
+                study_info.id = 'AV841';
+            end
+            study_info.experiment = 'local'; % indicate local or prolific
+            results_dir = sprintf([root 'rsmith/lab-members/cgoldman/Wellbeing/social_media/output/test/']); % Specify directory to save results
+            addpath(['./data_processing/wellbeing_data_processing/']);
+        %%%% Specify the data to process for the exercise study
+        elseif strcmp(study_info.study,'exercise')
+        %%%% Specify the data to process for the cobre_neut study
+        elseif strcmp(study_info.study,'cobre_neut')
+        %%%% Specify the data to process for the adm study
+        elseif strcmp(study_info.study,'adm')
+        %%%% Specify the data to process for the eit study
+        elseif strcmp(study_info.study,'eit')
+
         end
-        room = 'Like';
+        study_info.room = 'Like';
         % Indicate the model to fit or simulate
         model = "KF_SIGMA"; % Possible models: 'KF_SIGMA_logistic','KF_SIGMA_logistic_DDM', 'KF_SIGMA_logistic_RACING','KF_SIGMA', 'KF_SIGMA_DDM', 'KF_SIGMA_RACING', 'obs_means_logistic', 'obs_means_logistic_DDM', 'obs_means_logistic_RACING'
         MDP.field = {'side_bias'}; % Determine which parameters to fit
@@ -68,7 +79,6 @@ function [output_table] = Social_wrapper()
     addpath(['./SPM_models/']);
     addpath(['./racing_accumulator/']);
     addpath(['./plotting/']);
-    addpath(['./data_processing/']);
     addpath([root '/rsmith/all-studies/util/spm12/']);
     addpath([root '/rsmith/all-studies/util/spm12/toolbox/DEM/']);
 
@@ -167,9 +177,10 @@ function [output_table] = Social_wrapper()
 
     % display the MDP.params
     disp(MDP.params)
-        
-    [raw_data,subject_data_info] = get_raw_data(root,experiment,room,id);
-    processed_data = process_behavioral_data_SM(raw_data);
+
+
+    [processed_data,raw_data,subject_data_info] =  process_data_across_studies(root, study_info);
+
 
     % Getting free choices from empirical data
     if EMPIRICAL

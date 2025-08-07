@@ -1,4 +1,4 @@
-function [raw_data,subject_data_info] = get_raw_data(root,study,room_type,id)
+function [raw_data,subject_data_info] = get_raw_data_SM(root,study,room_type,id)
     % Clean up files and concatenate for fitting
     files = {};
     subs = {id};
