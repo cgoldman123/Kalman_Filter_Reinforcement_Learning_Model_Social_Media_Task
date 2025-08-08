@@ -27,6 +27,10 @@ function plot_sweep_rt(simmed_model_output,study_info)
     all_colors = lines(numel(choice_nums) * numel(horizons));
 
     % Prepare axes
+
+  if contains(sweep_param, '_')
+      sweep_param = strrep(sweep_param, '_', ' ');
+  end
     ax = axes(fig); hold on;
     xlabel(ax, sweep_param);
     ylabel(ax, 'Reaction Time');
