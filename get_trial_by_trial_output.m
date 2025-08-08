@@ -14,7 +14,7 @@ function trial_by_trial_output = get_trial_by_trial_output(model_output, subject
     experiment_col  = repmat({subject_data_info.experiment}, num_games * num_trials, 1);
     run_col  = repmat({subject_data_info.run}, num_games * num_trials, 1);
     room_col   = repmat({subject_data_info.room_type}, num_games * num_trials, 1);
-    cb_col     = repmat(subject_data_info.cb, num_games * num_trials, 1);
+    cb_col     = repmat({subject_data_info.cb}, num_games * num_trials, 1);
     
     % Create game and trial indices
     game_col   = repelem((1:num_games)', num_trials);

@@ -28,7 +28,7 @@ function     [processed_data,raw_data,subject_data_info] = process_data_across_s
     end
 
     % Fill in empty fields of suject_data_info
-    fields_to_check = {'experiment', 'condition', 'room_type', 'run','has_practice_effects'};
+    fields_to_check = {'experiment', 'condition', 'room_type', 'run','has_practice_effects','cb'};
     for i = 1:numel(fields_to_check)
         if ~isfield(subject_data_info, fields_to_check{i})
             subject_data_info.(fields_to_check{i}) = '';

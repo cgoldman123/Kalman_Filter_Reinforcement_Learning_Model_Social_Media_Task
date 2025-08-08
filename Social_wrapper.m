@@ -10,7 +10,7 @@ function [output_table] = Social_wrapper()
         MDP.fit_model = 1; % Toggle on to fit the model to empirical data.
         % If fitting the model
         if MDP.fit_model
-            MDP.do_simulated_model_free = 1; % Toggle on to do model-free analyses on data simulated using posterior parameter estimates of model.
+            MDP.do_simulated_model_free = 0; % Toggle on to do model-free analyses on data simulated using posterior parameter estimates of model.
             MDP.plot_fitted_behavior = 1; % Toggle on to plot behavior after model fitting.
             MDP.save_trial_by_trial_output = 1;  % Toggle on to save trial by trial model latents (e.g., prediction errors) and behavioral data (e.g., reaction times).
         end
@@ -40,7 +40,7 @@ function [output_table] = Social_wrapper()
         if ispc; root = 'L:/';end
         if ismac; root = '/Volumes/labs/';end
         
-        study_info.study = 'adm'; % 'wellbeing', 'exercise', 'cobre_neut', 'adm', 'eit'
+        study_info.study = 'cobre_neut'; % 'wellbeing', 'exercise', 'cobre_neut', 'adm', 'eit'
 
         %%%%% Specify the data to process for the wellbeing study
         if strcmp(study_info.study,'wellbeing')
@@ -141,12 +141,12 @@ function [output_table] = Social_wrapper()
             'cong_base_info_bonus', 0, 'incong_base_info_bonus', 0, 'cong_directed_exp', 0, 'incong_directed_exp', 0, ...
             'random_exp', 5, 'sigma_r', 8, 'sigma_d',0,'initial_sigma', 10000, 'decision_thresh_baseline', 3, 'rdiff_bias_mod', 0.05);
         MDP.max_rt = 7;
-        MDP.num_choices_to_fit = 5; % fit/sim first free choice (1) or all choices (5)
+        MDP.num_choices_to_fit = 6; % fit/sim first free choice (1) or all choices (5 or 6)
     elseif strcmp(model, 'KF_SIGMA')
         MDP.params = struct('reward_sensitivity', 1, 'initial_mu', 50, 'side_bias', 0, 'baseline_noise', 5, ...
             'cong_base_info_bonus', 0, 'incong_base_info_bonus', 0, 'cong_directed_exp', 0, 'incong_directed_exp', 0, ...
             'random_exp', 5, 'sigma_r', 8, 'sigma_d',0,'initial_sigma', 10000);
-        MDP.num_choices_to_fit = 5; % fit/sim first free choice (1) or all choices (5)
+        MDP.num_choices_to_fit = 6; % fit/sim first free choice (1) or all choices (5 or 6)
 
     elseif strcmp(model, 'KF_SIGMA_RACING')
         MDP.params = struct('reward_sensitivity', 1, 'initial_mu', 50, 'side_bias', 0, 'baseline_noise', 5, ...
@@ -155,7 +155,7 @@ function [output_table] = Social_wrapper()
             'starting_bias_baseline', 0.5, 'drift_baseline', 0, 'drift_reward_diff_mod', 0.1, ...
             'starting_bias_reward_diff_mod', 0.1, 'wd', 0.05, 'ws', 0.05, 'V0', 0);
         MDP.max_rt = 7;
-        MDP.num_choices_to_fit = 5; % fit/sim first free choice (1) or all choices (5)
+        MDP.num_choices_to_fit = 6; % fit/sim first free choice (1) or all choices (5 or 6)
 
     elseif strcmp(model, 'KF_SIGMA_logistic')
         MDP.params = struct('reward_sensitivity', 1, 'initial_mu', 50, 'sigma_r', 8, 'sigma_d',0,'initial_sigma', 10000, ...
