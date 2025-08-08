@@ -413,10 +413,32 @@ Make sure that you have SPM12 installed and added to your MATLAB path. Additiona
 
 ---
 
-## Notes
 
-* You do **not** need to edit below the "DO NOT EDIT" line unless modifying models themselves.
-* Random seed is set for reproducibility (`rng(23)`).
+## Legacy Scripts
+
+The `/legacy` folder contains alternative and historical analysis pipelines, including both MATLAB and Python implementations for fitting and simulating behavioral models. In the legacy folder, Social_wrapper.m is the starting point for fitting models using these methods. 
+
+### `/legacy/PyDDM_scripts/`
+
+This folder contains Python scripts for modeling the Horizon Task using the [`pyddm`](https://pyddm.readthedocs.io/en/latest/) package:
+
+* **`fit_pyddm_social_media.py`** – Loads behavioral data from the Social Media variant of the Horizon Task, reformats it into a `pyddm.Sample`, and fits a **Kalman Filter + Drift Diffusion Model (KF-DDM)** to choice and reaction time data.  
+  * Supports different fitting settings (e.g., fit all RTs vs. first 3 RTs; fit using JSD or z-scored RTs).
+  * Saves fitted parameter estimates, model outputs (choice probabilities, RT PDFs, prediction errors, uncertainty measures), and simulation recoverability results to `.mat` files for further analysis.
+  * Produces trial-by-trial simulated behavior based on the fitted parameters.
+
+* **`simulate_pyddm_social_media.py`** – Simulates behavior from a KF-DDM model without fitting to new data, using predefined or swept parameter values.  
+  * Generates and plots model-free statistics such as mean RT by reward difference, choice number, and horizon.
+  * Can sweep over a specified model parameter to examine its effect on choice behavior, information seeking, and RTs.
+  * Includes options to:
+    * Simulate using the **maximum of the predicted choice×RT distribution** or sampling multiple times from the distribution.
+    * Plot latent states (e.g., total uncertainty, reward difference, Jensen–Shannon divergence) by horizon and choice number.
+
+### VBA Toolbox Models
+
+In addition to the PyDDM pipelines, the `/legacy` folder includes MATLAB scripts for fitting models using the [VBA Toolbox](https://mbb-team.github.io/VBA-toolbox/).  
+The VBA Toolbox implements **Variational Bayes Analysis** for fitting hierarchical and single-subject models, providing a flexible alternative to PyDDM for the Horizon Task data.
 
 ---
+
 
