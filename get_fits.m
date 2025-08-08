@@ -1,7 +1,8 @@
 function output = get_fits(root, processed_data, subject_data_info, results_dir, MDP)
     id = subject_data_info.id;
     room_type = subject_data_info.room_type;
-    study = subject_data_info.study;
+    
+
     timestamp = datestr(datetime('now'), 'mm_dd_yy_THH-MM-SS');
     
     
@@ -16,16 +17,26 @@ function output = get_fits(root, processed_data, subject_data_info, results_dir,
 
         % Assemble .mat object to save
         model_output.id = id; 
+        model_output.study = subject_data_info.study;
         model_output.room_type = room_type;
         model_output.cb = subject_data_info.cb;
+        model_output.experiment = subject_data_info.experiment;
+        model_output.run = subject_data_info.run;
+        model_output.condition = subject_data_info.condition;
+        
         model_output.raw_behavioral_file = subject_data_info.behavioral_file_path;
         save(sprintf([results_dir 'model_output_%s_%s_%s.mat'], id, room_type, timestamp),'model_output');
     
         % Assemble fits table to save as CSV
         fits_table.id = id;
+        fits_table.study = subject_data_info.study;
         fits_table.cb = subject_data_info.cb;
-        fits_table.has_practice_effects = subject_data_info.has_practice_effects;
         fits_table.room_type = room_type;
+        fits_table.experiment = subject_data_info.experiment;
+        fits_table.run = subject_data_info.run;
+        fits_table.condition = subject_data_info.condition;
+
+        fits_table.has_practice_effects = subject_data_info.has_practice_effects;
         fits_table.model = func2str(MDP.model);
         fits_table.raw_behavioral_file = subject_data_info.behavioral_file_path;
        
@@ -53,7 +64,7 @@ function output = get_fits(root, processed_data, subject_data_info, results_dir,
     end
     if MDP.fit_model
         if MDP.do_simulated_model_free 
-            simulated_model_free = social_model_free(root,subject_data_info.behavioral_file_path,room_type,study,model_output.simfit_DCM.processed_data);
+            simulated_model_free = social_model_free(processed_data,model_output.simfit_DCM.processed_data);
         end
     end
     

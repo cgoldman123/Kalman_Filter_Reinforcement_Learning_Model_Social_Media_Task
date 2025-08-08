@@ -1,4 +1,4 @@
-function [all_data, subject_data_info] = Social_merge(root,ids, files, room_type, study)        
+function [all_data, subject_data_info] = Berg_merge(root,ids, files, room_type, study)        
     
     % Note that the ids argument will be as long as the
     % total number of files for all subjects (in the files argument). So there may be 
@@ -34,30 +34,44 @@ function [all_data, subject_data_info] = Social_merge(root,ids, files, room_type
         for j = 1:numel(file)
             if ~success
                 if strcmp(study,'local')
-                    % determine if cb=1 or cb=2; CB1 contains like first,
-                    % CB2 contains dislike first
                     filename = file{j};
                     if contains(filename, '_R1-')
-                        schedule = readtable([root 'rsmith/wellbeing/tasks/SocialMedia/schedules/sm_distributed_schedule_CB1.csv']);
-                        cb = 1;
-                    else % CB2 will contain _R3-
-                        schedule = readtable([root 'rsmith/wellbeing/tasks/SocialMedia/schedules/sm_distributed_schedule_CB2.csv']);
-                        cb = 2;
+                        % Define path
+                        file = [root 'rsmith/lab-members/osanchez/wellbeing/social_media/Kalman_Filter_Model_Horizon_Task_Berg/Berg_schedules/horizon_local_modified_v2_9-10-24.csv'];
+                        opts = detectImportOptions(file);
+                        opts = setvaropts(opts, opts.VariableNames, 'Type', 'char');
+                        opts.Delimiter = ',';
+                        opts = setvaropts(opts, opts.VariableNames, 'QuoteRule', 'keep');
+                        
+                        % Read table
+                        % Read and split
+                        schedule_unprocessed = readtable(file, opts);
+                        schedule = table();
+                        temp = erase(schedule_unprocessed.Var2, '"');
+                        parts = split(temp, "_");
+
+                        game_type_num = str2double(parts(:,2)); % game type indicator(5 = horizon 1, h10 = horizon 6)
+                        temp_trial_num = erase(schedule_unprocessed.Var1, '"');
+                        schedule.trial_num     = str2double(temp_trial_num);
+                        
+                        schedule.game_number   = str2double(parts(:, 3));
+                        schedule.dislike_room  = str2double(parts(:, 1));
+                        schedule.forced_choice = parts(:, 4);
+                        schedule.game_type = repmat({'h1'}, height(schedule), 1);
+                        schedule.game_type(game_type_num == 10) = {'h6'};
+                       
+                        temp = erase(schedule_unprocessed.Var5, '"');
+                        rewards = split(temp, "_"); %left - right reward values
+                        
+                        schedule.left_reward  = str2double(rewards(:, 1));
+                        schedule.right_reward = str2double(rewards(:, 2));
+
+                        clear game_type_num
+                        clear temp_trial_num
+                        clear temp
+                        clear rewards
                     end
-                    [all_data{i},started_this_game] = Social_local_parse(filename, schedule, room_type, study);  
-                elseif strcmp(study,'prolific')
-                    % determine if cb=1 or cb=2; CB1 contains like first,
-                    % CB2 contains dislike first
-                    filename = file{j};
-                    if contains(filename, '_CB_')
-                        cb = 2;
-                        schedule = readtable([root 'rsmith/wellbeing/tasks/SocialMedia/schedules/sm_distributed_schedule_CB2.csv']);
-                    else
-                        schedule = readtable([root 'rsmith/wellbeing/tasks/SocialMedia/schedules/sm_distributed_schedule_CB1.csv']);
-                        cb = 1;
-                    end
-                    % note how we still use social_local_parse for prolific
-                    [all_data{i},started_this_game] = Social_local_parse(filename, schedule, room_type, study);  
+                    [all_data{i},started_this_game] = Berg_local_parse(filename, schedule, room_type, study);   
                 end
                 has_started_a_game = has_started_a_game+started_this_game;
             else
@@ -68,7 +82,7 @@ function [all_data, subject_data_info] = Social_merge(root,ids, files, room_type
             
             % this is a good file if it is complete and there are no
             % practice effects
-            if((size(all_data{i}, 1) == 40) && (sum(all_data{i}.gameLength) == 280) && (has_started_a_game <= 1))
+            if((size(all_data{i}, 1) == 40) && (sum(all_data{i}.gameLength) == 300) && (has_started_a_game <= 1))
                 good_index = [good_index i];
                 good_file = filename;
                 success=1;
@@ -78,7 +92,6 @@ function [all_data, subject_data_info] = Social_merge(root,ids, files, room_type
             
             subject_data_info.id = id;
             subject_data_info.has_practice_effects = has_started_a_game > 1;
-            subject_data_info.cb = cb;
         end
     end
     
@@ -95,7 +108,7 @@ function [all_data, subject_data_info] = Social_merge(root,ids, files, room_type
 
     % Step 1: Initialize an empty table to hold the new structure
     num_games = 40; % There are 40 games
-    max_trials = 9; % Max number of trials per game
+    max_trials = 10; % Max number of trials per game
     reward_schedule = array2table(NaN(num_games, max_trials * 2), ...
         'VariableNames', [strcat('mu1_reward', string(1:max_trials)), ...
                           strcat('mu2_reward', string(1:max_trials))]);

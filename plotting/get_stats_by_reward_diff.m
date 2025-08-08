@@ -1,7 +1,13 @@
 
 function summary_table = get_stats_by_reward_diff(MDP, simmed_model_output)
-    left_means = mean(MDP.processed_data.bandit1_schedule(:,1:4), 2); % get mean of forced choices on left
-    right_means = mean(MDP.processed_data.bandit2_schedule(:,1:4), 2); % get mean of forced choices on right
+    % Get generative mean diffs
+    if isfield(MDP.processed_data, 'bandit1_mean') && isfield(MDP.processed_data,'bandit2_mean')
+        left_means = MDP.processed_data.bandit1_mean; % get gen mean
+        right_means = MDP.processed_data.bandit2_mean; % get gen mean
+    else
+        left_means = mean(MDP.processed_data.bandit1_schedule(:,1:4), 2); % get mean of forced choices on left
+        right_means = mean(MDP.processed_data.bandit2_schedule(:,1:4), 2); % get mean of forced choices on right
+    end
     gen_mean_diff = round(right_means - left_means);
     % Get unique values and preallocate
     [unique_rdiffs, ~, idx_rdiff] = unique(gen_mean_diff);

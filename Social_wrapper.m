@@ -6,7 +6,7 @@ function [output_table] = Social_wrapper()
     EMPIRICAL = 1; % Indicate if analyzing empirical choices (1) or simulated choices (0).
     % Using empirical choices!
     if EMPIRICAL
-        MDP.do_model_free = 1; % Toggle on to do model-free analyses on empirical data.
+        MDP.do_model_free = 0; % Toggle on to do model-free analyses on empirical data.
         MDP.fit_model = 1; % Toggle on to fit the model to empirical data.
         % If fitting the model
         if MDP.fit_model
@@ -36,9 +36,12 @@ function [output_table] = Social_wrapper()
     rng(23);
     
     % If running this code locally
-    if ispc
-        root = 'L:/';
-        study_info.study = 'exercise'; % 'wellbeing', 'exercise', 'cobre_neut', 'adm', 'eit'
+    if ispc || ismac
+        if ispc; root = 'L:/';end
+        if ismac; root = '/Volumes/labs/';end
+        
+        study_info.study = 'adm'; % 'wellbeing', 'exercise', 'cobre_neut', 'adm', 'eit'
+
         %%%%% Specify the data to process for the wellbeing study
         if strcmp(study_info.study,'wellbeing')
             study_info.experiment = 'local'; % indicate local or prolific
@@ -50,23 +53,44 @@ function [output_table] = Social_wrapper()
             study_info.room = 'Like';
             results_dir = sprintf([root 'rsmith/lab-members/cgoldman/Wellbeing/social_media/output/test/']); % Specify directory to save results
             addpath('./data_processing/wellbeing_data_processing/');
+
         %%%% Specify the data to process for the exercise study
         elseif strcmp(study_info.study,'exercise')
             study_info.id = 'AK465'; 
             study_info.run = 'T1';% specify T1, T2, T3, or T4
             study_info.room = 'Like';
             addpath('./data_processing/exercise_study_data_processing/');
+            results_dir = sprintf([root 'rsmith/lab-members/cgoldman/savitz_exercise_study/results/']); % Specify directory to save results
+
         %%%% Specify the data to process for the cobre_neut study
         elseif strcmp(study_info.study,'cobre_neut')
+            study_info.id = 'CA038'; 
+            study_info.room = 'Like';
+            addpath('./data_processing/cobre_neut_data_processing/');
+            results_dir = sprintf([root 'rsmith/lab-members/cgoldman/Berg_horizon_task/results/']); % Specify directory to save results
+
         %%%% Specify the data to process for the adm study
         elseif strcmp(study_info.study,'adm')
             study_info.id = 'AA022'; 
             study_info.condition = 'unloaded';% specify loaded or unloaded
             addpath('./data_processing/adm_data_processing/');
+            results_dir = sprintf([root 'rsmith/lab-members/cgoldman/adm/horizon/updated_modeling_results/test/']); % Specify directory to save results
+        
         %%%% Specify the data to process for the eit study
         elseif strcmp(study_info.study,'eit')
-
+            study_info.id = 'sub1';
+            addpath('./data_processing/EIT_data_processing/');
+            results_dir = sprintf([root 'rsmith/lab-members/cgoldman/EIT_horizon/output/test/']); % Specify directory to save results
         end
+
+        % Fill in missing study_info variables with ''
+        fields_to_check = {'experiment', 'condition', 'room', 'run'};
+        for i = 1:numel(fields_to_check)
+            if ~isfield(study_info, fields_to_check{i})
+                study_info.(fields_to_check{i}) = '';
+            end
+        end
+
         
         % Indicate the model to fit or simulate
         model = "KF_SIGMA"; % Possible models: 'KF_SIGMA_logistic','KF_SIGMA_logistic_DDM', 'KF_SIGMA_logistic_RACING','KF_SIGMA', 'KF_SIGMA_DDM', 'KF_SIGMA_RACING', 'obs_means_logistic', 'obs_means_logistic_DDM', 'obs_means_logistic_RACING'
@@ -76,9 +100,11 @@ function [output_table] = Social_wrapper()
     elseif isunix
         root = '/media/labs/'
         results_dir = getenv('RESULTS')   
-        room = getenv('ROOM') 
-        experiment = getenv('EXPERIMENT')
-        id = getenv('ID')
+        study_info.room = getenv('ROOM') 
+        study_info.experiment = getenv('EXPERIMENT')
+        study_info.condition = getenv('CONDITION')
+        study_info.run = getenv('RUN')
+        study_info.id = getenv('ID')
         model = getenv('MODEL')
         MDP.field = strsplit(getenv('FIELD'), ',')
     end
