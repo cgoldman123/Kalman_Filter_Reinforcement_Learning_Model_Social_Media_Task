@@ -38,28 +38,36 @@ function [output_table] = Social_wrapper()
     % If running this code locally
     if ispc
         root = 'L:/';
-        study_info.study = 'wellbeing'; % 'wellbeing', 'exercise', 'cobre_neut', 'adm', 'eit'
+        study_info.study = 'exercise'; % 'wellbeing', 'exercise', 'cobre_neut', 'adm', 'eit'
         %%%%% Specify the data to process for the wellbeing study
         if strcmp(study_info.study,'wellbeing')
+            study_info.experiment = 'local'; % indicate local or prolific
             if strcmp(study_info.experiment,'prolific')
                 study_info.id = '568d0641b5a2c2000cb657d0';
             elseif strcmp(study_info.experiment,'local')
                 study_info.id = 'AV841';
             end
-            study_info.experiment = 'local'; % indicate local or prolific
+            study_info.room = 'Like';
             results_dir = sprintf([root 'rsmith/lab-members/cgoldman/Wellbeing/social_media/output/test/']); % Specify directory to save results
-            addpath(['./data_processing/wellbeing_data_processing/']);
+            addpath('./data_processing/wellbeing_data_processing/');
         %%%% Specify the data to process for the exercise study
         elseif strcmp(study_info.study,'exercise')
+            study_info.id = 'AK465'; 
+            study_info.run = 'T1';% specify T1, T2, T3, or T4
+            study_info.room = 'Like';
+            addpath('./data_processing/exercise_study_data_processing/');
         %%%% Specify the data to process for the cobre_neut study
         elseif strcmp(study_info.study,'cobre_neut')
         %%%% Specify the data to process for the adm study
         elseif strcmp(study_info.study,'adm')
+            study_info.id = 'AA022'; 
+            study_info.condition = 'unloaded';% specify loaded or unloaded
+            addpath('./data_processing/adm_data_processing/');
         %%%% Specify the data to process for the eit study
         elseif strcmp(study_info.study,'eit')
 
         end
-        study_info.room = 'Like';
+        
         % Indicate the model to fit or simulate
         model = "KF_SIGMA"; % Possible models: 'KF_SIGMA_logistic','KF_SIGMA_logistic_DDM', 'KF_SIGMA_logistic_RACING','KF_SIGMA', 'KF_SIGMA_DDM', 'KF_SIGMA_RACING', 'obs_means_logistic', 'obs_means_logistic_DDM', 'obs_means_logistic_RACING'
         MDP.field = {'side_bias'}; % Determine which parameters to fit
@@ -76,9 +84,10 @@ function [output_table] = Social_wrapper()
     end
     
     % Add libraries
-    addpath(['./SPM_models/']);
-    addpath(['./racing_accumulator/']);
-    addpath(['./plotting/']);
+    addpath('./SPM_models/');
+    addpath('./data_processing/');
+    addpath('./racing_accumulator/');
+    addpath('./plotting/');
     addpath([root '/rsmith/all-studies/util/spm12/']);
     addpath([root '/rsmith/all-studies/util/spm12/toolbox/DEM/']);
 
