@@ -21,7 +21,7 @@ function [output_table] = Social_wrapper()
         MDP.do_plot_choice_given_gen_mean = 1; % Toggle on to plot simulated behavior for games of a specific generative mean and horizon (specified below).
         % If plotting simulated data, decide if doing parameter sweep.
         if MDP.do_plot_model_statistics         
-            MDP.param_to_sweep = ''; % Specify the name of the parameter name to sweep over or leave this empty to not sweep.
+            MDP.param_to_sweep = 'side_bias'; % Specify the name of the parameter name to sweep over or leave this empty to not sweep.
             MDP.param_values_to_sweep_over = linspace(-20, 20, 5); % Specify the values of the parameter to sweep over
         end
         % If plotting simulated data for a given game type
@@ -40,7 +40,7 @@ function [output_table] = Social_wrapper()
         if ispc; root = 'L:/';end
         if ismac; root = '/Volumes/labs/';end
         
-        study_info.study = 'cobre_neut'; % 'wellbeing', 'exercise', 'cobre_neut', 'adm', 'eit'
+        study_info.study = 'eit'; % 'wellbeing', 'exercise', 'cobre_neut', 'adm', 'eit'
 
         %%%%% Specify the data to process for the wellbeing study
         if strcmp(study_info.study,'wellbeing')

@@ -218,7 +218,7 @@ function L = spm_mdp_L(P,M,U,Y)
         % after accounting for invalid RTs
         % calculate number of total choices to fit since half of games were
         % H1 and half were H5
-        num_total_choices_to_fit = mdp.num_choices_to_fit*mdp.processed_data.num_games/2 + mdp.processed_data.num_games/2;
+        num_total_choices_to_fit = sum(mdp.processed_data.horizon_type == 1) + sum(mdp.processed_data.horizon_type == 2) * mdp.processed_data.num_free_choices_big_hor;
         invalid_rts = model_output.num_invalid_rts;
         if sum(~isnan(model_output.action_probs),'all') ~= (num_total_choices_to_fit-invalid_rts)
             error("Error! NaNs encountered in the log likelihood!");
@@ -229,7 +229,7 @@ function L = spm_mdp_L(P,M,U,Y)
         % Make sure that there were no NaN values in the log likelihood
         % calculate number of total choices to fit since half of games were
         % H1 and half were H5
-        num_total_choices_to_fit = mdp.num_choices_to_fit*mdp.processed_data.num_games/2 + mdp.processed_data.num_games/2;
+        num_total_choices_to_fit = sum(mdp.processed_data.horizon_type == 1) + sum(mdp.processed_data.horizon_type == 2) * mdp.processed_data.num_free_choices_big_hor;
         if sum(~isnan(model_output.action_probs),'all') ~= num_total_choices_to_fit
             error("Error! NaNs encountered in the log likelihood!");
         end
