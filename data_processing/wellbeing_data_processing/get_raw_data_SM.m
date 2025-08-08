@@ -1,9 +1,9 @@
-function [raw_data,subject_data_info] = get_raw_data_SM(root,study,room_type,id)
+function [raw_data,subject_data_info] = get_raw_data_SM(root,experiment,room_type,id)
     % Clean up files and concatenate for fitting
     files = {};
     subs = {id};
     
-    if strcmp(study, 'prolific')
+    if strcmp(experiment, 'prolific')
         file_path = fullfile(root, 'NPC/DataSink/StimTool_Online/WB_Social_Media/');
         SM_directory = dir(file_path);
         index_array = find(arrayfun(@(n) contains(SM_directory(n).name, strcat('social_media_',id)),1:numel(SM_directory)));
@@ -23,7 +23,7 @@ function [raw_data,subject_data_info] = get_raw_data_SM(root,study,room_type,id)
         if exist('file_index', 'var') & exist('file_index_cb', 'var')
             error("Participant has files for CB1 and CB2");
         end
-    elseif strcmp(study, 'local')
+    elseif strcmp(experiment, 'local')
         sink = [root 'rsmith/wellbeing/data/raw/'];
         all_subfolders = dir(sink);
         % Filter to find the subfolder for this ID
@@ -46,8 +46,8 @@ function [raw_data,subject_data_info] = get_raw_data_SM(root,study,room_type,id)
     end
     
     
-    [raw_data, subject_data_info] = Social_merge(root,subs, files, room_type, study);
-    subject_data_info.study = study;
+    [raw_data, subject_data_info] = Social_merge(root,subs, files, room_type, experiment);
+    subject_data_info.experiment = experiment;
     subject_data_info.room_type = room_type;
     
 end

@@ -6,8 +6,8 @@ function [output_table] = Social_wrapper()
     EMPIRICAL = 1; % Indicate if analyzing empirical choices (1) or simulated choices (0).
     % Using empirical choices!
     if EMPIRICAL
-        MDP.do_model_free = 1; % Toggle on to do model-free analyses on empirical data.
-        MDP.fit_model = 0; % Toggle on to fit the model to empirical data.
+        MDP.do_model_free = 0; % Toggle on to do model-free analyses on empirical data.
+        MDP.fit_model = 1; % Toggle on to fit the model to empirical data.
         % If fitting the model
         if MDP.fit_model
             MDP.do_simulated_model_free = 1; % Toggle on to do model-free analyses on data simulated using posterior parameter estimates of model.
@@ -82,6 +82,15 @@ function [output_table] = Social_wrapper()
             addpath('./data_processing/EIT_data_processing/');
             results_dir = sprintf([root 'rsmith/lab-members/cgoldman/EIT_horizon/output/test/']); % Specify directory to save results
         end
+
+        % Fill in missing study_info variables with ''
+        fields_to_check = {'experiment', 'condition', 'room', 'run'};
+        for i = 1:numel(fields_to_check)
+            if ~isfield(study_info, fields_to_check{i})
+                study_info.(fields_to_check{i}) = '';
+            end
+        end
+
         
         % Indicate the model to fit or simulate
         model = "KF_SIGMA"; % Possible models: 'KF_SIGMA_logistic','KF_SIGMA_logistic_DDM', 'KF_SIGMA_logistic_RACING','KF_SIGMA', 'KF_SIGMA_DDM', 'KF_SIGMA_RACING', 'obs_means_logistic', 'obs_means_logistic_DDM', 'obs_means_logistic_RACING'
