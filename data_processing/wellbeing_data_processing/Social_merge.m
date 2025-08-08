@@ -1,4 +1,4 @@
-function [all_data, subject_data_info] = Social_merge(ids, files, room_type, study)        
+function [all_data, subject_data_info] = Social_merge(root,ids, files, room_type, study)        
     
     % Note that the ids argument will be as long as the
     % total number of files for all subjects (in the files argument). So there may be 
@@ -11,11 +11,6 @@ function [all_data, subject_data_info] = Social_merge(ids, files, room_type, stu
     % complete and there are no practice effects (i.e., the subject did not
     % previously start the game). Files are in date order.
     
-    if ispc
-        root = 'L:/';
-    else
-        root = '/media/labs/';
-    end
     
     
     

@@ -41,6 +41,7 @@ function [output_table] = Social_wrapper()
         if ismac; root = '/Volumes/labs/';end
         
         study_info.study = 'adm'; % 'wellbeing', 'exercise', 'cobre_neut', 'adm', 'eit'
+
         %%%%% Specify the data to process for the wellbeing study
         if strcmp(study_info.study,'wellbeing')
             study_info.experiment = 'local'; % indicate local or prolific
@@ -52,6 +53,7 @@ function [output_table] = Social_wrapper()
             study_info.room = 'Like';
             results_dir = sprintf([root 'rsmith/lab-members/cgoldman/Wellbeing/social_media/output/test/']); % Specify directory to save results
             addpath('./data_processing/wellbeing_data_processing/');
+
         %%%% Specify the data to process for the exercise study
         elseif strcmp(study_info.study,'exercise')
             study_info.id = 'AK465'; 
@@ -62,6 +64,9 @@ function [output_table] = Social_wrapper()
 
         %%%% Specify the data to process for the cobre_neut study
         elseif strcmp(study_info.study,'cobre_neut')
+            study_info.id = 'CA038'; 
+            study_info.room = 'Like';
+            addpath('./data_processing/cobre_neut_data_processing/');
             results_dir = sprintf([root 'rsmith/lab-members/cgoldman/Berg_horizon_task/results/']); % Specify directory to save results
 
         %%%% Specify the data to process for the adm study
@@ -70,6 +75,7 @@ function [output_table] = Social_wrapper()
             study_info.condition = 'unloaded';% specify loaded or unloaded
             addpath('./data_processing/adm_data_processing/');
             results_dir = sprintf([root 'rsmith/lab-members/cgoldman/adm/horizon/updated_modeling_results/test/']); % Specify directory to save results
+        
         %%%% Specify the data to process for the eit study
         elseif strcmp(study_info.study,'eit')
             study_info.id = 'sub1';
