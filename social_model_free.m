@@ -5,8 +5,14 @@ function ff = social_model_free(processed_data, simulated_data)
     num_choices_big_hor = num_forced_choices + num_free_choices_big_hor;
 
     % Get generative mean diffs
-    left_means = mean(processed_data.bandit1_schedule(:,1:4), 2); % get mean of forced choices on left
-    right_means = mean(processed_data.bandit2_schedule(:,1:4), 2); % get mean of forced choices on right
+    if isfield(processed_data, 'bandit1_mean') && isfield(processed_data,'bandit2_mean')
+        left_means = processed_data.bandit1_mean; % get gen mean
+        right_means = processed_data.bandit2_mean; % get gen mean
+    else
+        left_means = mean(processed_data.bandit1_schedule(:,1:4), 2); % get mean of forced choices on left
+        right_means = mean(processed_data.bandit2_schedule(:,1:4), 2); % get mean of forced choices on right
+    end
+
     gen_mean_diff = round(right_means - left_means);
     % Get unique values and preallocate
     [unique_rdiffs, ~, idx_rdiff] = unique(gen_mean_diff);
@@ -123,7 +129,7 @@ function ff = social_model_free(processed_data, simulated_data)
         end
         % Compute average probability of choosing left given gen mean
         % difference
-        ff.(['small_hor_left_' mean_diff_char(end-1:end) '_' more_or_less '_prob']) = sum_val / n;
+        ff.(['small_hor_13_left_' mean_diff_char(end-1:end) '_' more_or_less '_prob']) = sum_val / n;
         
         % Do this for big horizon
         % Filter data based on matching mean_diff
@@ -131,7 +137,7 @@ function ff = social_model_free(processed_data, simulated_data)
         % Loop through the free choices 
         for free_choice_num = 1:num_free_choices_big_hor
             col_idx = free_choice_num + 4; % maps free_choice_num = 1 to key(5), etc.
-            fieldname = sprintf('big_hor_left_%s_%s_choice_%d_prob',mean_diff_char(end-1:end), more_or_less, free_choice_num);        
+            fieldname = sprintf('big_hor_13_left_%s_%s_choice_%d_prob',mean_diff_char(end-1:end), more_or_less, free_choice_num);        
             n = numel(filtered_dat); % Get number of games
             sum_val = 0; % Initialize counter for times chose left
             % Loop through each element and check if the free choice key is 1

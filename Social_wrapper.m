@@ -7,7 +7,7 @@ function [output_table] = Social_wrapper()
     % Using empirical choices!
     if EMPIRICAL
         MDP.do_model_free = 1; % Toggle on to do model-free analyses on empirical data.
-        MDP.fit_model = 1; % Toggle on to fit the model to empirical data.
+        MDP.fit_model = 0; % Toggle on to fit the model to empirical data.
         % If fitting the model
         if MDP.fit_model
             MDP.do_simulated_model_free = 1; % Toggle on to do model-free analyses on data simulated using posterior parameter estimates of model.
@@ -40,7 +40,7 @@ function [output_table] = Social_wrapper()
         if ispc; root = 'L:/';end
         if ismac; root = '/Volumes/labs/';end
         
-        study_info.study = 'eit'; % 'wellbeing', 'exercise', 'cobre_neut', 'adm', 'eit'
+        study_info.study = 'adm'; % 'wellbeing', 'exercise', 'cobre_neut', 'adm', 'eit'
         %%%%% Specify the data to process for the wellbeing study
         if strcmp(study_info.study,'wellbeing')
             study_info.experiment = 'local'; % indicate local or prolific
