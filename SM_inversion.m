@@ -220,7 +220,7 @@ function L = spm_mdp_L(P,M,U,Y)
         % H1 and half were H5
         num_total_choices_to_fit = sum(mdp.processed_data.horizon_type == 1) + sum(mdp.processed_data.horizon_type == 2) * mdp.processed_data.num_free_choices_big_hor;
         invalid_rts = model_output.num_invalid_rts;
-        if sum(~isnan(model_output.action_probs),'all') ~= (num_total_choices_to_fit-invalid_rts)
+        if sum(~isnan(model_output.rt_pdf),'all') ~= (num_total_choices_to_fit-invalid_rts)
             error("Error! NaNs encountered in the log likelihood!");
         end
         log_probs = log(model_output.rt_pdf+eps);
