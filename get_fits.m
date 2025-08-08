@@ -1,7 +1,13 @@
 function output = get_fits(root, processed_data, subject_data_info, results_dir, MDP)
     id = subject_data_info.id;
-    room_type = subject_data_info.room_type;
-    study = subject_data_info.study;
+    room_type = '';
+    if isfield(subject_data_info, 'room_type')
+        room_type = subject_data_info.room_type;
+    end
+    study = '';
+    if isfield(subject_data_info, 'study')
+        study = subject_data_info.study;
+    end
     timestamp = datestr(datetime('now'), 'mm_dd_yy_THH-MM-SS');
     
     

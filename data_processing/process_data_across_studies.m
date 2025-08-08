@@ -12,11 +12,13 @@ function     [processed_data,raw_data,subject_data_info] = process_data_across_s
     %%%% Specify the data to process for the adm study
     elseif strcmp(study_info.study,'adm')
         group_list = readtable("./data_processing/adm_data_processing/group_list.csv"); % hor_task_counterbalance- 1: loaded first, 2: unloaded first
-        [sub_table, subject_data_info] = get_raw_data_ADM(root, study_info.id, group_list, study_info.condition);
-        processed_data = process_behavioral_data_ADM(sub_table);
+        [raw_data, subject_data_info] = get_raw_data_ADM(root, study_info.id, group_list, study_info.condition);
+        processed_data = process_behavioral_data_ADM(raw_data);
     %%%% Specify the data to process for the eit study
     elseif strcmp(study_info.study,'eit')
-
+        group_list = readtable("./data_processing/EIT_data_processing/EIT_subject_and_notes.csv"); % hor_task_counterbalance- 1: loaded first, 2: unloaded first
+        [raw_data, subject_data_info] = get_raw_data_EIT(root, study_info.id, group_list);
+        processed_data = process_behavioral_data_EIT(raw_data);
     end
 
 end
