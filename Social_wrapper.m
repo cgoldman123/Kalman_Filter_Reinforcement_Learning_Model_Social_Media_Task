@@ -6,7 +6,7 @@ function [output_table] = Social_wrapper()
     dbstop if error;
     clearvars -except varargin
 
-    EMPIRICAL = 0; % Indicate if analyzing empirical choices (1) or simulated choices (0).
+    EMPIRICAL = 1; % Indicate if analyzing empirical choices (1) or simulated choices (0).
     % Using empirical choices!
     if EMPIRICAL
         MDP.do_model_free = 1; % Toggle on to do model-free analyses on empirical data.
@@ -43,7 +43,7 @@ function [output_table] = Social_wrapper()
         if ispc; root = 'L:/';end
         if ismac; root = '/Volumes/labs/';end
         
-        study_info.study = 'exercise'; % 'wellbeing', 'exercise', 'cobre_neut', 'adm', 'eit'
+        study_info.study = 'cobre_neut'; % 'wellbeing', 'exercise', 'cobre_neut', 'adm', 'eit'
 
         %%%%% Specify the data to process for the wellbeing study
         if strcmp(study_info.study,'wellbeing')
@@ -97,7 +97,7 @@ function [output_table] = Social_wrapper()
         
         % Indicate the model to fit or simulate
         model = "KF_SIGMA_DDM"; % Possible models: 'KF_SIGMA_logistic','KF_SIGMA_logistic_DDM', 'KF_SIGMA_logistic_RACING','KF_SIGMA', 'KF_SIGMA_DDM', 'KF_SIGMA_RACING', 'obs_means_logistic', 'obs_means_logistic_DDM', 'obs_means_logistic_RACING'
-        MDP.field = {'side_bias'}; % Determine which parameters to fit
+        MDP.field = {'sigma_d','sigma_r','cong_base_info_bonus','incong_base_info_bonus'}; % Determine which parameters to fit
     
     % If running this code on the analysis cluster, read in variables using getenv() 
     elseif isunix
@@ -142,32 +142,32 @@ function [output_table] = Social_wrapper()
     if strcmp(model, 'KF_SIGMA_DDM')
         MDP.params = struct('reward_sensitivity', 1, 'initial_mu', 50, 'side_bias', 0, 'baseline_noise', 5, ...
             'cong_base_info_bonus', 0, 'incong_base_info_bonus', 0, 'cong_directed_exp', 0, 'incong_directed_exp', 0, ...
-            'random_exp', 5, 'sigma_r', 8, 'sigma_d',0,'initial_sigma', 10000, 'decision_thresh_baseline', 3, 'rdiff_bias_mod', 0.05);
+            'random_exp', 5, 'sigma_r', 8, 'sigma_d',1,'initial_sigma', 10000, 'decision_thresh_baseline', 3, 'rdiff_bias_mod', 0.05);
         MDP.max_rt = 7;
         MDP.num_choices_to_fit = 6; % fit/sim first free choice (1) or all choices (5 or 6)
     elseif strcmp(model, 'KF_SIGMA')
         MDP.params = struct('reward_sensitivity', 1, 'initial_mu', 50, 'side_bias', 0, 'baseline_noise', 5, ...
             'cong_base_info_bonus', 0, 'incong_base_info_bonus', 0, 'cong_directed_exp', 0, 'incong_directed_exp', 0, ...
-            'random_exp', 5, 'sigma_r', 8, 'sigma_d',0,'initial_sigma', 10000);
+            'random_exp', 5, 'sigma_r', 8, 'sigma_d',1,'initial_sigma', 10000);
         MDP.num_choices_to_fit = 6; % fit/sim first free choice (1) or all choices (5 or 6)
 
     elseif strcmp(model, 'KF_SIGMA_RACING')
         MDP.params = struct('reward_sensitivity', 1, 'initial_mu', 50, 'side_bias', 0, 'baseline_noise', 5, ...
             'cong_base_info_bonus', 0, 'incong_base_info_bonus', 0, 'cong_directed_exp', 0, 'incong_directed_exp', 0, ...
-            'random_exp', 5, 'sigma_r', 8, 'sigma_d',0,'initial_sigma', 10000, 'decision_thresh_baseline', 2, ...
+            'random_exp', 5, 'sigma_r', 8, 'sigma_d',1,'initial_sigma', 10000, 'decision_thresh_baseline', 2, ...
             'starting_bias_baseline', 0.5, 'drift_baseline', 0, 'drift_reward_diff_mod', 0.1, ...
             'starting_bias_reward_diff_mod', 0.1, 'wd', 0.05, 'ws', 0.05, 'V0', 0);
         MDP.max_rt = 7;
         MDP.num_choices_to_fit = 6; % fit/sim first free choice (1) or all choices (5 or 6)
 
     elseif strcmp(model, 'KF_SIGMA_logistic')
-        MDP.params = struct('reward_sensitivity', 1, 'initial_mu', 50, 'sigma_r', 8, 'sigma_d',0,'initial_sigma', 10000, ...
+        MDP.params = struct('reward_sensitivity', 1, 'initial_mu', 50, 'sigma_r', 8, 'sigma_d',1,'initial_sigma', 10000, ...
             'info_bonus_small_hor', 0, 'info_bonus_big_hor', 0, 'dec_noise_small_hor', 1, ...
             'dec_noise_big_hor', 1, 'side_bias_small_hor', 0, 'side_bias_big_hor', 0);
         MDP.num_choices_to_fit = 1; % DO NOT EDIT. This model is for the first free choice only.
 
     elseif strcmp(model, 'KF_SIGMA_logistic_DDM')
-        MDP.params = struct('reward_sensitivity', 1, 'initial_mu', 50, 'sigma_r', 8, 'sigma_d',0,'initial_sigma', 10000, ...
+        MDP.params = struct('reward_sensitivity', 1, 'initial_mu', 50, 'sigma_r', 8, 'sigma_d',1,'initial_sigma', 10000, ...
             'info_bonus_small_hor', 0, 'info_bonus_big_hor', 0, 'dec_noise_small_hor', 1, ...
             'dec_noise_big_hor', 1, 'side_bias_small_hor', 0, 'side_bias_big_hor', 0, ...
             'decision_thresh_baseline', 2, 'starting_bias_baseline', 0.5, 'drift_baseline', 0, ...
@@ -176,7 +176,7 @@ function [output_table] = Social_wrapper()
         MDP.num_choices_to_fit = 1; % DO NOT EDIT. This model is for the first free choice only.
 
     elseif strcmp(model, 'KF_SIGMA_logistic_RACING')
-        MDP.params = struct('reward_sensitivity', 1, 'initial_mu', 50, 'sigma_r', 8, 'sigma_d',0,'initial_sigma', 10000, ...
+        MDP.params = struct('reward_sensitivity', 1, 'initial_mu', 50, 'sigma_r', 8, 'sigma_d',1,'initial_sigma', 10000, ...
             'info_bonus_small_hor', 0, 'info_bonus_big_hor', 0, 'dec_noise_small_hor', 1, ...
             'dec_noise_big_hor', 1, 'side_bias_small_hor', 0, 'side_bias_big_hor', 0, ...
             'decision_thresh_baseline', 2, 'starting_bias_baseline', 0.5, 'drift_baseline', 0, ...
