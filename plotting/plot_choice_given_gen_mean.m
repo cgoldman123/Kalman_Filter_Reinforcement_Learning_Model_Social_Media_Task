@@ -30,9 +30,15 @@ function plot_choice_given_gen_mean(processed_data, MDP, gen_mean_difference, ho
 end
 
 function games_of_interest = locate_games_of_interest(processed_data, model_output, gen_mean_difference, horizon)
-    % Calculate the mean difference between the first 4 choices of each bandit
-    mean_bandit1 = mean(processed_data.bandit1_schedule(:, 1:4), 2);
-    mean_bandit2 = mean(processed_data.bandit2_schedule(:, 1:4), 2);
+    % Calculate the mean difference between bandits
+    if isfield(processed_data, 'bandit1_mean') && isfield(processed_data,'bandit2_mean')
+        mean_bandit1 = processed_data.bandit1_mean; % get gen mean
+        mean_bandit2 = processed_data.bandit2_mean; % get gen mean
+    else
+        mean_bandit1 = mean(processed_data.bandit1_schedule(:,1:4), 2); % get mean of forced choices on left
+        mean_bandit2 = mean(processed_data.bandit2_schedule(:,1:4), 2); % get mean of forced choices on right
+    end
+    
     mean_diff = abs(mean_bandit1 - mean_bandit2);
 
     % Define target values based on gen_mean_difference
@@ -45,12 +51,11 @@ function games_of_interest = locate_games_of_interest(processed_data, model_outp
     % Find the rows where the mean difference matches target values
     rows_with_gen_mean_diff = find(ismember(mean_diff, target_values));
 
-    % Count the number of NaN values in each row for horizon filtering
-    nan_counts = sum(isnan(model_output.actions), 2);
-    if horizon == 1
-        rows_with_horizon = find(nan_counts == 4);
+    % Find the rows with this horizon
+    if horizon ==1
+        rows_with_horizon = find(processed_data.horizon_type == 1);
     else
-        rows_with_horizon = find(nan_counts == 0);
+        rows_with_horizon = find(processed_data.horizon_type == 2);
     end
 
     % Find the intersection of rows that match both criteria

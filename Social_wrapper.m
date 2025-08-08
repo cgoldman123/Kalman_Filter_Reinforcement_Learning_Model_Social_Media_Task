@@ -3,7 +3,7 @@ function [output_table] = Social_wrapper()
     dbstop if error;
     clearvars -except varargin
 
-    EMPIRICAL = 1; % Indicate if analyzing empirical choices (1) or simulated choices (0).
+    EMPIRICAL = 0; % Indicate if analyzing empirical choices (1) or simulated choices (0).
     % Using empirical choices!
     if EMPIRICAL
         MDP.do_model_free = 0; % Toggle on to do model-free analyses on empirical data.
@@ -17,18 +17,18 @@ function [output_table] = Social_wrapper()
     else
         % Using simulated choices!
         MDP.do_plot_model_statistics = 1; % Toggle on to plot statistics under the current parameter set
-        MDP.do_simulated_model_free = 1; % Toggle on to calculate and save model-free analyses on data simulated using parameters set in this main file.
+        MDP.do_simulated_model_free = 0; % Toggle on to calculate and save model-free analyses on data simulated using parameters set in this main file.
         MDP.do_plot_choice_given_gen_mean = 1; % Toggle on to plot simulated behavior for games of a specific generative mean and horizon (specified below).
         % If plotting simulated data, decide if doing parameter sweep.
         if MDP.do_plot_model_statistics         
-            MDP.param_to_sweep = 'side_bias_big_hor'; % Specify the name of the parameter name to sweep over or leave this empty to not sweep.
+            MDP.param_to_sweep = ''; % Specify the name of the parameter name to sweep over or leave this empty to not sweep.
             MDP.param_values_to_sweep_over = linspace(-20, 20, 5); % Specify the values of the parameter to sweep over
         end
         % If plotting simulated data for a given game type
         if MDP.do_plot_choice_given_gen_mean
             gen_mean_difference = 4; % choose a generative mean difference
-            horizon = 5; % choose horizon of 1 or 5
-            truncate_big_hor = 1; % if truncate_big_hor is true, use the big bandit schedule but truncate so that all games are H1
+            horizon = 1; % choose horizon of 1 or 5/6
+            truncate_big_hor = 0; % if truncate_big_hor is true, use the big bandit schedule but truncate so that all games are H1
         end
     end
     MDP.num_samples_to_draw_from_pdf = 0;   %If 0, the model will simulate a choice/RT based on the maximum of the simulated pdf. If >0, it will sample from the distribution of choices/RTs this many times. Note this only matters for models that generate RTs.

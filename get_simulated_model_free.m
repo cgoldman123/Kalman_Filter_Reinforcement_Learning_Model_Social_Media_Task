@@ -12,24 +12,28 @@ function output_struct = get_simulated_model_free(processed_data, MDP,subject_da
 
     simmed_model_output = MDP.model(MDP.params, actions_and_rts, processed_data.rewards, MDP, 1);
 
-    datastruct.actions = simmed_model_output.actions;
-    datastruct.rewards = simmed_model_output.rewards;
+    processed_data.actions = simmed_model_output.actions;
+    processed_data.rewards = simmed_model_output.rewards;
 
     model_str = func2str(MDP.model);
     if contains(model_str, 'DDM') || contains(model_str, 'RACING')   
-        datastruct.RTs = simmed_model_output.rts;
+        processed_data.RTs = simmed_model_output.rts;
     else
-        datastruct.RTs = nan(40,9);
+        processed_data.RTs = nan(40,9);
     end
 
 
+    % Build output struct and fill with parameter values
     output_struct.id = id;
     param_fields = fieldnames(MDP.params);
     for i = 1:length(param_fields)
         output_struct.(param_fields{i}) = MDP.params.(param_fields{i});
     end
     output_struct.field = strjoin(MDP.field, ','); 
-    simulated_model_free = social_model_free(root,subject_data_info.behavioral_file_path,room_type,experiment,datastruct);
+
+    % Call model free function
+    simulated_model_free = social_model_free(processed_data);
+    % Continue building output struct with model free stats
     simulated_model_free_fields = fieldnames(simulated_model_free);
     for i = 1:length(simulated_model_free_fields)
         output_struct.(simulated_model_free_fields{i}) = simulated_model_free.(simulated_model_free_fields{i});
