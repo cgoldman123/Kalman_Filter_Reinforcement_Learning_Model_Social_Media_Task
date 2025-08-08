@@ -4,10 +4,7 @@ function output = get_fits(root, processed_data, subject_data_info, results_dir,
     if isfield(subject_data_info, 'room_type')
         room_type = subject_data_info.room_type;
     end
-    study = '';
-    if isfield(subject_data_info, 'study')
-        study = subject_data_info.study;
-    end
+
     timestamp = datestr(datetime('now'), 'mm_dd_yy_THH-MM-SS');
     
     
@@ -59,7 +56,7 @@ function output = get_fits(root, processed_data, subject_data_info, results_dir,
     end
     if MDP.fit_model
         if MDP.do_simulated_model_free 
-            simulated_model_free = social_model_free(root,subject_data_info.behavioral_file_path,room_type,study,model_output.simfit_DCM.processed_data);
+            simulated_model_free = social_model_free(processed_data,model_output.simfit_DCM.processed_data);
         end
     end
     

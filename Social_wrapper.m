@@ -85,9 +85,11 @@ function [output_table] = Social_wrapper()
     elseif isunix
         root = '/media/labs/'
         results_dir = getenv('RESULTS')   
-        room = getenv('ROOM') 
-        experiment = getenv('EXPERIMENT')
-        id = getenv('ID')
+        study_info.room = getenv('ROOM') 
+        study_info.experiment = getenv('EXPERIMENT')
+        study_info.condition = getenv('CONDITION')
+        study_info.run = getenv('RUN')
+        study_info.id = getenv('ID')
         model = getenv('MODEL')
         MDP.field = strsplit(getenv('FIELD'), ',')
     end
