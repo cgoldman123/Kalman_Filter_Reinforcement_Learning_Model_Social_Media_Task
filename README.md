@@ -49,6 +49,7 @@ output_table = Social_wrapper();
 * For certain models, indicate the number of free choices you would like to fit. Do not do this for models with "obs_mean" or "logistic" in the name, as they were not intended to be fit to multiple choices.
 
 
+
 Supported models:
 
 * `KF_SIGMA`, `KF_SIGMA_DDM`, `KF_SIGMA_RACING`
@@ -61,7 +62,14 @@ Each model has a pre-defined parameter structure and number of choices to fit (e
 
 ---
 
-### Model Description
+### Model Free
+
+* Note that in model free analysis, `has_equal_info_games`: whether indicate whether a given dataset has [2 2] games 
+suffix _13 or _22 correspond to games types [1 3] games or [2 2] games. applicable to all the statistics
+
+### Model Descriptions
+
+
 1. **`KF_SIGMA_DDM`: Kalman filter + drift-diffusion model for jointly modeling choice and RTs**
     - Fit/sim first free choice (`1`) or all choices (`5`)
 
@@ -397,6 +405,8 @@ Depending on the mode, the wrapper generates:
 Files are saved to the `results_dir` specified near the top of the script.
 
 ### `output_table` 
+
+
 
 ### Plots
 
