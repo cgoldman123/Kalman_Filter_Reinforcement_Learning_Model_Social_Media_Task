@@ -3,7 +3,7 @@ function [output_table] = Social_wrapper()
     dbstop if error;
     clearvars -except varargin
 
-    EMPIRICAL = 0; % Indicate if analyzing empirical choices (1) or simulated choices (0).
+    EMPIRICAL = 1; % Indicate if analyzing empirical choices (1) or simulated choices (0).
     % Using empirical choices!
     if EMPIRICAL
         MDP.do_model_free = 0; % Toggle on to do model-free analyses on empirical data.
@@ -40,7 +40,7 @@ function [output_table] = Social_wrapper()
         if ispc; root = 'L:/';end
         if ismac; root = '/Volumes/labs/';end
         
-        study_info.study = 'eit'; % 'wellbeing', 'exercise', 'cobre_neut', 'adm', 'eit'
+        study_info.study = 'exercise'; % 'wellbeing', 'exercise', 'cobre_neut', 'adm', 'eit'
 
         %%%%% Specify the data to process for the wellbeing study
         if strcmp(study_info.study,'wellbeing')
