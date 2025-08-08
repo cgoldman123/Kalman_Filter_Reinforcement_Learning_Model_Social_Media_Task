@@ -1,4 +1,4 @@
-function output = get_fits(root, processed_data, subject_data_info, results_dir, MDP)
+function output = get_fits(processed_data, subject_data_info, results_dir, MDP)
     id = subject_data_info.id;
     room_type = subject_data_info.room_type;
     
@@ -57,14 +57,22 @@ function output = get_fits(root, processed_data, subject_data_info, results_dir,
                 fits_table.(['fixed_' vars{i}]) = fits.(vars{i});
             end
         end
+
+        % Save plots
+        figHandles = findall(0, 'Type', 'figure');
+        for plot_num = 1:numel(figHandles)
+            fname = sprintf([results_dir 'fig_%d_%s_%s_%s.png'], plot_num, id, room_type, timestamp);
+            saveas(figHandles(plot_num), fname); % saves the .fig file
+        end
+
     end
     
     if MDP.do_model_free
-        model_free = social_model_free(processed_data,struct());
+        model_free = social_model_free(processed_data);
     end
     if MDP.fit_model
         if MDP.do_simulated_model_free 
-            simulated_model_free = social_model_free(processed_data,model_output.simfit_DCM.processed_data);
+            simulated_model_free = social_model_free(model_output.simfit_DCM.processed_data);
         end
     end
     

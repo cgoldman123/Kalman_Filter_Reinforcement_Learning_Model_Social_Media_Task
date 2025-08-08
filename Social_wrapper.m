@@ -1,23 +1,26 @@
+% Main script for analyzing horizon task data, 2025
+% Authors: Carter Goldman, Ko-Ping Chou, Rowan Hodson, Marishka Mehta, 
+% Orestes Pena Sanchez, Grace Kozlowski, Claire Lavalley, Sam Taylor, and Ryan Smith
 function [output_table] = Social_wrapper()
     close all;
     dbstop if error;
     clearvars -except varargin
 
-    EMPIRICAL = 1; % Indicate if analyzing empirical choices (1) or simulated choices (0).
+    EMPIRICAL = 0; % Indicate if analyzing empirical choices (1) or simulated choices (0).
     % Using empirical choices!
     if EMPIRICAL
-        MDP.do_model_free = 0; % Toggle on to do model-free analyses on empirical data.
+        MDP.do_model_free = 1; % Toggle on to do model-free analyses on empirical data.
         MDP.fit_model = 1; % Toggle on to fit the model to empirical data.
         % If fitting the model
         if MDP.fit_model
-            MDP.do_simulated_model_free = 0; % Toggle on to do model-free analyses on data simulated using posterior parameter estimates of model.
+            MDP.do_simulated_model_free = 1; % Toggle on to do model-free analyses on data simulated using posterior parameter estimates of model.
             MDP.plot_fitted_behavior = 1; % Toggle on to plot behavior after model fitting.
             MDP.save_trial_by_trial_output = 1;  % Toggle on to save trial by trial model latents (e.g., prediction errors) and behavioral data (e.g., reaction times).
         end
     else
         % Using simulated choices!
         MDP.do_plot_model_statistics = 1; % Toggle on to plot statistics under the current parameter set
-        MDP.do_simulated_model_free = 0; % Toggle on to calculate and save model-free analyses on data simulated using parameters set in this main file.
+        MDP.do_simulated_model_free = 1; % Toggle on to calculate and save model-free analyses on data simulated using parameters set in this main file.
         MDP.do_plot_choice_given_gen_mean = 1; % Toggle on to plot simulated behavior for games of a specific generative mean and horizon (specified below).
         % If plotting simulated data, decide if doing parameter sweep.
         if MDP.do_plot_model_statistics         
@@ -40,7 +43,7 @@ function [output_table] = Social_wrapper()
         if ispc; root = 'L:/';end
         if ismac; root = '/Volumes/labs/';end
         
-        study_info.study = 'eit'; % 'wellbeing', 'exercise', 'cobre_neut', 'adm', 'eit'
+        study_info.study = 'adm'; % 'wellbeing', 'exercise', 'cobre_neut', 'adm', 'eit'
 
         %%%%% Specify the data to process for the wellbeing study
         if strcmp(study_info.study,'wellbeing')
@@ -219,7 +222,7 @@ function [output_table] = Social_wrapper()
 
     % Getting free choices from empirical data
     if EMPIRICAL
-        output_table = get_fits(root, processed_data, subject_data_info, results_dir,MDP);
+        output_table = get_fits(processed_data, subject_data_info, results_dir,MDP);
     else
        % Getting free choices from simulated data
         if MDP.do_plot_choice_given_gen_mean & isempty(MDP.param_to_sweep)

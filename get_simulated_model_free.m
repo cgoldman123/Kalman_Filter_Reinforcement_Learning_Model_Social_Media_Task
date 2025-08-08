@@ -14,13 +14,7 @@ function output_struct = get_simulated_model_free(processed_data, MDP,subject_da
 
     processed_data.actions = simmed_model_output.actions;
     processed_data.rewards = simmed_model_output.rewards;
-
-    model_str = func2str(MDP.model);
-    if contains(model_str, 'DDM') || contains(model_str, 'RACING')   
-        processed_data.RTs = simmed_model_output.rts;
-    else
-        processed_data.RTs = nan(40,9);
-    end
+    processed_data.RTs = simmed_model_output.rts;
 
 
     % Build output struct and fill with parameter values
