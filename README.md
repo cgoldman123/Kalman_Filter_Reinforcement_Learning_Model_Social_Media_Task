@@ -2,7 +2,7 @@
 
 ## `Social_wrapper.m`
 
-`Social_wrapper.m` is a flexible MATLAB wrapper function designed to process empirical or simulated behavioral data from social decision-making tasks. It supports data from multiple studies, performs model-based or model-free analyses, and can fit a variety of Bayesian and sequential sampling models to participant choice and reaction time data.
+`Social_wrapper.m` is a flexible MATLAB wrapper function designed to process empirical or simulated behavioral data from the Horizon Task (https://psycnet.apa.org/record/2014-44776-001). It supports data from multiple studies, performs model-based or model-free analyses, and can fit a variety of logistic and sequential sampling models to participant choice and reaction time data.
 
 ## Features
 
@@ -18,73 +18,36 @@
 
 ## Usage
 
-Open MATLAB and run:
+Open MATLAB and run the following script to sim/fit data for one subject:
 
 ```matlab
 output_table = Social_wrapper();
 ```
 
-OR
+* Specify whether to process **empirical** or **simulated** choices based on the `EMPIRICAL` flag. 
+    * For **empirical** data, specify if you would like to fit the model to participants' actual data and/or conduct model-free analyses on this data.
+        * If fitting the model to participant behavior, additionally specify if you would like to conduct model free analyses on data simulated using the posterior parameter estimates of the model. You may also plot the results of fitting the model and save trial-by-trial output, including model latents (e.g., prediction errors) and behavioral data (e.g., reaction times).
+    * For **simulated** data, specify if you would like to plot model statistics, do model free analyses on simulated data (using the parameter values in Social_wrapper.m), and/or plot behavior for specific game types (i.e., MDP.do_plot_choice_given_gen_mean)
+        * If plotting model statistics, indicate if you would like to conduct a parameter sweep by listing a parameter in MDP.param_to_sweep. Otherwise, leave it empty.
+        * If plotting a specific game type, specify the horizon and generative mean difference of that game. Use truncate_big_hor to indicate if you would like to use the schedule of big horizon games but have the model treat them as small horizon games. 
+* Use MDP.num_samples_to_draw_from_pdf = 0 to specify whether to simulate a choice/RT based on the maximum of the simulated pdf. If >0, it will sample from the distribution of choices RTs this many times. Note this only matters for models that generate RTs.
 
-[@carter can you add a cluster usage eg]
+* Ensure the root directory is the root file path in your computer's file system.
+* Specify study: *wellbeing*, *exercise*, *adm*, *cobre_neut*, and *eit*. For *wellbeing*, also specify *local* or *prolific* in `study_info.experiment`
+* Within the study you are running, specify the subject you would like to fit and any additional fields to identify that subject's data. Additional fields include:
+    * room: applies to horizon task studies with like (positive) and dislike (negative) rooms
+    * run: applies to studies with multiple runs
+    * cb: applies to studies with multiple counterbalanced schedules
+    * experiment: applies to the wellbeing study, with an online and local experiment
+    * condition: applies to the adm study with loaded (breathing resistance) and unloaded (without breathing resistance) conditions
 
-
-* Specify whether to process **empirical** or **simulated** choices based on the `EMPIRICAL` flag. For **empirical** data, specify if 
-* Specify study type: *wellbeing*, *exercise*, *adm*, *cobre_neut*, and *eit*. For *wellbeing*, also specify *local* or *prolific* in `study_info.experiment`
-* [@Carter can you specify how to run this for either "ALL" participants or list of participants]
 * Specify model type ` model` and which parameters to fit `MDP.field`
 * Specify the result directory" `results_dir` 
-* Load the appropriate dataset and parameters
-* Fit or simulate the specified model
-* Run optional plotting or model-free analyses
-* Save trial-level output and return summary results in `output_table`
 
----
+* For fitting, specify the prior parameter values in MDP.params. 
+* For reaction time models, additionally specify the maximum reaction time to fit (max.rt), disregarding greater rts
+* For certain models, indicate the number of free choices you would like to fit. Do not do this for models with "obs_mean" or "logistic" in the name, as they were not intended to be fit to multiple choices.
 
-## Configuration
-
-### Data Mode
-
-Toggle between empirical or simulated analyses by modifying:
-
-```matlab
-EMPIRICAL = 1; % 1 = use empirical choices, 0 = simulate choices
-```
-For **empirical** data you can further specify if descriptive model-free analyses and/or model fitting is required by toggling [1: on; 0: off] `MDP.do_model_free` and `MDP.fit_model`, respectively.
-
-If fitting model, futher options are available:
-    1. ` MDP.do_simulated_model_free`: descriptive analyses of simulated behavior. RTs are not simlated for choice-only models. Associated fields are expected to be NaNs 
-    2. `MDP.plot_fitted_behavior`: participant level plots, see section on plots below for details
-
-For **simulated** data:
-    1.  `MDP.param_to_sweep`;`MDP.param_values_to_sweep_over`:Specify the values of the parameter to sweep overspecify the name of the parameter name, and value range to sweep over or leave this empty to not sweep.
-    2. If plotting simulated data, specify 
-        - `gen_mean_difference`: % choose a generative mean difference
-        - `horizon`: choose horizon of 1 or 5
-        - `truncate_big_hor`: if truncate_big_hor is true, use the big bandit schedule but truncate so that all games are H1
-    3. `MDP.num_samples_to_draw_from_pdf`: If 0, the model will simulate a choice/RT based on the maximum of the simulated pdf. If >0, it will sample from the distribution of choices/RTs this many times. Note this only matters for models that generate RTs.
-
-### Study and Subject Info
-
-Edit the `study_info` struct to specify:
-
-* Study type: `'wellbeing'`, `'exercise'`, `'adm'`, etc.
-* Subject ID
-* Session/run (`T1`, `T2`, etc.)
-* Room/context
-
-For example:
-
-```matlab
-study_info.study = 'exercise';
-study_info.id = 'AK465';
-study_info.run = 'T1';
-study_info.room = 'Like';
-```
-
-Cluster users can define these via environment variables (`RESULTS`, `ID`, `MODEL`, etc.).
-
-### Model Specification
 
 Supported models:
 
@@ -94,14 +57,7 @@ Supported models:
 
 Model implementation scripts are located in `./SPM_models/`.
 
-Set the model in:
-
-```matlab
-model = 'KF_SIGMA';
-```
-
 Each model has a pre-defined parameter structure and number of choices to fit (e.g., first choice only vs. all 5 choices). These are assigned automatically in the wrapper. Note: The `KF_SIGMA`, `KF_SIGMA_DDM`, and `KF_SIGMA_RACING` models can fit either the first free choice (`1`) or all five choices (`5`). This is specified via `MDP.num_choices_to_fit`.
-
 
 ---
 
@@ -448,26 +404,18 @@ Files are saved to the `results_dir` specified near the top of the script.
 (b) *top*: Total Uncertainty by Choice Number; *bottom*: Estimated Reward Difference by Choice Number
 (c) *top*: Probability of Correct Choice; *middle*: Reaction Time; *bottom*: Probability of Choosing High-Info Option
 (d) *top*: P(Choose Right) by Reward Difference; *bottom*: P(Choose High-Info) by Reward Difference
-[@Carter add file names]
 
 ---
 
 ## Dependencies
 
-Make sure the following folders are in your MATLAB path:
-
-* `./SPM_models/`: stores models
-* `./data_processing/`: stores study specific raw data processing scripts
-* `./racing_accumulator/`: specific function required for `racing_accumulator` models
-* `./plotting/`: plotting scripts
-* SPM12 (with `DEM` toolbox)
+Make sure that you have SPM12 installed and added to your MATLAB path. Additionally add the `DEM` toolbox within SPM.
 
 ---
 
 ## Notes
 
 * You do **not** need to edit below the "DO NOT EDIT" line unless modifying models themselves.
-* Ensure `process_data_across_studies()` and model-fitting functions (e.g., `get_fits()`) are available in your path.
 * Random seed is set for reproducibility (`rng(23)`).
 
 ---
